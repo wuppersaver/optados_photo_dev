@@ -488,7 +488,7 @@ contains
 
               jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
               if (calc_projected_jdos) then
-                projected_jdos(idos,is) = jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)*&
+                projected_jdos(idos,is) = projected_jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)*&
                 &pdos_weights_k_band(ib,is,ik)
               end if
 

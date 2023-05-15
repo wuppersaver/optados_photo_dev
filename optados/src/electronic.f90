@@ -1459,6 +1459,7 @@ contains
           do is = 1, pdos_mwab%nspins
             read (pdos_in_unit) dummyi ! this is the spin number
             read (pdos_in_unit) nbands_occ(ik, is)
+            if (full_debug_pdos_weights) write(nbands_occ(ik,is))
             do ib = 1, nbands_occ(ik, is)
               if (full_debug_pdos_weights) then
                 write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
@@ -1479,8 +1480,15 @@ contains
         do is = 1, pdos_mwab%nspins
           read (pdos_in_unit) dummyi ! this is the spin number
           read (pdos_in_unit) nbands_occ(ik, is)
+          if (full_debug_pdos_weights) write (stdout,*) nbands_occ(ik,is)
           do ib = 1, nbands_occ(ik, is)
+            if (full_debug_pdos_weights) then
+              write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
+              write (stdout, *) ib, ik, is
+              write (stdout, *) "   **** ***** *****  ***** ***** *****  ***** ***** *****  "
+            end if
             read (pdos_in_unit) pdos_weights(1:pdos_mwab%norbitals, ib, ik, is)
+            if (full_debug_pdos_weights) write (stdout, *) pdos_weights(1:pdos_mwab%norbitals, ib, ik, is)
           end do
         end do
       end do

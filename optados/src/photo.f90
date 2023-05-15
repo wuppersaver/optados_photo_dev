@@ -378,7 +378,7 @@ contains
   subroutine make_pdos_weights_atoms
     !***************************************************************
     !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout
@@ -426,6 +426,16 @@ contains
         end do
       end do
     end do
+    ! write(stdout,*) " ***** F U L L _ D E B U G _ P D O S _ K P T _ B A N D _ W E I G H T S ***** "
+    ! do N = 1, num_kpoints_on_node(my_node_id)
+    !   write (stdout,*) N
+    !   do N_spin = 1, nspins
+    !     do n_eigen=1,pdos_mwab%nbands
+    !       write(stdout,*) pdos_weights_k_band(n_eigen, N_spin, N), band_energy(n_eigen,N_spin,N)
+    !     end do
+    !   end do
+    ! end do
+
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
