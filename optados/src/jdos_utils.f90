@@ -55,6 +55,8 @@ module od_jdos_utils
   logical :: calc_weighted_jdos
   integer, allocatable, save :: vb_max(:)
   !-------------------------------------------------------------------------------
+  real(kind=dp),allocatable :: projected_jdos(:,:)
+  logical :: calc_projected_jdos = .true.
 
 contains
 
@@ -72,6 +74,7 @@ contains
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
+    use od_photo, only: calc_layers,make_pdos_weights_atoms
 
     implicit none
     integer :: ierr
@@ -80,7 +83,7 @@ contains
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
 
-    integer :: N_geom ,is, idos, wjdos_unit = 25
+    integer :: N_geom ,is, idos, wjdos_unit = 25,pjdos_unit = 26
     logical :: print_weighted_jdos = .false.
 
     calc_weighted_jdos = .false.
@@ -110,7 +113,6 @@ contains
     time0 = io_time()
 
     call setup_energy_scale(E)
-
     if (fixed) then
       if (calc_weighted_jdos) then
         call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos)
@@ -170,10 +172,28 @@ contains
         do is = 1, nspins
           write (wjdos_unit, *) 'Spin Channel :', is
           do idos = 1, jdos_nbins
-            write (wjdos_unit, *) idos*jdos_spacing, ' , ',sum(weighted_jdos(idos, is, 1:N_geom))
+            write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
           end do
         end do
         close (unit=wjdos_unit)
+      end if
+    end if
+
+    if (calc_projected_jdos) then
+      if (on_root) then
+        open (unit=pjdos_unit, action='write', file=trim(seedname)//'_projected_jdos.dat')
+        write (pjdos_unit, '(1x,a28)') '############################'
+        write (pjdos_unit, '(1x,a20,1x,a99)') '# Projected JDOS for' , seedname
+        write (pjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :' , jdos_max_energy , '[eV]'
+        write (pjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :' , jdos_spacing , '[eV]'
+        write (pjdos_unit, '(1x,a28)') '############################'
+        do is = 1, nspins
+          write (pjdos_unit, *) 'Spin Channel :', is
+          do idos = 1, jdos_nbins
+            write (pjdos_unit, *) E(idos), ' , ', projected_jdos(idos, is)
+          end do
+        end do
+        close (unit=pjdos_unit)
       end if
     end if
 
@@ -280,6 +300,11 @@ contains
     allocate (jdos(jdos_nbins, nspins), stat=ierr)
     if (ierr /= 0) call io_error("Error in allocating jdos (jdos_utils)")
     jdos = 0.0_dp
+    if (calc_projected_jdos) then
+      allocate (projected_jdos(jdos_nbins, nspins), stat=ierr)
+      if (ierr /= 0) call io_error("Error in allocating projected_jdos (jdos_utils)")
+      jdos = 0.0_dp
+    end if
 
   end subroutine allocate_jdos
 
@@ -323,9 +348,10 @@ contains
          &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
-         & efermi
+         & efermi, elec_pdos_read
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
+    use od_photo, only: pdos_weights_k_band,calc_layers,make_pdos_weights_atoms
     implicit none
 
     integer :: ik, is, ib, idos, jb, i
@@ -405,6 +431,11 @@ contains
     if (fixed) width = fixed_smearing
 
     call allocate_jdos(jdos)
+    if (calc_projected_jdos) then
+      call elec_pdos_read
+      call calc_layers
+      call make_pdos_weights_atoms
+    end if
     if (calc_weighted_jdos) then
       N_geom = size(matrix_weights, 5)
       allocate (weighted_jdos(jdos_nbins, nspins, N_geom), stat=ierr)
@@ -456,6 +487,10 @@ contains
               end if
 
               jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
+              if (calc_projected_jdos) then
+                projected_jdos(idos,is) = jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)*&
+                &pdos_weights_k_band(ib,is,ik)
+              end if
 
               ! this will become a loop over final index (polarisation)
               ! Also need to remove kpoints weights.
@@ -517,6 +552,7 @@ contains
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
     if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
+    if (calc_projected_jdos)    call comms_reduce(projected_jdos(1,1), nspins*jdos_nbins, "SUM")
 
 !    if(.not.on_root) then
 !       if(allocated(jdos)) deallocate(jdos,stat=ierr)

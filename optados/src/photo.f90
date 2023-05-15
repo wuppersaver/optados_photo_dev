@@ -28,6 +28,8 @@ module od_photo
   implicit none
   private
   public :: photo_calculate
+  public :: calc_layers
+  public :: make_pdos_weights_atoms
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
@@ -35,7 +37,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
-  real(kind=dp), allocatable, dimension(:, :, :) :: pdos_weights_k_band
+  real(kind=dp), allocatable, public,dimension(:, :, :) :: pdos_weights_k_band
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
   real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
@@ -115,7 +117,6 @@ contains
     end if
 
     !Identify layers
-
     call calc_layers
     call calc_band_info
 
