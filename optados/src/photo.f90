@@ -378,14 +378,13 @@ contains
   subroutine make_pdos_weights_atoms
     !***************************************************************
     !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, stdout, seedname
+    use od_io, only: io_error, stdout
     use od_parameters, only: devel_flag
     implicit none
-    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max, pdosunit = 27
-    logical :: calc_projected_jdos = .true.
+    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -427,25 +426,6 @@ contains
         end do
       end do
     end do
-
-    if (calc_projected_jdos) then
-      if (on_root) then
-        open (unit=pdosunit, action='write', file=trim(seedname)//'_pdos_k_band.dat')
-        write (pdosunit, '(1x,a28)') '############################'
-        write (pdosunit, '(1x,a20,1x,a99)') '# PDOS weights for' , seedname
-        write (pdosunit, '(1x,a22,1x,I4)') '# Number of PDOS Bands', pdos_mwab%nbands
-        write (pdosunit, '(1x,a22,1x,I4)') '# Number of Spectral Bands', nbands
-        write (pdosunit, '(1x,a22,1x,I4)') '# Number of K-Points', num_kpoints_on_node(my_node_id)
-        write (pdosunit, '(1x,a28)') '############################'
-        write(pdosunit,'(1x, a78)') "# ***** F U L L _ D E B U G _ P D O S _ K P T _ B A N D _ W E I G H T S ***** "
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write(pdosunit,*) (pdos_weights_k_band(n_eigen, N_spin, N),n_eigen=1,pdos_mwab%nbands)
-          end do
-        end do
-        close (unit=pdosunit)
-      end if
-    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'

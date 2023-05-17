@@ -348,10 +348,9 @@ contains
          &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
-         & efermi, elec_pdos_read
+         & efermi, elec_pdos_read, pdos_weights, pdos_mwab
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_photo, only: pdos_weights_k_band,calc_layers,make_pdos_weights_atoms
     implicit none
 
     integer :: ik, is, ib, idos, jb, i
@@ -433,8 +432,6 @@ contains
     call allocate_jdos(jdos)
     if (calc_projected_jdos) then
       call elec_pdos_read
-      call calc_layers
-      call make_pdos_weights_atoms
     end if
     if (calc_weighted_jdos) then
       N_geom = size(matrix_weights, 5)
@@ -489,7 +486,7 @@ contains
               jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
               if (calc_projected_jdos) then
                 projected_jdos(idos,is) = projected_jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)*&
-                &pdos_weights_k_band(jb,is,ik)
+                &sum(pdos_weights(1:pdos_mwab%norbitals,jb,ik,is))
               end if
 
               ! this will become a loop over final index (polarisation)
