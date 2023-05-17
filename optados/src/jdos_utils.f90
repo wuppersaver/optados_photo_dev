@@ -489,7 +489,7 @@ contains
               jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
               if (calc_projected_jdos) then
                 projected_jdos(idos,is) = projected_jdos(idos,is) + dos_temp*electrons_per_state*kpoint_weight(ik)*&
-                &pdos_weights_k_band(ib,is,ik)
+                &pdos_weights_k_band(jb,is,ik)
               end if
 
               ! this will become a loop over final index (polarisation)
