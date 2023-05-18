@@ -74,7 +74,6 @@ contains
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
     use od_dos_utils, only: dos_utils_set_efermi
-    use od_photo, only: calc_layers,make_pdos_weights_atoms
 
     implicit none
     integer :: ierr
@@ -494,7 +493,8 @@ contains
               if (calc_weighted_jdos) then
                 do N2 = 1, N_geom
                   weighted_jdos(idos, is, N2) = weighted_jdos(idos, is, N2) + dos_temp*matrix_weights(ib, jb, ik, is, N2)&
-                                               &*electrons_per_state*kpoint_weight(ik)
+                                               &*electrons_per_state*kpoint_weight(ik)*sum(pdos_weights(&
+                                               &1:pdos_mwab%norbitals,jb,ik,is))
                 end do
               end if
 
