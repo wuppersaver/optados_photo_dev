@@ -451,14 +451,14 @@ contains
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
     & epsilon, refract, absorp, reflect, intra
-    use od_io, only: stdout, io_error, io_time
+    use od_io, only: stdout, io_error, io_time, seedname
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-    photo_photon_min, photo_photon_max, devel_flag, iprint
+    photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -469,8 +469,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
 
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy
-    integer :: jdos_bin, i, s
+    integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23
     real(kind=dp)    :: num_energies, temp, time0,time1
+    character(len=2) :: atom_s
 
     time0 = io_time()
 
@@ -558,6 +559,24 @@ contains
       ! Send matrix element to jDOS routine and get weighted jDOS back
       call jdos_utils_calculate(projected_matrix_weights, weighted_jdos)
 
+      if (on_root) then
+        N_geom = size(matrix_weights, 5)
+        write(atom_s,'(I2)') atom
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(atom_s)//'.dat')
+        write (wjdos_unit, '(1x,a28)') '############################'
+        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for' , seedname
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :' , jdos_max_energy , '[eV]'
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :' , jdos_spacing , '[eV]'
+        write (wjdos_unit, '(1x,a28)') '############################'
+        do is = 1, nspins
+          write (wjdos_unit, *) 'Spin Channel :', is
+          do idos = 1, jdos_nbins
+            write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+          end do
+        end do
+        close (unit=wjdos_unit)
+      end if
+
       if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
         write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
         write (stdout, 124) shape(weighted_jdos)
@@ -640,6 +659,13 @@ contains
           write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
+        write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+        write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+        write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+        write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         ! Deallocate extra arrays produced in the case of using optics_intraband
         deallocate (epsilon, stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
