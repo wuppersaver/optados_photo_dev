@@ -806,6 +806,10 @@ contains
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
 
+    write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
+    write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
+    write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
       write (stdout, '(1x,I4,1x,I4,1x)') jdos_nbins, max_layer
@@ -1342,9 +1346,8 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-      write (stdout, '(1x,a261)') 'calced_qe_value - initial_state_energy - final_state_energy - matrix_weights - delta_temp -&
-      & electron_esc - electrons_per_state - kpoint_weight - I_layer - qe_factor - transverse_g - vac_g - fermi_dirac -&
-      & pdos_weights_atoms - pdos_weights_k_band - field_emission'
+      write (stdout, '(13(1x,a17))') 'calced_qe_value','initial_state_energy','final_state_energy', 'matrix_weights','delta_temp'&
+      &'electron_esc', 'kpoint_weight','I_layer','transverse_g','vac_g','fermi_dirac','pdos_weights_atoms','pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
@@ -1398,15 +1401,14 @@ contains
                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                   pdos_weights_k_band(n_eigen, N_spin, N)))* &
                 (1.0_dp + field_emission(n_eigen, N_spin, N))
-                ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-                !   write (stdout, '(5(1x,I4))') atom, n_eigen, n_eigen2, N_spin, N
-                !   write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
-                !     band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-                !     delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, &
-                !     kpoint_weight(N), I_layer(layer(atom), current_index), qe_factor, transverse_g, vac_g, fermi_dirac, &
-                !     pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N), &
-                !     field_emission(n_eigen, N_spin, N)
-                ! end if
+                if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                  write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
+                  write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
+                    band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                    delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
+                    kpoint_weight(N), I_layer(layer(atom), current_index), transverse_g, vac_g, fermi_dirac, &
+                    pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
+                end if
             end do
           end do
         end do
@@ -1467,8 +1469,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate delta_temp')
     end if
 
-    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and.&
-    & on_root)) then
+    if ((index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -1909,9 +1910,8 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(1x,a222)') 'calculated_QE  foptical_matrix_weight selectron_esc electrons_per_state kpoint_weight    &
-      &  I_layer      qe_factor        transverse_g         vac_g         fermi_dirac  pdos_weights_atoms pdos_weights_k_band&
-      & field_emission'
+      write (stdout, '(10(1x,a17))') 'calced_qe_value','foptical_matrix_weights','electron_esc', 'kpoint_weight',&
+      & 'I_layer','transverse_g','vac_g','fermi_dirac','pdos_weights_atoms','pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
     do atom = 1, max_atoms
@@ -1956,14 +1956,14 @@ contains
                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
               (1.0_dp + field_emission(n_eigen, N_spin, N))
-            ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-            !   write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
-            !   write (stdout, '(13(7x,E16.8E4))') qe_osm(n_eigen, N_spin, N, atom), &
-            !     foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-            !    electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom), current_index), &
-            !     qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
-            !     pdos_weights_k_band(n_eigen, N_spin, N), field_emission(n_eigen, N_spin, N)
-            ! end if
+            if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+              write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
+              write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
+                foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+               electron_esc(n_eigen, N_spin, N, atom), kpoint_weight(N), I_layer(layer(atom), current_index), &
+                transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
+                pdos_weights_k_band(n_eigen, N_spin, N)
+            end if
           end do
         end do
       end do

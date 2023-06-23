@@ -357,7 +357,7 @@ contains
                 matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom) = (factor/3.0_dp)* &
                      &   (real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp) +  &
                      &    real(g(3)*conjg(g(3)), dp))
-                write (*, *) matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom)
+                ! write (*, *) matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom)
                 !                 print *, n_eigen, n_eigen2, N, matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
                 !                 print *, band_energy(n_eigen2,N_spin,N), band_energy(n_eigen,N_spin,N)
               else
@@ -524,9 +524,11 @@ contains
 
     dE = E(2) - E(1)
     if (photo) then
-      epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
+        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
+        epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
     else
-      epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
+        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
+        epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
     end if
     !epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
@@ -539,8 +541,10 @@ contains
         end do
       end do
       if (photo) then
+        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
         intra = intra*e_charge/(photo_slab_volume*1E-10*epsilon_0)
       else
+        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
       end if
       ! intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
@@ -582,8 +586,10 @@ contains
         end if
       end do
       if (photo) then
+        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
         N_eff = (x*e_mass*photo_slab_volume*1E-30*epsilon_0*2)/(pi)
       else
+        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
       end if
       ! N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
