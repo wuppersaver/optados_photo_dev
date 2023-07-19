@@ -12,8 +12,7 @@ jobs:
         id: build
         uses: ResearchSoftwareActions/ford-build@v1.0
         with:
-          project_file: ./optados/ford/project.md
-          output_dir: ./optados/autod_doc
+          project_file: ${GITHUB_WORKSPACE}/optados/ford/project.md
       - name: Deploy
         if: success()
         uses: crazy-max/ghaction-github-pages@v3.1.0
