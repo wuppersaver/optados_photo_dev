@@ -2,6 +2,10 @@ name: Docs
 
 on: push
 
+defaults:
+  run:
+    working-directory: ford
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -16,4 +20,4 @@ jobs:
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
           target_branch: gh-pages
-          build_dir: ${{ steps.build.outputs.auto_opt }}
+          build_dir: ${{ steps.build.outputs.out_dir }}
