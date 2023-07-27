@@ -460,19 +460,36 @@ contains
     !-------------------------------------------------------------------------------
     ! Written by : A J Morris December 2010
     !===============================================================================
-    use od_comms, only: comms_reduce
+    use od_comms, only: comms_reduce, on_root
     use od_electronic, only: nspins
+    use od_io, only: seedname
+    use od_parameters, only: jdos_max_energy, jdos_spacing
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
-
-    integer :: N_geom
+    integer :: N_geom, wjdos_unit, is, idos
     if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
 
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
     if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
+
+    if (on_root) then
+      open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_total.dat')
+      write (wjdos_unit, '(1x,a28)') '############################'
+      write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+      write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+      write (wjdos_unit, '(1x,a28)') '############################'
+      do is = 1, nspins
+        write (wjdos_unit, *) 'Spin Channel :', is
+        do idos = 1, jdos_nbins
+          write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+        end do
+      end do
+      close (unit=wjdos_unit)
+    end if
 
 !    if(.not.on_root) then
 !       if(allocated(jdos)) deallocate(jdos,stat=ierr)
