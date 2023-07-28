@@ -44,7 +44,7 @@ module od_optics
   public :: write_reflect
 
   type :: graph_labels
-    character(20) :: name
+    character(25) :: name
     character(40) :: title
     character(20) :: x_label
     character(20) :: y_label
@@ -882,7 +882,7 @@ contains
     type(graph_labels) :: label
     if (atom .gt. 0) then
       write (atom_char, '(I3)') atom
-      label%name = "epsilon_atom"//atom_char
+      label%name = "epsilon_atom_"//trim(adjustl(atom_char))
     else
       label%name = "epsilon"
     end if
@@ -898,7 +898,7 @@ contains
     epsilon_unit = io_file_unit()
     if (atom .gt. 0) then
       write (atom_char, '(I3)') atom
-      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(atom_char)//'.dat')
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(adjustl(atom_char))//'.dat')
     else
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
     end if
@@ -949,19 +949,19 @@ contains
       write (epsilon_unit, *) '#'
       if (.not. optics_intraband) then
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N),',', epsilon(N, 1, 1, 1),',', epsilon(N, 2, 1, 1)
         end do
       else
         write (epsilon_unit, *) ''
         write (epsilon_unit, *) ''
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N),',', epsilon(N, 1, 1, 1),',', epsilon(N, 2, 1, 1)
         end do
         do N2 = 2, 3
           write (epsilon_unit, *) ''
           write (epsilon_unit, *) ''
           do N = 2, jdos_nbins
-            write (epsilon_unit, *) E(N), epsilon(N, 1, 1, N2), epsilon(N, 2, 1, N2)/(E(N)*e_charge)
+            write (epsilon_unit, *) E(N),',', epsilon(N, 1, 1, N2),',', epsilon(N, 2, 1, N2)/(E(N)*e_charge)
           end do
         end do
       end if
@@ -1225,8 +1225,12 @@ contains
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "refractive_index"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "refractive_index_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "refractive_index"
+    end if
     label%title = "Refractive Index"  ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1237,7 +1241,7 @@ contains
     refract_unit = io_file_unit()
     if (atom .gt. 0) then
       write (atom_char, '(I3)') atom
-      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom'//trim(atom_char)//'.dat')
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom_'//trim(adjustl(atom_char))//'.dat')
     else
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
     end if
@@ -1268,7 +1272,7 @@ contains
     end if
     write (refract_unit, *) '#'
     do N = 1, jdos_nbins
-      write (refract_unit, *) E(N), refract(N, 1), refract(N, 2)
+      write (refract_unit, *) E(N),',', refract(N, 1),',', refract(N, 2)
     end do
 
     ! Close output file
@@ -1301,8 +1305,12 @@ contains
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "absorption"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "absorption_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "absorption"
+    end if
     label%title = "Absorption Coefficient (m-1)" ! per metre
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1312,7 +1320,7 @@ contains
     absorp_unit = io_file_unit()
     if (atom .gt. 0) then
       write (atom_char, '(I3)') atom
-      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom'//trim(atom_char)//'.dat')
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom_'//trim(adjustl(atom_char))//'.dat')
     else
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
     end if
@@ -1342,7 +1350,7 @@ contains
     end if
     write (absorp_unit, *) '#'
     do N = 1, jdos_nbins
-      write (absorp_unit, *) E(N), absorp(N)
+      write (absorp_unit, *) E(N),',', absorp(N)
     end do
 
     ! Close output file
@@ -1375,7 +1383,12 @@ contains
     character(len=3) :: atom_char
     type(graph_labels) :: label
 
-    label%name = "reflection"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "reflection_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "reflection"
+    end if
     label%title = "Reflection Coefficient"  ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1385,7 +1398,7 @@ contains
     reflect_unit = io_file_unit()
     if (atom .gt. 0) then
       write (atom_char, '(I3)') atom
-      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom'//trim(atom_char)//'.dat')
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom_'//trim(adjustl(atom_char))//'.dat')
     else
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
     end if
@@ -1416,7 +1429,7 @@ contains
     end if
     write (reflect_unit, *) '#'
     do N = 1, jdos_nbins
-      write (reflect_unit, *) E(N), reflect(N)
+      write (reflect_unit, *) E(N),',', reflect(N)
     end do
 
     ! Close output file
@@ -1517,6 +1530,7 @@ contains
       call xmgu_data(batch_file, 0, E(:), column1)
     end if
 
+    close(batch_file)
   end subroutine write_optics_xmgrace
 
   !===============================================================================

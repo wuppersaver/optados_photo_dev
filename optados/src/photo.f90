@@ -592,7 +592,7 @@ contains
         N_geom = size(matrix_weights, 5)
         write (atom_s, '(I2)') atom
         wjdos_unit = io_file_unit()
-        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(atom_s)//'.dat')
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
         write (wjdos_unit, '(1x,a28)') '############################'
         call io_date(cdate, ctime)
         write (wjdos_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
