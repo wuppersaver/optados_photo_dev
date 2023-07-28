@@ -861,7 +861,7 @@ contains
   end subroutine calc_reflect
 
   !***************************************************************
-  subroutine write_epsilon(atom)
+  subroutine write_epsilon(atom, photo_at_e)
     !***************************************************************
     ! This subroutine writes out the dielectric function
 
@@ -876,11 +876,16 @@ contains
     real(kind=dp) ::dE
     integer :: epsilon_unit
     integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), dimension(:, :), optional :: photo_at_e
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "epsilon"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "epsilon_atom"//atom_char
+    else
+      label%name = "epsilon"
+    end if
     label%title = "Dielectric Function" ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -892,7 +897,7 @@ contains
     ! Open the output file
     epsilon_unit = io_file_unit()
     if (atom .gt. 0) then
-      write (atom_char,'(I3)') atom
+      write (atom_char, '(I3)') atom
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(atom_char)//'.dat')
     else
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
@@ -926,9 +931,15 @@ contains
     write (epsilon_unit, *) '#'
     if (optics_intraband) then
       write (epsilon_unit, *) '# Calculation includes intraband term'
-      if (fixed) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(1, :)
-      if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(2, :)
-      if (linear) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(3, :)
+      if (present(photo_at_e)) then
+        if (fixed) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(1, :)
+        if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(2, :)
+        if (linear) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(3, :)
+      else
+        if (fixed) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(1, :)
+        if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(2, :)
+        if (linear) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(3, :)
+      end if
       do N = 1, N_geom
         write (epsilon_unit, *) '# Plasmon energy:', (intra(N)**0.5)
       end do
@@ -949,7 +960,7 @@ contains
         do N2 = 2, 3
           write (epsilon_unit, *) ''
           write (epsilon_unit, *) ''
-          do N = 1, jdos_nbins
+          do N = 2, jdos_nbins
             write (epsilon_unit, *) E(N), epsilon(N, 1, 1, N2), epsilon(N, 2, 1, N2)/(E(N)*e_charge)
           end do
         end do
@@ -1225,7 +1236,7 @@ contains
     ! Open the output file
     refract_unit = io_file_unit()
     if (atom .gt. 0) then
-      write (atom_char,'(I3)') atom
+      write (atom_char, '(I3)') atom
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom'//trim(atom_char)//'.dat')
     else
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
@@ -1300,12 +1311,11 @@ contains
     ! Open the output file
     absorp_unit = io_file_unit()
     if (atom .gt. 0) then
-      write (atom_char,'(I3)') atom
+      write (atom_char, '(I3)') atom
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom'//trim(atom_char)//'.dat')
     else
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
     end if
-    
 
     ! Write into the output file
     write (absorp_unit, *) '#*********************************************'
@@ -1374,7 +1384,7 @@ contains
     ! Open the output file
     reflect_unit = io_file_unit()
     if (atom .gt. 0) then
-      write (atom_char,'(I3)') atom
+      write (atom_char, '(I3)') atom
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom'//trim(atom_char)//'.dat')
     else
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')

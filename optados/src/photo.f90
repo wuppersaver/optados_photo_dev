@@ -643,7 +643,7 @@ contains
           reflect_photo(atom, energy) = reflect(index_energy(energy))
         end do
 
-        call write_epsilon(atom)
+        call write_epsilon(atom, photo_at_e=dos_at_e)
         call write_refract(atom)
         call write_absorp(atom)
         call write_reflect(atom)
