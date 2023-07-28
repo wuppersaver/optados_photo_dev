@@ -462,22 +462,26 @@ contains
     !===============================================================================
     use od_comms, only: comms_reduce, on_root
     use od_electronic, only: nspins
-    use od_io, only: seedname
-    use od_parameters, only: jdos_max_energy, jdos_spacing
+    use od_io, only: seedname, io_date
+    use od_parameters, only: jdos_max_energy, jdos_spacing, photo
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
     integer :: N_geom, wjdos_unit, is, idos
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
     if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
 
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
     if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")
 
-    if (on_root) then
+    if (on_root .and. .not. photo) then
       open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_total.dat')
       write (wjdos_unit, '(1x,a28)') '############################'
+      call io_date(cdate, ctime)
+      write (wjdos_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
       write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
       write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
       write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'

@@ -36,6 +36,12 @@ module od_optics
   public :: calc_loss_fn
   public :: calc_absorp
   public :: calc_reflect
+  public :: write_epsilon
+  public :: write_conduct
+  public :: write_refract
+  public :: write_loss_fn
+  public :: write_absorp
+  public :: write_reflect
 
   type :: graph_labels
     character(20) :: name
@@ -141,13 +147,13 @@ contains
       end if
 
       ! Write everything out
-      call write_epsilon
+      call write_epsilon(0)
       if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
-        call write_refract
+        call write_refract(0)
         call write_loss_fn
-        call write_absorp
-        call write_reflect
+        call write_absorp(0)
+        call write_reflect(0)
       end if
     end if
 
@@ -855,7 +861,7 @@ contains
   end subroutine calc_reflect
 
   !***************************************************************
-  subroutine write_epsilon
+  subroutine write_epsilon(atom)
     !***************************************************************
     ! This subroutine writes out the dielectric function
 
@@ -869,6 +875,8 @@ contains
     integer :: N, N2, N3
     real(kind=dp) ::dE
     integer :: epsilon_unit
+    integer, intent(in), optional :: atom
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
 
@@ -883,8 +891,12 @@ contains
 
     ! Open the output file
     epsilon_unit = io_file_unit()
-    open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
-
+    if (atom .gt. 0) then
+      write (atom_char,'(I3)') atom
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(atom_char)//'.dat')
+    else
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
+    end if
     ! Write into the output file
     write (epsilon_unit, *) '#*********************************************'
     write (epsilon_unit, *) '#            Dielectric function                 '
@@ -1186,7 +1198,7 @@ contains
   end subroutine write_conduct
 
   !***************************************************************
-  subroutine write_refract
+  subroutine write_refract(atom)
     !***************************************************************
     ! This subroutine writes out the refractive index
 
@@ -1198,6 +1210,8 @@ contains
 
     integer :: N
     integer :: refract_unit
+    integer, intent(in), optional :: atom
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
 
@@ -1210,7 +1224,12 @@ contains
 
     ! Open the output file
     refract_unit = io_file_unit()
-    open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
+    if (atom .gt. 0) then
+      write (atom_char,'(I3)') atom
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom'//trim(atom_char)//'.dat')
+    else
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
+    end if
 
     ! Write into the output file
     write (refract_unit, *) '#*********************************************'
@@ -1255,7 +1274,7 @@ contains
   end subroutine write_refract
 
   !***************************************************************
-  subroutine write_absorp
+  subroutine write_absorp(atom)
     !***************************************************************
     ! This subroutine writes out the absorption coefficient
 
@@ -1267,6 +1286,8 @@ contains
 
     integer :: N
     integer :: absorp_unit
+    integer, intent(in), optional :: atom
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
 
@@ -1278,7 +1299,13 @@ contains
 
     ! Open the output file
     absorp_unit = io_file_unit()
-    open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
+    if (atom .gt. 0) then
+      write (atom_char,'(I3)') atom
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom'//trim(atom_char)//'.dat')
+    else
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
+    end if
+    
 
     ! Write into the output file
     write (absorp_unit, *) '#*********************************************'
@@ -1322,7 +1349,7 @@ contains
   end subroutine write_absorp
 
   !***************************************************************
-  subroutine write_reflect
+  subroutine write_reflect(atom)
     !***************************************************************
     ! This subroutine writes out the reflection coefficient
 
@@ -1334,6 +1361,8 @@ contains
 
     integer :: N
     integer :: reflect_unit
+    integer, intent(in), optional :: atom
+    character(len=3) :: atom_char
     type(graph_labels) :: label
 
     label%name = "reflection"
@@ -1344,7 +1373,12 @@ contains
 
     ! Open the output file
     reflect_unit = io_file_unit()
-    open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
+    if (atom .gt. 0) then
+      write (atom_char,'(I3)') atom
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom'//trim(atom_char)//'.dat')
+    else
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
+    end if
 
     ! Write into the output file
     write (reflect_unit, *) '#*********************************************'

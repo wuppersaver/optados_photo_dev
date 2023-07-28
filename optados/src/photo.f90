@@ -476,8 +476,8 @@ contains
     !***************************************************************
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-    & epsilon, refract, absorp, reflect, intra
-    use od_io, only: stdout, io_error, io_time, io_file_unit, seedname
+    & epsilon, refract, absorp, reflect, intra, write_epsilon, write_absorp, write_refract, write_reflect
+    use od_io, only: stdout, io_error, io_time, io_file_unit, seedname, io_date
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
@@ -498,6 +498,8 @@ contains
     integer :: jdos_bin, i, s, wjdos_unit, idos, is
     real(kind=dp)    :: num_energies, temp, time0, time1
     character(len=2) :: atom_s
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
 
@@ -592,6 +594,8 @@ contains
         wjdos_unit = io_file_unit()
         open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(atom_s)//'.dat')
         write (wjdos_unit, '(1x,a28)') '############################'
+        call io_date(cdate, ctime)
+        write (wjdos_unit, *) '## OptaDOS Photoemission: Printing QE Matrix on ', cdate, ' at ', ctime
         write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
         write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
         write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
@@ -638,6 +642,11 @@ contains
           absorp_photo(atom, energy) = absorp(index_energy(energy))
           reflect_photo(atom, energy) = reflect(index_energy(energy))
         end do
+
+        call write_epsilon(atom)
+        call write_refract(atom)
+        call write_absorp(atom)
+        call write_reflect(atom)
 
         ! Deallocate extra arrays produced in the case of using optics_intraband
         deallocate (epsilon, stat=ierr)
