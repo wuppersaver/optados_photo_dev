@@ -81,12 +81,12 @@ contains
     !
 
     use od_electronic, only: optical_mat, elec_read_optical_mat, nbands, nspins, &
-                             efermi, efermi_set, elec_dealloc_optical
+      efermi, efermi_set, elec_dealloc_optical
     use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_geom, adaptive, linear, fixed, optics_intraband, &
-                             optics_drude_broadening
+      optics_drude_broadening
     use od_dos_utils, only: dos_utils_calculate_at_e, dos_utils_set_efermi
     use od_io, only: stdout
 
@@ -160,9 +160,9 @@ contains
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
-                             electrons_per_state, band_energy, efermi
+      electrons_per_state, band_energy, efermi
     use od_cell, only: nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
-                       num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
+      num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
@@ -504,7 +504,7 @@ contains
     use od_cell, only: nkpoints, cell_volume
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening, photo,photo_slab_volume, iprint
+    use od_parameters, only: optics_intraband, optics_drude_broadening, photo, photo_slab_volume, iprint
     use od_io, only: stdout
     use od_comms, only: on_root
 
@@ -524,11 +524,11 @@ contains
 
     dE = E(2) - E(1)
     if (photo) then
-        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
-        epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
+      write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
+      epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
     else
-        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
-        epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
+      write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
+      epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
     end if
     !epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
 
@@ -652,6 +652,7 @@ contains
         end if
       end do
     end do
+
   end subroutine calc_epsilon_1
 
   !***************************************************************
@@ -799,11 +800,11 @@ contains
     refract = 0.0_dp
 
     if (.not. optics_intraband) then
-      do N_energy = 2, jdos_nbins
+      do N_energy = 1, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
-      do N_energy = 2, jdos_nbins
+      do N_energy = 1, jdos_nbins
         refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
@@ -1001,7 +1002,7 @@ contains
 
     use od_cell, only: nkpoints, cell_volume
     use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format, &
-                             optics_intraband, optics_lossfn_broadening
+      optics_intraband, optics_lossfn_broadening
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: jdos_nbins, E
     use od_io, only: seedname, io_file_unit, stdout

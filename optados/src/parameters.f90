@@ -121,8 +121,10 @@ module od_parameters
 
   ! Photoemission parameters - V.Chang, et al. Dec-2022
   character(len=20), public, save :: photo_model
-  character(len=20), public, save :: write_photo_matrix
+  character(len=20), public, save :: write_photo_output
   character(len=20), public, save :: photo_momentum
+  character(len=20), public, save :: photo_layer_choice
+  integer, public, save           :: photo_max_layer
   !logical,           public, save :: angle_resolution
   !character(len=20), public, save :: resolution_type
   real(kind=dp), public, save :: photo_phi_lower
@@ -136,7 +138,9 @@ module od_parameters
   real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
-  real(kind=dp), public, save :: photo_imfp_const
+  integer, public, save       :: photo_len_imfp_const
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_const
+  ! real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
   ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
@@ -218,7 +222,7 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
-        elseif (index(task_string(loop), 'photon_sweep') >0) then
+        elseif (index(task_string(loop), 'photon_sweep') > 0) then
           photo = .true.; photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
@@ -446,11 +450,11 @@ contains
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
-    write_photo_matrix = 'off'
-    call param_get_keyword('write_photo_matrix', found, c_value=write_photo_matrix)
-    if (index(write_photo_matrix, 'qe_matrix') == 0 .and. index(write_photo_matrix, 'e_bind') == 0 .and. &
-      & index(write_photo_matrix, 'off') == 0) then
-        call io_error('Error: value of write_photo_matrix output not recognised in param_read')
+    write_photo_output = 'off'
+    call param_get_keyword('write_photo_output', found, c_value=write_photo_output)
+    if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
+      & index(write_photo_output, 'off') == 0) then
+      call io_error('Error: value of write_photo_output output not recognised in param_read')
     end if
 
     photo_model = '1step'
@@ -493,11 +497,29 @@ contains
     if (photo .and. .not. found) &
       call io_error('Error: please set volume of the slab for photoemission calculation')
 
+    photo_layer_choice = 'optados'
+    call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
+
+    photo_max_layer = -1
+    call param_get_keyword('photo_max_layer', found, i_value=photo_max_layer)
+    if (photo .and. index(photo_layer_choice, 'user') .gt. 0 .and. .not. found) &
+      call io_error('Error: max # of layers was set to be supplied by user, but does not exist in input')
+
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
 
-    photo_imfp_const = 0.0_dp
-    call param_get_keyword('photo_imfp_const', found, r_value=photo_imfp_const)
+    call param_get_vector_length('photo_imfp_const', found, i_temp)
+    if (found) then
+      photo_len_imfp_const = i_temp
+      allocate (photo_imfp_const(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
+      call param_get_keyword_vector('photo_imfp_const', found, i_temp, r_value=photo_imfp_const)
+    else
+      photo_len_imfp_const = 1
+      allocate (photo_imfp_const(1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
+      photo_imfp_const = 0.0_dp
+    end if
     if (photo .and. .not. found) &
       call io_error('Error: constant imfp, but photo_imfp_const is not set')
 
@@ -843,8 +865,8 @@ contains
     end if
 
     if (photo) then
-      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing',': ', jdos_spacing,'eV                  |'
-      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin',': ', jdos_max_energy,'eV                  |'
+      write (stdout, '(1x,a19,26x,a2,f7.4,3x,21a)') '|  JDOS bin spacing', ': ', jdos_spacing, 'eV                  |'
+      write (stdout, '(1x,a22,23x,a2,f7.4,3x,21a)') '|  JDOS max energy bin', ': ', jdos_max_energy, 'eV                  |'
     end if
 
     if (optics .or. photo) then
@@ -922,15 +944,23 @@ contains
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
       end if
       if (photo_photon_sweep) then
-        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min ,&
-                                                        & ' -> ',photo_photon_max,' eV      |'
+        write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
+                                                        & ' -> ', photo_photon_max, ' eV      |'
       else
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
       end if
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const, '|'
+      if (index(photo_layer_choice, 'user') > 0) then
+        write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
+      end if
+      if (size(photo_imfp_const, 1) .eq. 1) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const(1), '|'
+      else
+        write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
+        write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
+      end if
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else
@@ -939,10 +969,10 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
       write (stdout, '(1x,a46,1x,a9,21x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
-      if (index(write_photo_matrix, 'slab') > 0) then
+      if (index(write_photo_output, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
-      elseif (index(write_photo_matrix, 'all') > 0) then
+      elseif (index(write_photo_output, 'all') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     All Elements              |'
         write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
       end if
@@ -1684,18 +1714,25 @@ contains
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
     call comms_bcast(photo_photon_energy, 1)
-    if (photo_photon_sweep)then
+    if (photo_photon_sweep) then
       call comms_bcast(photo_photon_min, 1)
       call comms_bcast(photo_photon_max, 1)
     end if
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_surface_area, 1)
     call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_layer_choice, len(photo_layer_choice))
+    call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
-    call comms_bcast(photo_imfp_const, 1)
+    call comms_bcast(photo_len_imfp_const, 1)
+    if (.not. on_root) then
+      allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_const')
+    end if
+    call comms_bcast(photo_imfp_const(1), photo_len_imfp_const)
     call comms_bcast(photo_bulk_length, 1)
     call comms_bcast(photo_temperature, 1)
-    call comms_bcast(write_photo_matrix, len(write_photo_matrix))
+    call comms_bcast(write_photo_output, len(write_photo_output))
     call comms_bcast(photo_theta_lower, 1)
     call comms_bcast(photo_theta_upper, 1)
     call comms_bcast(photo_phi_lower, 1)

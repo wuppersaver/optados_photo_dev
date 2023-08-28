@@ -1085,17 +1085,17 @@ contains
         allocate (atoms_symbol(num_species), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating atoms_symbol in cell_dist')
         ! For Photoemission
-        allocate(atoms_pos_cart_photo(3,num_atoms),stat=ierr)
-        if (ierr/=0) call io_error('Error allocating atoms_pos_cart_photo in cell_dist')
-        allocate(atoms_label_tmp(num_atoms),stat=ierr)
-        if (ierr/=0) call io_error('Error allocating atoms_label_tmp in cell_dist')
+        allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_dist')
+        allocate (atoms_label_tmp(num_atoms), stat=ierr)
+        if (ierr /= 0) call io_error('Error allocating atoms_label_tmp in cell_dist')
       end if
       call comms_bcast(atoms_pos_frac(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_pos_cart(1, 1, 1), 3*num_species*max_sites)
       call comms_bcast(atoms_label(1), len(atoms_label(1))*num_species)
       call comms_bcast(atoms_symbol(1), len(atoms_symbol(1))*num_species)
       ! For Photoemission
-      call comms_bcast(atoms_pos_cart_photo(1,1),3*num_atoms)
+      call comms_bcast(atoms_pos_cart_photo(1, 1), 3*num_atoms)
       call comms_bcast(atoms_label_tmp(1), maxlen*num_atoms)
     end if
     call comms_bcast(num_crystal_symmetry_operations, 1)
@@ -1122,7 +1122,7 @@ contains
 
     use od_comms, only: on_root
     use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
-                     io_error
+      io_error
     use od_constants, only: bohr2ang
 
     integer :: band_unit
@@ -1159,7 +1159,7 @@ contains
     use od_algorithms, only: utility_reciprocal_frac_to_cart
     use od_comms, only: my_node_id
     use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
-                     io_error
+      io_error
 !    use od_electronic, only : elec_read_band_energy
 
     integer :: i, ik, loop, ierr

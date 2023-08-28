@@ -33,7 +33,7 @@ contains
     write (stdout, '(A)') " <in_type> and <out_type> is one of: "
     write (stdout, '(A)') "       ome_fmt : a formatted optical matrix element file"
     write (stdout, '(A)') "       ome_bin : an unformatted optical matrix element file"
-    ! Added by F. Mildner (04/2023) for photoemission 
+    ! Added by F. Mildner (04/2023) for photoemission
     write (stdout, '(A)') "       fem_fmt : a formatted free electron optical matrix element file"
     write (stdout, '(A)') "       fem_bin : an unformatted free electron optical matrix element file"
 
@@ -279,7 +279,7 @@ contains
     open (unit=fem_unit, form='formatted', recl=1073741824, file=trim(seedname)//".fem_fmt")
 
     ! Total number of elements of ome
-    write (string, '(I0,"(1x,",a,")")') 3*(nbands+1)*(nbands+1), trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
     ! write(stdout,*) string
 
     ! write(string,'(a)') trim(format_precision)
@@ -292,8 +292,8 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands+1), &
-             &jb=1, nbands+1), i=1, 3)
+        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
       end do
     end do
 
@@ -325,8 +325,8 @@ contains
     foptical_mat = foptical_mat/(bohr2ang*H2eV)
 
     open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
-    
-    write (string, '(I0,"(1x,",a,")")') 3*(nbands+1)*(nbands+1), trim(format_precision)
+
+    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
     !   write(stdout,*) string
 
     write (stdout, '(a80)') femfile_header
@@ -337,8 +337,8 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands+1), &
-             &jb=1, nbands+1), i=1, 3)
+        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
       end do
     end do
 
@@ -386,14 +386,13 @@ contains
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands+1), &
-             &jb=1, nbands+1), i=1, 3)
+        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
+             &jb=1, nbands + 1), i=1, 3)
       end do
     end do
 
     write (stdout, *) " Sucesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
   end subroutine write_fem_bin
-
 
   !=========================================================================
   ! D I A G O N A L  O P T I C A L   M A T R I X   E L E M E N T S
