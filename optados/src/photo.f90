@@ -477,7 +477,7 @@ contains
     !***************************************************************
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-    & epsilon, refract, absorp, reflect, intra
+    & epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
     use od_io, only: stdout, io_error, io_time, seedname
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
@@ -663,6 +663,11 @@ contains
         call calc_refract
         call calc_absorp
         call calc_reflect
+
+        call write_epsilon(atom, photo_at_e=dos_at_e)
+        call write_refract(atom)
+        call write_absorp(atom)
+        call write_reflect(atom)
 
         do energy = 1, number_energies
           absorp_photo(atom, energy) = absorp(index_energy(energy))
