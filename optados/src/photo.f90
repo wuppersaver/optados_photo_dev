@@ -587,7 +587,7 @@ contains
       end if
 
       ! Send matrix element to jDOS routine and get weighted jDOS back
-      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos)
+      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
       if (on_root) then
         N_geom = size(matrix_weights, 5)

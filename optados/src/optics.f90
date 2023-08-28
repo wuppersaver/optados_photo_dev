@@ -106,7 +106,7 @@ contains
     call make_weights(matrix_weights)
 
     ! Send matrix element to jDOS routine and get weighted jDOS back
-    call jdos_utils_calculate(matrix_weights, weighted_jdos)
+    call jdos_utils_calculate(matrix_weights, weighted_jdos=weighted_jdos)
 
     ! Calculate weighted DOS at Ef for intraband term
     if (optics_intraband) then
