@@ -6,9 +6,9 @@ name: Docs to Pages
 on:
   # Triggers the workflow on push or pull request events but only for the "photo_dev" branch
   push:
-    branches: [ "photo_dev" ]
+    branches: [ "develop" ]
   pull_request:
-    branches: [ "photo_dev" ]
+    branches: [ "develop" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -29,11 +29,6 @@ jobs:
         uses: wuppersaver/ford-build@v1.0
         with:
           project_file: /optados/
-#      - name: Upload Static Elements
-#        uses: actions/upload-pages-artifact@v2
-#       with:
-#         name: github-pages.tar.gz
-#         path: /optados/auto_doc/
       - name: Deploy to GitHub Pages
         if: success()
         uses: crazy-max/ghaction-github-pages@v3
