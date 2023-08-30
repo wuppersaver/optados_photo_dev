@@ -53,7 +53,6 @@ module od_jdos_utils
 
   real(kind=dp), save                   :: delta_bins ! Width of bins
   logical :: calc_weighted_jdos
-  logical :: calc_projected_wjdos = .false.
   integer, allocatable, save :: vb_max(:)
   !-------------------------------------------------------------------------------
   real(kind=dp), allocatable :: projected_jdos(:, :)
@@ -62,7 +61,7 @@ module od_jdos_utils
 contains
 
   !===============================================================================
-  subroutine jdos_utils_calculate(matrix_weights, pdos_weights_atoms, weighted_jdos)
+  subroutine jdos_utils_calculate(matrix_weights, weighted_jdos)
     !===============================================================================
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
@@ -81,15 +80,13 @@ contains
     real(kind=dp) :: time0, time1
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
-    real(kind=dp), intent(in), optional  :: pdos_weights_atoms(:, :, :, :)
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
 
     integer :: N_geom, is, idos, wjdos_unit = 25, pjdos_unit = 26
-    logical :: print_weighted_jdos = .true.
+    logical :: print_weighted_jdos = .false.
 
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
-    if (present(pdos_weights_atoms)) calc_projected_wjdos = .true.
 
     if (calc_weighted_jdos .eqv. .false.) then ! We are called just to provide jdos.
       if (allocated(E)) then
@@ -119,9 +116,6 @@ contains
       if (calc_weighted_jdos) then
         call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_fixed, weighted_jdos)
-      elseif (calc_projected_wjdos) then
-        call calculate_jdos('f', jdos_linear, matrix_weights, pdos_weights_atoms, weighted_jdos=weighted_jdos)
-        call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
         call calculate_jdos('f', jdos_fixed)
         call jdos_utils_merge(jdos_fixed)
@@ -132,9 +126,6 @@ contains
       if (calc_weighted_jdos) then
         call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_adaptive, weighted_jdos)
-      elseif (calc_projected_wjdos) then
-        call calculate_jdos('a', jdos_linear, matrix_weights, pdos_weights_atoms, weighted_jdos=weighted_jdos)
-        call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
         call calculate_jdos('a', jdos_adaptive)
         call jdos_utils_merge(jdos_adaptive)
@@ -143,9 +134,6 @@ contains
     if (linear) then
       if (calc_weighted_jdos) then
         call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos=weighted_jdos)
-        call jdos_utils_merge(jdos_linear, weighted_jdos)
-      elseif (calc_projected_wjdos) then
-        call calculate_jdos('l', jdos_linear, matrix_weights, pdos_weights_atoms, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
         call calculate_jdos('l', jdos_linear)
@@ -349,7 +337,7 @@ contains
   end subroutine jdos_deallocate
 
   !===============================================================================
-  subroutine calculate_jdos(jdos_type, jdos, matrix_weights, pdos_weights_atoms, weighted_jdos)
+  subroutine calculate_jdos(jdos_type, jdos, matrix_weights, weighted_jdos)
     !===============================================================================
 
     !===============================================================================
@@ -372,7 +360,6 @@ contains
 
     character(len=1), intent(in)                      :: jdos_type
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :)
-    real(kind=dp), intent(in), optional                :: pdos_weights_atoms(:, :, :, :)
     real(kind=dp), intent(in), optional                :: matrix_weights(:, :, :, :, :)
 
     real(kind=dp), intent(out), allocatable :: jdos(:, :)
