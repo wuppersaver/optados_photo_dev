@@ -405,13 +405,13 @@ contains
   subroutine make_pdos_weights_atoms
     !***************************************************************
     !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout
     use od_parameters, only: devel_flag
     implicit none
-    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
+    integer :: N, N_spin, n_eigen, n_eigen2, np, ierr, atom, i, i_max
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -455,21 +455,45 @@ contains
     end do
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-      write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
-      write (stdout, 125) shape(pdos_weights_atoms)
-      write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
-125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N, i), N_spin=1, nspins) &
-                                          , n_eigen=1, pdos_mwab%nbands), N=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      write (stdout, '(1x,a78)') '+----------------------- Printing pDOS_weights_k_band -----------------------+'
-      write (stdout, 124) shape(pdos_weights_k_band)
-      write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
-124   format(3(1x, I4))
-      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N), &
-                                          N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+!       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
+!       write (stdout, 125) shape(pdos_weights_atoms)
+!       write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
+! 125   format(4(1x, I4))
+!       write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N, i), N_spin=1, nspins) &
+!                                           , n_eigen=1, pdos_mwab%nbands), N=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
+!       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+!       write (stdout, '(1x,a78)') '+----------------------- Printing pDOS_weights_k_band -----------------------+'
+!       write (stdout, 124) shape(pdos_weights_k_band)
+!       write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
+! 124   format(3(1x, I4))
+!       write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N), &
+!                                           N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
+!       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+      ! write (stdout, '(1x,a78)') '+------------- Printing pDOS_weights_k_band --------------+'
+      ! do atom = 1, max_atoms                           ! Loop over atoms
+      !   do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+      !     do N_spin = 1, nspins                    ! Loop over spins
+      !         write (stdout,'(I2,1x,I4,1x,I1)') atom, N, N_spin
+      !         write (stdout,'(9999(f15.8))') (pdos_weights_k_band(n_eigen, N_spin, N),n_eigen = 1, min_index_unocc(N_spin,N))
+      !     end do                                ! Loop over spins
+      !   end do                                    ! Loop over kpoints
+      ! end do
     end if
+    ! write (stdout, '(1x,a78)') '+------------- Printing pDOS_weights_atoms/pDOS_weights_k_band --------------+'
+    ! do atom = 1, max_atoms                           ! Loop over atoms
+    !   do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+    !     do N_spin = 1, nspins                    ! Loop over spins
+    !       do n_eigen=1, nbands
+    !         write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+    !         write (stdout,'(99(ES22.15))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+    !            pdos_weights_k_band(n_eigen, N_spin, N)
+    !         call FLUSH()
+    !         write (stdout,'(ES22.15)') (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/&
+    !         pdos_weights_k_band(n_eigen, N_spin, N))
+    !       end do
+    !     end do                                ! Loop over spins
+    !   end do                                    ! Loop over kpoints
+    ! end do
   end subroutine make_pdos_weights_atoms
 
   !***************************************************************
@@ -565,6 +589,16 @@ contains
               do n_eigen2 = n_eigen, nbands    ! Loop over state 2
                 if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
                 if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
+                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
+                  ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+                  ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+                  ! pdos_weights_k_band(n_eigen, N_spin, N)
+                  ! call FLUSH()
+                  cycle
+                end if
+                ! write (stdout,'(I1,1x,I2,1x,I4,1x,I1,1x,I3,1x,I3)') N2, atom, N, N_spin, n_eigen, n_eigen2
+                ! write (stdout,'(99(ES22.15))') matrix_weights(n_eigen, n_eigen2, N, N_spin, N2),&
+                ! pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
                 projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
                   matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))

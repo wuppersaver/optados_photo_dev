@@ -57,7 +57,7 @@ module od_jdos_utils
   integer, allocatable, save :: vb_max(:)
   !-------------------------------------------------------------------------------
   real(kind=dp), allocatable :: projected_jdos(:, :)
-  logical :: calc_projected_jdos = .true.
+  logical :: calc_projected_jdos = .false.
 
 contains
 

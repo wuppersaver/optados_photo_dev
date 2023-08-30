@@ -44,7 +44,7 @@ module od_optics
   public :: write_reflect
 
   type :: graph_labels
-    character(20) :: name
+    character(40) :: name
     character(40) :: title
     character(20) :: x_label
     character(20) :: y_label
@@ -147,13 +147,13 @@ contains
       end if
 
       ! Write everything out
-      call write_epsilon
+      call write_epsilon(0)
       if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
-        call write_refract
+        call write_refract(0)
         call write_loss_fn
-        call write_absorp
-        call write_reflect
+        call write_absorp(0)
+        call write_reflect(0)
       end if
     end if
 
