@@ -28,6 +28,8 @@ module od_photo
   implicit none
   private
   public :: photo_calculate
+  public :: calc_layers
+  public :: make_pdos_weights_atoms
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
@@ -35,7 +37,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
-  real(kind=dp), allocatable, dimension(:, :, :) :: pdos_weights_k_band
+  real(kind=dp), allocatable, public, dimension(:, :, :) :: pdos_weights_k_band
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
   real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
@@ -126,7 +128,6 @@ contains
     end if
 
     !Identify layers
-
     call analyse_geometry
     call calc_band_info
 
@@ -517,7 +518,7 @@ contains
   subroutine make_pdos_weights_atoms
     !***************************************************************
     !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
     use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout
@@ -582,6 +583,20 @@ contains
                                           N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
+    ! write (stdout, '(1x,a78)') '+------------- Printing pDOS_weights_atoms/pDOS_weights_k_band --------------+'
+    ! do atom = 1, max_atoms                           ! Loop over atoms
+    !   do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+    !     do N_spin = 1, nspins                    ! Loop over spins
+    !       do n_eigen=1, nbands
+    !         if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) cycle
+    !         write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+    !         write (stdout,'(99(ES22.15))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+    !            pdos_weights_k_band(n_eigen, N_spin, N), (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/&
+    !            pdos_weights_k_band(n_eigen, N_spin, N))
+    !       end do
+    !     end do                                ! Loop over spins
+    !   end do                                    ! Loop over kpoints
+    ! end do
   end subroutine make_pdos_weights_atoms
 
   !***************************************************************
@@ -589,12 +604,12 @@ contains
     !***************************************************************
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-    & epsilon, refract, absorp, reflect, intra
-    use od_io, only: stdout, io_error, io_time
+    & epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
+    use od_io, only: stdout, io_error, io_time, seedname
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
       photo_photon_min, photo_photon_max, devel_flag, iprint
@@ -608,8 +623,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
 
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy
-    integer :: jdos_bin, i, s
+    integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23
     real(kind=dp)    :: num_energies, temp, time0, time1
+    character(len=2) :: atom_s
 
     time0 = io_time()
 
@@ -676,6 +692,13 @@ contains
               do n_eigen2 = n_eigen, nbands    ! Loop over state 2
                 if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
                 if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
+                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
+                  ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+                  ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+                  ! pdos_weights_k_band(n_eigen, N_spin, N)
+                  ! call FLUSH()
+                  cycle
+                end if
                 projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
                   matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
@@ -698,7 +721,25 @@ contains
       end if
 
       ! Send matrix element to jDOS routine and get weighted jDOS back
-      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos)
+      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
+
+      if (on_root) then
+        N_geom = size(matrix_weights, 5)
+        write (atom_s, '(I2)') atom
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(atom_s)//'.dat')
+        write (wjdos_unit, '(1x,a28)') '############################'
+        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+        write (wjdos_unit, '(1x,a28)') '############################'
+        do is = 1, nspins
+          write (wjdos_unit, *) 'Spin Channel :', is
+          do idos = 1, jdos_nbins
+            write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+          end do
+        end do
+        close (unit=wjdos_unit)
+      end if
 
       if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
         write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
@@ -728,7 +769,7 @@ contains
       end if
 
       if (on_root) then
-        if (index(devel_flag, 'print_qe_constituents') > 0) then
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
           write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
           write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
           write (stdout, 125) shape(dos_matrix_weights)
@@ -757,6 +798,11 @@ contains
         call calc_absorp
         call calc_reflect
 
+        call write_epsilon(atom, photo_at_e=dos_at_e)
+        call write_refract(atom)
+        call write_absorp(atom)
+        call write_reflect(atom)
+
         do energy = 1, number_energies
           absorp_photo(atom, energy) = absorp(index_energy(energy))
           reflect_photo(atom, energy) = reflect(index_energy(energy))
@@ -782,6 +828,13 @@ contains
           write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
+        write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+        write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+        write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+        write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         ! Deallocate extra arrays produced in the case of using optics_intraband
         deallocate (epsilon, stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
@@ -871,10 +924,14 @@ contains
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate reflect_photo')
     end if
 
-    ! if (allocated(atoms_per_layer)) then
-    !   deallocate (atoms_per_layer, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
-    ! end if
+    if (allocated(atoms_per_layer)) then
+      deallocate (atoms_per_layer, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
+    end if
+
+    write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
+    write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
+    write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
@@ -1492,9 +1549,8 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-      write (stdout, '(1x,a261)') 'calced_qe_value - initial_state_energy - final_state_energy - matrix_weights - delta_temp -&
-      & electron_esc - electrons_per_state - kpoint_weight - I_layer - qe_factor - transverse_g - vac_g - fermi_dirac -&
-      & pdos_weights_atoms - pdos_weights_k_band - field_emission'
+     write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', 'delta_temp'&
+    &'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
@@ -1515,7 +1571,7 @@ contains
               ! issues when computing fermi_dirac due to possible underflow.
               if (argument .gt. 575.0_dp) then
                 fermi_dirac = 0.0_dp
-                exit
+                cycle
               elseif (argument .lt. -575.0_dp) then
                 fermi_dirac = 1.0_dp
               else
@@ -1548,15 +1604,14 @@ contains
                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                   pdos_weights_k_band(n_eigen, N_spin, N)))* &
                 (1.0_dp + field_emission(n_eigen, N_spin, N))
-              ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-              !   write (stdout, '(5(1x,I4))') atom, n_eigen, n_eigen2, N_spin, N
-              !   write (stdout, '(16(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
-              !     band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-              !     delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, &
-              !     kpoint_weight(N), I_layer(layer(atom), current_index), qe_factor, transverse_g, vac_g, fermi_dirac, &
-              !     pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N), &
-              !     field_emission(n_eigen, N_spin, N)
-              ! end if
+              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
+                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
+                  band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                  delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
+                  kpoint_weight(N), I_layer(layer(atom), current_index), transverse_g, vac_g, fermi_dirac, &
+                  pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
+              end if
             end do
           end do
         end do
@@ -1575,7 +1630,6 @@ contains
             ! issues when computing fermi_dirac due to possible underflow.
             if (argument .gt. 575.0_dp) then
               fermi_dirac = 0.0_dp
-              exit
             elseif (argument .lt. -575.0_dp) then
               fermi_dirac = 1.0_dp
             else
@@ -1617,8 +1671,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate delta_temp')
     end if
 
-    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and.&
-    & on_root)) then
+    if ((index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root)) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -2057,9 +2110,8 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(1x,a222)') 'calculated_QE  foptical_matrix_weight selectron_esc electrons_per_state kpoint_weight    &
-      &  I_layer      qe_factor        transverse_g         vac_g         fermi_dirac  pdos_weights_atoms pdos_weights_k_band&
-      & field_emission'
+      write (stdout, '(10(1x,a17))') 'calced_qe_value', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
+      & 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
     do atom = 1, max_atoms
@@ -2104,14 +2156,14 @@ contains
                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
               (1.0_dp + field_emission(n_eigen, N_spin, N))
-            ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-            !   write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
-            !   write (stdout, '(13(7x,E16.8E4))') qe_osm(n_eigen, N_spin, N, atom), &
-            !     foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-            !    electron_esc(n_eigen, N_spin, N, atom), electrons_per_state, kpoint_weight(N), I_layer(layer(atom),current_index),&
-            !     qe_factor, transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
-            !     pdos_weights_k_band(n_eigen, N_spin, N), field_emission(n_eigen, N_spin, N)
-            ! end if
+            if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+              write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
+              write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
+                foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                electron_esc(n_eigen, N_spin, N, atom), kpoint_weight(N), I_layer(layer(atom), current_index), &
+                transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
+                pdos_weights_k_band(n_eigen, N_spin, N)
+            end if
           end do
         end do
       end do

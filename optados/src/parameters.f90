@@ -526,7 +526,7 @@ contains
     num_atoms = 0
     num_species = 0
     num_crystal_symmetry_operations = 0
-    if (pdos .or. pdis .or. core .or. optics .or. photo) then
+    if (pdos .or. pdis .or. core .or. optics .or. photo .or. jdos) then
       ! try to read in the atoms from the cell file.
       ! We don't need them otherwise, so let's not bother
       !  if(index(devel_flag,'old_filename')>0) then
