@@ -610,7 +610,7 @@ contains
     allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_get_atoms')
 
-    ! Making a copy to use in the photo.f90 subroutine "calc_layer"
+    ! Making a copy to use in the photo.f90 subroutine "analyse_geometry"
     atoms_pos_cart_photo = atoms_pos_cart_tmp
 
     do loop = 1, num_species
