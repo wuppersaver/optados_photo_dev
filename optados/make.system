@@ -8,9 +8,7 @@ BUILD := debug
 COMMS_ARCH := serial
 
 # Where would you like the executables?
-#PREFIX:=../photon_new/
-#PREFIX:=../../../compiled_programs/optados_latest/
-PREFIX:=../../../compiled_codes/optados_pjdos/
+PREFIX:=../../../compiled_codes/optados_geom/
 #PREFIX:=../
 SYSTEM := $(strip $(SYSTEM))
 BUILD  := $(strip $(BUILD))

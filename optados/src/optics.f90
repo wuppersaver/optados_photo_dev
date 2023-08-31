@@ -502,7 +502,7 @@ contains
   end subroutine make_weights
 
   !***************************************************************
-  subroutine calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
+  subroutine calc_epsilon_2(weighted_jdos, weighted_dos_at_e, photo_atom_volume)
     !***************************************************************
     ! This subroutine calculates epsilon_2
 
@@ -516,6 +516,7 @@ contains
 
     real(kind=dp), intent(in), allocatable, dimension(:, :, :) :: weighted_jdos
     real(kind=dp), intent(in), allocatable, dimension(:, :) :: weighted_dos_at_e
+    real(kind=dp), intent(in), optional                        :: photo_atom_volume
 
     integer :: N_energy
     integer :: N
@@ -529,9 +530,8 @@ contains
     real(kind=dp) :: epsilon2_const
 
     dE = E(2) - E(1)
-    if (photo) then
-      write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
-      epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
+    if (present(photo_atom_volume)) then
+      epsilon2_const = (e_charge*pi*1E-20)/(photo_atom_volume*1E-30*epsilon_0)
     else
       write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
       epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
@@ -546,9 +546,8 @@ contains
           intra(N) = intra(N) + weighted_dos_at_e(N_spin, N)
         end do
       end do
-      if (photo) then
-        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
-        intra = intra*e_charge/(photo_slab_volume*1E-10*epsilon_0)
+      if (present(photo_atom_volume)) then
+        intra = intra*e_charge/(photo_atom_volume*1E-10*epsilon_0)
       else
         write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
@@ -591,9 +590,8 @@ contains
           x = x + ((N*(dE**2)*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
         end if
       end do
-      if (photo) then
-        write (stdout, '(1x,a78)') '+-------------------------- Using photo_slab_volume -------------------------+'
-        N_eff = (x*e_mass*photo_slab_volume*1E-30*epsilon_0*2)/(pi)
+      if (present(photo_atom_volume)) then
+        N_eff = (x*e_mass*photo_atom_volume*1E-30*epsilon_0*2)/(pi)
       else
         write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)

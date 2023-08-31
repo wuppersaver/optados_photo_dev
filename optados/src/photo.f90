@@ -51,7 +51,10 @@ module od_photo
 
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
+  real(kind=dp), dimension(:), allocatable :: volume_layer
+  real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp), dimension(:), allocatable :: atom_imfp
+  integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -115,7 +118,7 @@ contains
 
     if (index(devel_flag, 'geom_analysis') > 0) then
       write (stdout, '(1x,a78)') '+           Only performing the analysis of the supplied geometry!           +'
-      call calc_layers
+      call analyse_geometry
       return
     end if
 
@@ -125,7 +128,7 @@ contains
     end if
 
     !Identify layers
-    call calc_layers
+    call analyse_geometry
     call calc_band_info
 
     call elec_read_optical_mat
@@ -234,27 +237,32 @@ contains
   end subroutine photo_calculate
 
   !***************************************************************
-  subroutine calc_layers
+  subroutine analyse_geometry
     !***************************************************************
     !This subroutine identifies the layer of each atom
-    use od_constants, only: dp
-    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp
+    use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
+    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, num_species, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic
+    real(kind=dp), allocatable, dimension(:) :: vdw_radii
+    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, cell_area
 
     allocate (atom_order(num_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atom_order failed')
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
+
+    allocate (vdw_radii(num_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
 
     allocate (layer(num_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of layer failed')
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer failed')
     do i = 1, num_atoms
       atom_order(i) = i
     end do
 
-    !SORTING ALGORITHM
+    !SORTING ALGORITHM to sort the atoms by z-coordinate
     do atom_1 = 1, num_atoms - 1
       first = atom_order(atom_1)
       do atom_2 = atom_1 + 1, num_atoms
@@ -272,6 +280,22 @@ contains
       end do
     end do
 
+    ! Capitalise the first letter of the atomic label for later
+    do atom = 1, num_atoms
+      ic = ichar(atoms_label_tmp(atom_order(atom)) (1:1))
+      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+        atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
+    end do
+
+    ! Retreive the van-der-Waals radii from the constants
+    do atom_1 = 1, num_atoms
+      do i = 1, 109
+        if (atoms_label_tmp(atom_order(atom_1)) .eq. periodic_table_name(i)) then
+          vdw_radii(atom_1) = periodic_table_vdw(i)
+        end if
+      end do
+    end do
+
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
     ! the atom is more than 0.5 Angstrom lower than the current layer
@@ -285,11 +309,6 @@ contains
       layer(atom) = i
     end do
 
-    do atom = 1, num_atoms
-      ic = ichar(atoms_label_tmp(atom_order(atom)) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    end do
     if (on_root) then
       write (stdout, '(1x,a78)') '+------------------------------- Atomic Order  ------------------------------+'
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |         Atom Z-Coordinate (Ang)          |'
@@ -327,9 +346,17 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
-    !CALCULATE HOW MANY ATOMS PER LAYER
+    allocate (thickness_atom(max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of thickness_atom failed')
+    thickness_atom = 0.0_dp
+
+    allocate (volume_atom(max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of thickness_atom failed')
+    thickness_atom = 0.0_dp
+
+    !CALCULATE HOW MANY ATOMS PER LAYER THERE ARE
     allocate (atoms_per_layer(max_layer), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_layers - allocation of atoms_per_layer failed')
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atoms_per_layer failed')
     atoms_per_layer = 1
     do atom = 2, max_atoms
       if (layer(atom) .eq. layer(atom - 1)) then
@@ -340,12 +367,98 @@ contains
     !   write (stdout, *) 'Layer: ', i, atoms_per_layer(i), ' |'
     ! end do
 
+    ! Redefine z=0 (i.e. surface) to the top part of the atom sticking out of the surface the most
+    do atom = 1, max_atoms
+      if (layer(atom) .gt. 3) exit
+      z_temp = atoms_pos_cart_photo(3, atom_order(atom)) + vdw_radii(atom)*sin(45*deg_to_rad)
+      if (z_temp .gt. z_zero) then
+        z_zero = z_temp
+      end if
+    end do
+
+    ! Calculate the thickness of each of the layers
+    if (max_layer .lt. 2) then
+      ! TODO: Check if this is a reasonable estimate for the single layer case
+      do atom_1 = 1, max_atoms
+        thickness_atom = vdw_radii(atom_1)*2
+      end do
+    else
+      ! Setting thickness_atom for the first atom in layer # 1 and finding the first atom in the second layer
+      do atom = 2, max_atoms
+        if (layer(atom) .gt. 1) then
+          ! write (stdout, *) 'z_zero', z_zero, '1', atoms_pos_cart_photo(3, atom_order(1)), 'second layer', &
+          ! atoms_pos_cart_photo(3, atom_order(atom))
+          thickness_atom(1) = z_zero - ((atoms_pos_cart_photo(3, atom_order(1)) + atoms_pos_cart_photo(3, atom_order(atom)))/2)
+          first_atom_second_l = atom
+          exit
+        end if
+      end do
+      ! Setting thickness_atom for the rest of the atoms in the first layer
+      do i = 2, first_atom_second_l - 1
+        thickness_atom(i) = ((atoms_pos_cart_photo(3, atom_order(i)) - &
+                              atoms_pos_cart_photo(3, atom_order(first_atom_second_l)))/2)*2
+      end do
+      ! Setting thickness_atom for the last atom in the last layer and finding the last atom in the second to last layer
+      do i = 1, max_atoms
+        if (layer(max_atoms - i) .lt. layer(max_atoms)) then
+          thickness_atom(max_atoms) = (abs(atoms_pos_cart_photo(3, atom_order(max_atoms)) - &
+                                           atoms_pos_cart_photo(3, atom_order(max_atoms - i)))/2)*2
+          last_atom_secondlast_l = max_atoms - i
+          exit
+        end if
+      end do
+      ! Setting thickness_atom for the atoms in the last layer, but not for the last atom
+      do i = last_atom_secondlast_l + 1, max_atoms - 1
+        thickness_atom(i) = (abs(atoms_pos_cart_photo(3, atom_order(i)) - &
+                                 atoms_pos_cart_photo(3, atom_order(last_atom_secondlast_l)))/2)*2
+      end do
+      ! Setting thickness_atom for the atoms in between the first and last layers
+      ! Formula -> abs( (z(last atom in n-1th layer) - z(atom) )/2 ) + abs( (z(first atom in n+1th layer) - z(atom) )/2 )
+      do atom = first_atom_second_l, last_atom_secondlast_l
+        thickness_atom(atom) = abs((atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom) - 1)))) &
+                                    - atoms_pos_cart_photo(3, atom_order(atom)))/2) + &
+                               abs((atoms_pos_cart_photo(3, atom_order(atom)) - &
+                                    atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom))) + 1)))/2)
+      end do
+    end if
+
+    allocate (thickness_layer(max_layer), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of thickness_layer failed')
+    thickness_layer = 0.0_dp
+
+    do atom = 1, max_atoms
+      thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
+    end do
+    ! write (stdout, *) thickness_layer(1:max_layer)
+    do i = 1, max_layer
+      thickness_layer(i) = thickness_layer(i)/atoms_per_layer(i)
+    end do
+    ! write (stdout, *) thickness_layer(1:max_layer)
+
+    cell_area = cell_volume/real_lattice(3, 3)
+    ! write (stdout, *) atoms_per_layer(1:max_layer)
+    do atom = 1, max_atoms
+      volume_atom(atom) = (thickness_layer(layer(atom))*cell_area)/atoms_per_layer(layer(atom))
+    end do
+    ! write (stdout, *) volume_atom(1:max_atoms)
+
+    write (stdout, '(1x,a78)') '+--------------------- Geometric Analysis of Structure ----------------------+'
+    write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | used vdW-rad  | calc. volume |'
+
+    ! Calculate the layer volumes
+    do atom = 1, max_atoms
+      write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+        layer(atom), thickness_layer(layer(atom)), vdw_radii(atom), volume_atom(atom), "    |"
+225   format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+    end do
+    write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
     if (allocated(photo_imfp_const) .and. size(photo_imfp_const, 1) .gt. 1 .and. size(photo_imfp_const, 1) .lt. max_layer) then
       call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
     end if
 
-  end subroutine calc_layers
+  end subroutine analyse_geometry
 
   subroutine calc_band_info
     !===============================================================================
@@ -499,7 +612,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-      photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
+      photo_photon_min, photo_photon_max, devel_flag, iprint
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -782,57 +895,11 @@ contains
     use od_comms, only: on_root
     implicit none
     real(kind=dp) :: I_0
-    integer :: atom, i, ierr, first_atom_second_l, last_atom_secondlast_l, num_layer
-
-    allocate (thickness_atom(max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of thickness_atom failed')
-    thickness_atom = 0.0_dp
+    integer :: atom, i, ierr, num_layer
 
     allocate (I_layer(max_layer, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
     I_layer = 0.0_dp
-
-    ! Calculate the thickness of each of the layers
-    if (max_layer .lt. 2) then
-      ! TODO: Check if this is a reasonable estimate for the single layer case
-      thickness_atom = 1.5_dp
-    else
-      ! Setting thickness_atom for the first atom in layer # 1 and finding the first atom in the second layer
-      do atom = 2, max_atoms
-        if (layer(atom) .gt. 1) then
-          thickness_atom(1) = ((atoms_pos_cart_photo(3, atom_order(1)) - atoms_pos_cart_photo(3, atom_order(atom)))/2)*2
-          first_atom_second_l = atom
-          exit
-        end if
-      end do
-      ! Setting thickness_atom for the rest of the atoms in the first layer
-      do i = 2, first_atom_second_l - 1
-        thickness_atom(i) = ((atoms_pos_cart_photo(3, atom_order(i)) - &
-                              atoms_pos_cart_photo(3, atom_order(first_atom_second_l)))/2)*2
-      end do
-      ! Setting thickness_atom for the last atom in the last layer and finding the last atom in the second to last layer
-      do i = 1, max_atoms
-        if (layer(max_atoms - i) .lt. layer(max_atoms)) then
-          thickness_atom(max_atoms) = (abs(atoms_pos_cart_photo(3, atom_order(max_atoms)) - &
-                                           atoms_pos_cart_photo(3, atom_order(max_atoms - i)))/2)*2
-          last_atom_secondlast_l = max_atoms - i
-          exit
-        end if
-      end do
-      ! Setting thickness_atom for the atoms in the last layer, but not for the last atom
-      do i = last_atom_secondlast_l + 1, max_atoms - 1
-        thickness_atom(i) = (abs(atoms_pos_cart_photo(3, atom_order(i)) - &
-                                 atoms_pos_cart_photo(3, atom_order(last_atom_secondlast_l)))/2)*2
-      end do
-      ! Setting thickness_atom for the atoms in between the first and last layers
-      ! Formula -> abs( (z(last atom in n-1th layer) - z(atom) )/2 ) + abs( (z(first atom in n+1th layer) - z(atom) )/2 )
-      do atom = first_atom_second_l, last_atom_secondlast_l
-        thickness_atom(atom) = abs((atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom) - 1)))) &
-                                    - atoms_pos_cart_photo(3, atom_order(atom)))/2) + &
-                               abs((atoms_pos_cart_photo(3, atom_order(atom)) - &
-                                    atoms_pos_cart_photo(3, atom_order(sum(atoms_per_layer(1:layer(atom))) + 1)))/2)
-      end do
-    end if
 
     I_0 = 1.0_dp
     I_layer = 1.0_dp
@@ -1209,9 +1276,6 @@ contains
     electron_esc = 0.0_dp
 
     if (size(photo_imfp_const, 1) .gt. 1) then
-      allocate (thickness_layer(max_layer), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_layers - allocation of thickness_layer failed')
-      thickness_layer = 0.0_dp
 
       allocate (atom_imfp(max_atoms), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
