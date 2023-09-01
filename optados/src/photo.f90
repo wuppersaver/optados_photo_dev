@@ -28,7 +28,6 @@ module od_photo
   implicit none
   private
   public :: photo_calculate
-  public :: calc_layers
   public :: make_pdos_weights_atoms
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
@@ -248,7 +247,7 @@ contains
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
-    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, cell_area
+    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, cell_area, devel_volume
 
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
@@ -453,6 +452,12 @@ contains
     end do
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
 
+    if (index(devel_flag, 'atom_vol') .gt. 0) then
+      i = len_trim(devel_flag)
+      read (devel_flag(i - 6:i), *) devel_volume
+      volume_atom = devel_volume
+    end if
+
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
     if (allocated(photo_imfp_const) .and. size(photo_imfp_const, 1) .gt. 1 .and. size(photo_imfp_const, 1) .lt. max_layer) then
       call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
@@ -612,7 +617,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-      photo_photon_min, photo_photon_max, devel_flag, iprint
+      photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
 
@@ -726,7 +731,7 @@ contains
       if (on_root) then
         N_geom = size(matrix_weights, 5)
         write (atom_s, '(I2)') atom
-        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(atom_s)//'.dat')
+        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
         write (wjdos_unit, '(1x,a28)') '############################'
         write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
         write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
@@ -788,7 +793,7 @@ contains
         end if
 
         ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
+        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, volume_atom(atom))
 
         ! Calculate epsilon_1
         call calc_epsilon_1
@@ -798,10 +803,10 @@ contains
         call calc_absorp
         call calc_reflect
 
-        call write_epsilon(atom, photo_at_e=dos_at_e)
-        call write_refract(atom)
-        call write_absorp(atom)
-        call write_reflect(atom)
+        call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
+        call write_refract(atom, photo_volume=volume_atom(atom))
+        call write_absorp(atom, photo_volume=volume_atom(atom))
+        call write_reflect(atom, photo_volume=volume_atom(atom))
 
         do energy = 1, number_energies
           absorp_photo(atom, energy) = absorp(index_energy(energy))

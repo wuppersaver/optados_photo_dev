@@ -532,6 +532,7 @@ contains
     dE = E(2) - E(1)
     if (present(photo_atom_volume)) then
       epsilon2_const = (e_charge*pi*1E-20)/(photo_atom_volume*1E-30*epsilon_0)
+      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
     else
       write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
       epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
@@ -864,7 +865,7 @@ contains
   end subroutine calc_reflect
 
   !***************************************************************
-  subroutine write_epsilon(atom, photo_at_e)
+  subroutine write_epsilon(atom, photo_at_e, photo_volume)
     !***************************************************************
     ! This subroutine writes out the dielectric function
 
@@ -880,6 +881,7 @@ contains
     integer :: epsilon_unit
     integer, intent(in), optional :: atom
     real(kind=dp), intent(in), dimension(:, :), optional :: photo_at_e
+    real(kind=dp), intent(in), optional                  :: photo_volume
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
@@ -917,7 +919,11 @@ contains
       write (epsilon_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (epsilon_unit, *) '# Number of bands:', nbands
-    write (epsilon_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (epsilon_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (epsilon_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (epsilon_unit, *) '#'
     write (epsilon_unit, '(1x,a,f10.6,1x,a,f10.6,1x,a)') &
          & '# Dielectric function calculated to', jdos_max_energy, 'eV in', dE, 'eV steps'
@@ -1212,7 +1218,7 @@ contains
   end subroutine write_conduct
 
   !***************************************************************
-  subroutine write_refract(atom)
+  subroutine write_refract(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the refractive index
 
@@ -1225,6 +1231,7 @@ contains
     integer :: N
     integer :: refract_unit
     integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
@@ -1263,7 +1270,11 @@ contains
       write (refract_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (refract_unit, *) '# No of bands:', nbands
-    write (refract_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (refract_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (refract_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (refract_unit, *) '#'
     write (refract_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
@@ -1292,7 +1303,7 @@ contains
   end subroutine write_refract
 
   !***************************************************************
-  subroutine write_absorp(atom)
+  subroutine write_absorp(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the absorption coefficient
 
@@ -1305,6 +1316,7 @@ contains
     integer :: N
     integer :: absorp_unit
     integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
@@ -1341,7 +1353,11 @@ contains
       write (absorp_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (absorp_unit, *) '# No of bands:', nbands
-    write (absorp_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (absorp_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (absorp_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (absorp_unit, *) '#'
     write (absorp_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
@@ -1370,7 +1386,7 @@ contains
   end subroutine write_absorp
 
   !***************************************************************
-  subroutine write_reflect(atom)
+  subroutine write_reflect(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the reflection coefficient
 
@@ -1383,6 +1399,7 @@ contains
     integer :: N
     integer :: reflect_unit
     integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
     character(len=3) :: atom_char
     type(graph_labels) :: label
 
@@ -1420,7 +1437,11 @@ contains
       write (reflect_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (reflect_unit, *) '# No of bands:', nbands
-    write (reflect_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (reflect_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (reflect_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (reflect_unit, *) '#'
     write (reflect_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
