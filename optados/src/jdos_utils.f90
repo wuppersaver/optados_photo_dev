@@ -339,6 +339,8 @@ contains
 
     real(kind=dp), intent(out), allocatable :: jdos(:, :)
 
+
+    integer, allocatable, dimension(:, :):: min_index_unocc
     logical :: linear, fixed, adaptive, force_adaptive
 
     linear = .false.
@@ -357,6 +359,21 @@ contains
     end select
 
     width = 0.0_dp
+
+    allocate (min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calculate_jdos - allocation of min_index_unocc failed')
+
+    do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+      do is = 1, nspins                           ! Loop over spins
+        do ib = 1, nbands                        ! Loop over bands
+          ! TODO: Test if this is the behaviour we want and or if we have to change the condition
+          if (band_energy (ib, is, ik) .gt. efermi) then
+            min_index_unocc(is, ik) = ib
+            exit
+          end if
+        end do
+      end do
+    end do
 
     if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
     if (adaptive .or. hybrid_linear) then
@@ -379,60 +396,110 @@ contains
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------------ Calculate JDOS ------------------------------+'
     end if
-
-    do ik = 1, num_kpoints_on_node(my_node_id)
-      if (iprint > 1 .and. on_root) then
-        if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,3x,a10)') ',', &
-             &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
-      end if
-      do is = 1, nspins
-        occ_states: do ib = 1, nbands
-          if (num_exclude_bands > 0) then
-            if (any(exclude_bands == ib)) cycle
-          end if
-          if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
-          unocc_states: do jb = 1, nbands
-            if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
-            if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
-            ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
-            ! adaptive smearing (and take advantage of FBCS if required).
-            force_adaptive = .false.
-            if (.not. fixed) then
-              if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
-  &band_energy(ib, is, ik) + scissor_op, EV)
-              if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
-            end if
-
-            ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
-            ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
-            if (finite_bin_correction .and. (width < delta_bins)) width = delta_bins
-
-            do idos = 1, jdos_nbins
-              ! The linear method has a special way to calculate the integrated dos
-              ! we have to take account for this here.
-              if (linear .and. .not. force_adaptive) then
-                dos_temp = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(idos), cuml)
-              else
+    
+    if (fixed) then
+      do ik = 1, num_kpoints_on_node(my_node_id)
+        if (iprint > 1 .and. on_root) then
+          if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,3x,a10)') ',', &
+              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
+        end if
+        do is = 1, nspins
+          occ_states: do ib = 1, min_index_unocc(is, ik) - 1
+            ! if (num_exclude_bands > 0) then
+            !   if (any(exclude_bands == ib)) cycle
+            ! end if
+            ! if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
+            unocc_states: do jb = min_index_unocc(is, ik), nbands
+              do idos = 1, jdos_nbins
+                ! The linear method has a special way to calculate the integrated dos
+                ! we have to take account for this here.
+                ! if (linear .and. .not. force_adaptive) then
+                !   dos_temp = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(idos), cuml)
+                ! else
+                !   dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
+                ! end if
                 dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
-              end if
 
-              jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
+                jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
 
-              ! this will become a loop over final index (polarisation)
-              ! Also need to remove kpoints weights.
-              if (calc_weighted_jdos) then
+                ! this will become a loop over final index (polarisation)
+                ! Also need to remove kpoints weights.
+                ! if (calc_weighted_jdos) then
+                !   do N2 = 1, N_geom
+                !     weighted_jdos(idos, is, N2) = weighted_jdos(idos, is, N2) + dos_temp*matrix_weights(ib, jb, ik, is, N2)&
+                !                                  &*electrons_per_state*kpoint_weight(ik)
+                !   end do
+                ! end if
                 do N2 = 1, N_geom
                   weighted_jdos(idos, is, N2) = weighted_jdos(idos, is, N2) + dos_temp*matrix_weights(ib, jb, ik, is, N2)&
-                                               &*electrons_per_state*kpoint_weight(ik)
+                                                &*electrons_per_state*kpoint_weight(ik)
                 end do
-              end if
 
-            end do
-          end do unocc_states
-        end do occ_states
+              end do
+            end do unocc_states
+          end do occ_states
+        end do
       end do
-    end do
+    else
+      do ik = 1, num_kpoints_on_node(my_node_id)
+        if (iprint > 1 .and. on_root) then
+          if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,3x,a10)') ',', &
+              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
+        end if
+        do is = 1, nspins
+          occ_states_1: do ib = 1, min_index_unocc(is, ik) - 1
+            ! if (num_exclude_bands > 0) then
+            !   if (any(exclude_bands == ib)) cycle
+            ! end if
+            ! if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
+            unocc_states_1: do jb = min_index_unocc(is, ik), nbands
+              ! if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
+              ! If the band is very flat linear broadening can have problems describing it. In this case, fall back to
+              ! adaptive smearing (and take advantage of FBCS if required).
+    !             if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
+    !             if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
+    ! &band_energy(ib, is, ik) + scissor_op, EV)
+              grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
+              width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
+
+              ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
+              ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
+              if (finite_bin_correction .and. (width < delta_bins)) width = delta_bins
+
+              do idos = 1, jdos_nbins
+                ! The linear method has a special way to calculate the integrated dos
+                ! we have to take account for this here.
+                ! if (linear .and. .not. force_adaptive) then
+                !   dos_temp = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(idos), cuml)
+                ! else
+                !   dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
+                ! end if
+                dos_temp=gaussian(band_energy(jb,is,ik)-band_energy(ib,is,ik)+scissor_op,width,E(idos))!&
+
+                jdos(idos, is) = jdos(idos, is) + dos_temp*electrons_per_state*kpoint_weight(ik)
+
+                ! this will become a loop over final index (polarisation)
+                ! Also need to remove kpoints weights.
+                ! if (calc_weighted_jdos) then
+                !   do N2 = 1, N_geom
+                !     weighted_jdos(idos, is, N2) = weighted_jdos(idos, is, N2) + dos_temp*matrix_weights(ib, jb, ik, is, N2)&
+                !                                  &*electrons_per_state*kpoint_weight(ik)
+                !   end do
+                ! end if
+                do N2 = 1, N_geom
+                  weighted_jdos(idos, is, N2) = weighted_jdos(idos, is, N2) + dos_temp*matrix_weights(ib, jb, ik, is, N2)&
+                                                &*electrons_per_state*kpoint_weight(ik)
+                end do
+
+              end do
+            end do unocc_states_1
+          end do occ_states_1
+        end do
+      end do
+    end if
+
+    deallocate (min_index_unocc, stat=ierr)
+    if (ierr /= 0) call io_error('Error: calculate_jdos - deallocation of min_index_unocc failed')
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
