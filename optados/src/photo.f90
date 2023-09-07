@@ -440,17 +440,18 @@ contains
       volume_atom(atom) = (thickness_layer(layer(atom))*cell_area)/atoms_per_layer(layer(atom))
     end do
     ! write (stdout, *) volume_atom(1:max_atoms)
+    if (on_root) then
+      write (stdout, '(1x,a78)') '+--------------------- Geometric Analysis of Structure ----------------------+'
+      write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | used vdW-rad  | calc. volume |'
 
-    write (stdout, '(1x,a78)') '+--------------------- Geometric Analysis of Structure ----------------------+'
-    write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | used vdW-rad  | calc. volume |'
-
-    ! Calculate the layer volumes
-    do atom = 1, max_atoms
-      write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-        layer(atom), thickness_layer(layer(atom)), vdw_radii(atom), volume_atom(atom), "    |"
+      ! Write out the atomic volumes
+      do atom = 1, max_atoms
+        write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+          layer(atom), thickness_layer(layer(atom)), vdw_radii(atom), volume_atom(atom), "    |"
 225   format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
-    end do
-    write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      end do
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+    end if
 
     if (index(devel_flag, 'atom_vol') .gt. 0) then
       i = len_trim(devel_flag)
