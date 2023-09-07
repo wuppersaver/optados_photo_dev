@@ -1294,8 +1294,10 @@ contains
       do i = 1, max_layer
         thickness_layer(i) = thickness_layer(i)/atoms_per_layer(i)
       end do
-      write (stdout, '(1x,a78)') '+--------------- User Supplied and Calculated IMFP Constants ----------------+'
-      write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
+      if (on_root) then
+        write (stdout, '(1x,a78)') '+--------------- User Supplied and Calculated IMFP Constants ----------------+'
+        write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
+      end if
 
       ! Calculate the layer dependent imfp constant as a list
       do atom = 1, max_atoms
@@ -1303,11 +1305,13 @@ contains
           atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_const(i)
         end do
         atom_imfp(atom) = atom_imfp(atom)/sum(thickness_layer(1:i - 1))
-        write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
+        if (on_root) then
+          write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+            layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
 225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+        end if
       end do
-      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
 
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
