@@ -548,6 +548,7 @@ contains
         end do
       end do
       if (present(photo_atom_volume)) then
+      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
         intra = intra*e_charge/(photo_atom_volume*1E-10*epsilon_0)
       else
         write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
