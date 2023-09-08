@@ -39,6 +39,7 @@ module od_algorithms
   private
 
   public :: gaussian
+  public :: gaussian_array
   public :: heap_sort
   public :: utility_lowercase
   public :: utility_cart_to_frac
@@ -91,6 +92,31 @@ contains
     end if
     return
   end function gaussian
+
+!=========================================================================!
+  subroutine gaussian_array(m, w, E, gaussian)
+    !=========================================================================!
+    ! ** Return value of Gaussian(mean=m,width=w) at position x
+    ! I don't know who's this function originally was, CJP? MIJP?
+    ! Version optimised for array inputs by F. Mildner
+    !=========================================================================!
+        implicit none
+
+        real(kind=dp), intent(in) :: m, w
+        real(kind=dp), intent(inout) :: E(:)
+        real(kind=dp), intent(inout) :: gaussian(:)
+
+        integer :: i, maxE
+        real(kind=dp) :: argument
+
+        gaussian = 0.0_dp
+        maxE = size(E,1)
+        do i = 1, maxE
+          argument = 0.5_dp*((E(i) - m)/w)**2
+          if (argument .gt. 30.0_dp) cycle
+          gaussian(i) = inv_sqrt_two_pi*exp(-1*argument)/w
+        end do
+  end subroutine gaussian_array
 
 !=========================================================================!
   subroutine heap_sort(num_items, weight)

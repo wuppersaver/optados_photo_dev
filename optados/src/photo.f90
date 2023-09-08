@@ -615,7 +615,7 @@ contains
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
     & nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
+    use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E, deallocate_adaptive_widths
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
       photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
@@ -683,7 +683,6 @@ contains
     if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
 
     do atom = 1, max_atoms                           ! Loop over atoms
-      !
       if (iprint > 1 .and. on_root) then
         write (stdout, 145) '+------------------------ Starting Atom # ', atom, ' of ', max_atoms, ' ------------------------+'
 145     format(1x, a42, I3, a4, I3, a26)
@@ -698,13 +697,8 @@ contains
               do n_eigen2 = n_eigen, nbands    ! Loop over state 2
                 if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
                 if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
-                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
-                  ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
-                  ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
-                  ! pdos_weights_k_band(n_eigen, N_spin, N)
-                  ! call FLUSH()
-                  cycle
-                end if
+                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) cycle
+
                 projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
                   matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
@@ -729,7 +723,7 @@ contains
       ! Send matrix element to jDOS routine and get weighted jDOS back
       call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
-      if (on_root) then
+      if (on_root .and. index(devel_flag,'write_atom_optics') .gt. 0) then
         N_geom = size(matrix_weights, 5)
         write (atom_s, '(I2)') atom
         open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
@@ -803,11 +797,12 @@ contains
         call calc_refract
         call calc_absorp
         call calc_reflect
-
-        call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
-        call write_refract(atom, photo_volume=volume_atom(atom))
-        call write_absorp(atom, photo_volume=volume_atom(atom))
-        call write_reflect(atom, photo_volume=volume_atom(atom))
+        if (index(devel_flag,'write_atom_optics') .gt. 0) then
+          call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
+          call write_refract(atom, photo_volume=volume_atom(atom))
+          call write_absorp(atom, photo_volume=volume_atom(atom))
+          call write_reflect(atom, photo_volume=volume_atom(atom))
+        end if
 
         do energy = 1, number_energies
           absorp_photo(atom, energy) = absorp(index_energy(energy))
@@ -834,13 +829,13 @@ contains
           write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
-        write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        ! write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+        ! write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+        ! write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
-        write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        ! write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+        ! write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+        ! write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         ! Deallocate extra arrays produced in the case of using optics_intraband
         deallocate (epsilon, stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
@@ -876,6 +871,8 @@ contains
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
+
+    call deallocate_adaptive_widths
 
     if (index(photo_model, '1step') > 0) then
       deallocate (matrix_weights, stat=ierr)
