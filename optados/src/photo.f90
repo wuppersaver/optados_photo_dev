@@ -448,7 +448,7 @@ contains
       do atom = 1, max_atoms
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
           layer(atom), thickness_layer(layer(atom)), vdw_radii(atom), volume_atom(atom), "    |"
-225   format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -495,7 +495,7 @@ contains
           ! TODO: Test if this is the behaviour we want and or if we have to change the condition
           if (band_energy(n_eigen - 1, N_spin, N) .gt. band_energy(n_eigen, N_spin, N)) then
             call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
-            & which will give WRONG RESULTS!')
+            & which will give WRONG RESULTS with the current code!')
           end if
         end do
       end do
@@ -1308,7 +1308,7 @@ contains
         if (on_root) then
           write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
             layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
-225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+225       format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
         end if
       end do
       if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
