@@ -36,9 +36,15 @@ module od_optics
   public :: calc_loss_fn
   public :: calc_absorp
   public :: calc_reflect
+  public :: write_epsilon
+  public :: write_conduct
+  public :: write_refract
+  public :: write_loss_fn
+  public :: write_absorp
+  public :: write_reflect
 
   type :: graph_labels
-    character(20) :: name
+    character(40) :: name
     character(40) :: title
     character(20) :: x_label
     character(20) :: y_label
@@ -81,12 +87,12 @@ contains
     !
 
     use od_electronic, only: optical_mat, elec_read_optical_mat, nbands, nspins, &
-                             efermi, efermi_set, elec_dealloc_optical
+      efermi, efermi_set, elec_dealloc_optical
     use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_geom, adaptive, linear, fixed, optics_intraband, &
-                             optics_drude_broadening
+      optics_drude_broadening
     use od_dos_utils, only: dos_utils_calculate_at_e, dos_utils_set_efermi
     use od_io, only: stdout
 
@@ -106,7 +112,7 @@ contains
     call make_weights(matrix_weights)
 
     ! Send matrix element to jDOS routine and get weighted jDOS back
-    call jdos_utils_calculate(matrix_weights, weighted_jdos)
+    call jdos_utils_calculate(matrix_weights, weighted_jdos=weighted_jdos)
 
     ! Calculate weighted DOS at Ef for intraband term
     if (optics_intraband) then
@@ -141,13 +147,13 @@ contains
       end if
 
       ! Write everything out
-      call write_epsilon
+      call write_epsilon(0)
       if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
-        call write_refract
+        call write_refract(0)
         call write_loss_fn
-        call write_absorp
-        call write_reflect
+        call write_absorp(0)
+        call write_reflect(0)
       end if
     end if
 
@@ -160,9 +166,9 @@ contains
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
-                             electrons_per_state, band_energy, efermi
+      electrons_per_state, band_energy, efermi
     use od_cell, only: nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
-                       num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
+      num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
@@ -357,7 +363,7 @@ contains
                 matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom) = (factor/3.0_dp)* &
                      &   (real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp) +  &
                      &    real(g(3)*conjg(g(3)), dp))
-                write (*, *) matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom)
+                ! write (*, *) matrix_weights(n_eigen, n_eigen2, N, N_spin, N_geom)
                 !                 print *, n_eigen, n_eigen2, N, matrix_weights(n_eigen,n_eigen2,N,N_spin,N_geom)
                 !                 print *, band_energy(n_eigen2,N_spin,N), band_energy(n_eigen,N_spin,N)
               else
@@ -496,7 +502,7 @@ contains
   end subroutine make_weights
 
   !***************************************************************
-  subroutine calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
+  subroutine calc_epsilon_2(weighted_jdos, weighted_dos_at_e, photo_atom_volume)
     !***************************************************************
     ! This subroutine calculates epsilon_2
 
@@ -510,6 +516,7 @@ contains
 
     real(kind=dp), intent(in), allocatable, dimension(:, :, :) :: weighted_jdos
     real(kind=dp), intent(in), allocatable, dimension(:, :) :: weighted_dos_at_e
+    real(kind=dp), intent(in), optional                        :: photo_atom_volume
 
     integer :: N_energy
     integer :: N
@@ -523,9 +530,11 @@ contains
     real(kind=dp) :: epsilon2_const
 
     dE = E(2) - E(1)
-    if (photo) then
-      epsilon2_const = (e_charge*pi*1E-20)/(photo_slab_volume*1E-30*epsilon_0)
+    if (present(photo_atom_volume)) then
+      epsilon2_const = (e_charge*pi*1E-20)/(photo_atom_volume*1E-30*epsilon_0)
+      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
     else
+      write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
       epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
     end if
     !epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
@@ -538,9 +547,11 @@ contains
           intra(N) = intra(N) + weighted_dos_at_e(N_spin, N)
         end do
       end do
-      if (photo) then
-        intra = intra*e_charge/(photo_slab_volume*1E-10*epsilon_0)
+      if (present(photo_atom_volume)) then
+      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
+        intra = intra*e_charge/(photo_atom_volume*1E-10*epsilon_0)
       else
+        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
       end if
       ! intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
@@ -581,24 +592,14 @@ contains
           x = x + ((N*(dE**2)*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
         end if
       end do
-      if (photo) then
-        N_eff = (x*e_mass*photo_slab_volume*1E-30*epsilon_0*2)/(pi)
+      if (present(photo_atom_volume)) then
+        N_eff = (x*e_mass*photo_atom_volume*1E-30*epsilon_0*2)/(pi)
       else
+        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
         N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
       end if
       ! N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
     end if
-
-    if (iprint .eq. 4 .and. on_root) then
-      write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-2 ---------------------------+'
-      if (.not. optics_intraband) then
-        write (stdout, '(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
-      else
-        write (stdout, '(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i), i=1, 3), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
-      end if
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
   end subroutine calc_epsilon_2
 
   !***************************************************************
@@ -657,16 +658,6 @@ contains
         end if
       end do
     end do
-
-    if (iprint .eq. 4 .and. on_root) then
-      write (stdout, '(1x,a78)') '+----------------------------- Printing Epsilon-1 ---------------------------+'
-      if (.not. optics_intraband) then
-        write (stdout, '(99999(es13.5))') (((epsilon(jdos_bin, j, N2, 1), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
-      else
-        write (stdout, '(99999(es13.5))') ((((epsilon(jdos_bin, j, N2, i), i=1, 3), N2=1, N_geom), j=1, 2), jdos_bin=1, jdos_nbins)
-      end if
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
 
   end subroutine calc_epsilon_1
 
@@ -815,11 +806,11 @@ contains
     refract = 0.0_dp
 
     if (.not. optics_intraband) then
-      do N_energy = 2, jdos_nbins
+      do N_energy = 1, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
-      do N_energy = 2, jdos_nbins
+      do N_energy = 1, jdos_nbins
         refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
@@ -875,7 +866,7 @@ contains
   end subroutine calc_reflect
 
   !***************************************************************
-  subroutine write_epsilon
+  subroutine write_epsilon(atom, photo_at_e, photo_volume)
     !***************************************************************
     ! This subroutine writes out the dielectric function
 
@@ -889,10 +880,18 @@ contains
     integer :: N, N2, N3
     real(kind=dp) ::dE
     integer :: epsilon_unit
+    integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), dimension(:, :), optional :: photo_at_e
+    real(kind=dp), intent(in), optional                  :: photo_volume
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "epsilon"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "epsilon_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "epsilon"
+    end if
     label%title = "Dielectric Function" ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -903,8 +902,12 @@ contains
 
     ! Open the output file
     epsilon_unit = io_file_unit()
-    open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
-
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(adjustl(atom_char))//'.dat')
+    else
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
+    end if
     ! Write into the output file
     write (epsilon_unit, *) '#*********************************************'
     write (epsilon_unit, *) '#            Dielectric function                 '
@@ -917,7 +920,11 @@ contains
       write (epsilon_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (epsilon_unit, *) '# Number of bands:', nbands
-    write (epsilon_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (epsilon_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (epsilon_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (epsilon_unit, *) '#'
     write (epsilon_unit, '(1x,a,f10.6,1x,a,f10.6,1x,a)') &
          & '# Dielectric function calculated to', jdos_max_energy, 'eV in', dE, 'eV steps'
@@ -934,9 +941,15 @@ contains
     write (epsilon_unit, *) '#'
     if (optics_intraband) then
       write (epsilon_unit, *) '# Calculation includes intraband term'
-      if (fixed) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(1, :)
-      if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(2, :)
-      if (linear) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(3, :)
+      if (present(photo_at_e)) then
+        if (fixed) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(1, :)
+        if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(2, :)
+        if (linear) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(3, :)
+      else
+        if (fixed) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(1, :)
+        if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(2, :)
+        if (linear) write (epsilon_unit, *) '# DOS at Ef:', dos_at_e(3, :)
+      end if
       do N = 1, N_geom
         write (epsilon_unit, *) '# Plasmon energy:', (intra(N)**0.5)
       end do
@@ -946,19 +959,19 @@ contains
       write (epsilon_unit, *) '#'
       if (.not. optics_intraband) then
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, 1), ',', epsilon(N, 2, 1, 1)
         end do
       else
         write (epsilon_unit, *) ''
         write (epsilon_unit, *) ''
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, 1), ',', epsilon(N, 2, 1, 1)
         end do
         do N2 = 2, 3
           write (epsilon_unit, *) ''
           write (epsilon_unit, *) ''
-          do N = 1, jdos_nbins
-            write (epsilon_unit, *) E(N), epsilon(N, 1, 1, N2), epsilon(N, 2, 1, N2)/(E(N)*e_charge)
+          do N = 2, jdos_nbins
+            write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, N2), ',', epsilon(N, 2, 1, N2)/(E(N)*e_charge)
           end do
         end do
       end if
@@ -1017,7 +1030,7 @@ contains
 
     use od_cell, only: nkpoints, cell_volume
     use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format, &
-                             optics_intraband, optics_lossfn_broadening
+      optics_intraband, optics_lossfn_broadening
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: jdos_nbins, E
     use od_io, only: seedname, io_file_unit, stdout
@@ -1206,7 +1219,7 @@ contains
   end subroutine write_conduct
 
   !***************************************************************
-  subroutine write_refract
+  subroutine write_refract(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the refractive index
 
@@ -1218,10 +1231,17 @@ contains
 
     integer :: N
     integer :: refract_unit
+    integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "refractive_index"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "refractive_index_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "refractive_index"
+    end if
     label%title = "Refractive Index"  ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1230,7 +1250,12 @@ contains
 
     ! Open the output file
     refract_unit = io_file_unit()
-    open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom_'//trim(adjustl(atom_char))//'.dat')
+    else
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
+    end if
 
     ! Write into the output file
     write (refract_unit, *) '#*********************************************'
@@ -1246,7 +1271,11 @@ contains
       write (refract_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (refract_unit, *) '# No of bands:', nbands
-    write (refract_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (refract_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (refract_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (refract_unit, *) '#'
     write (refract_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
@@ -1258,7 +1287,7 @@ contains
     end if
     write (refract_unit, *) '#'
     do N = 1, jdos_nbins
-      write (refract_unit, *) E(N), refract(N, 1), refract(N, 2)
+      write (refract_unit, *) E(N), ',', refract(N, 1), ',', refract(N, 2)
     end do
 
     ! Close output file
@@ -1275,7 +1304,7 @@ contains
   end subroutine write_refract
 
   !***************************************************************
-  subroutine write_absorp
+  subroutine write_absorp(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the absorption coefficient
 
@@ -1287,10 +1316,17 @@ contains
 
     integer :: N
     integer :: absorp_unit
+    integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
+    character(len=3) :: atom_char
 
     type(graph_labels) :: label
-
-    label%name = "absorption"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "absorption_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "absorption"
+    end if
     label%title = "Absorption Coefficient (m-1)" ! per metre
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1298,7 +1334,12 @@ contains
 
     ! Open the output file
     absorp_unit = io_file_unit()
-    open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom_'//trim(adjustl(atom_char))//'.dat')
+    else
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
+    end if
 
     ! Write into the output file
     write (absorp_unit, *) '#*********************************************'
@@ -1313,7 +1354,11 @@ contains
       write (absorp_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (absorp_unit, *) '# No of bands:', nbands
-    write (absorp_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (absorp_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (absorp_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (absorp_unit, *) '#'
     write (absorp_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
@@ -1325,7 +1370,7 @@ contains
     end if
     write (absorp_unit, *) '#'
     do N = 1, jdos_nbins
-      write (absorp_unit, *) E(N), absorp(N)
+      write (absorp_unit, *) E(N), ',', absorp(N)
     end do
 
     ! Close output file
@@ -1342,7 +1387,7 @@ contains
   end subroutine write_absorp
 
   !***************************************************************
-  subroutine write_reflect
+  subroutine write_reflect(atom, photo_volume)
     !***************************************************************
     ! This subroutine writes out the reflection coefficient
 
@@ -1354,9 +1399,17 @@ contains
 
     integer :: N
     integer :: reflect_unit
+    integer, intent(in), optional :: atom
+    real(kind=dp), intent(in), optional :: photo_volume
+    character(len=3) :: atom_char
     type(graph_labels) :: label
 
-    label%name = "reflection"
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      label%name = "reflection_atom_"//trim(adjustl(atom_char))
+    else
+      label%name = "reflection"
+    end if
     label%title = "Reflection Coefficient"  ! Dimensionless
     label%x_label = "Energy (eV)"
     label%y_label = ""
@@ -1364,7 +1417,12 @@ contains
 
     ! Open the output file
     reflect_unit = io_file_unit()
-    open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
+    if (atom .gt. 0) then
+      write (atom_char, '(I3)') atom
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom_'//trim(adjustl(atom_char))//'.dat')
+    else
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
+    end if
 
     ! Write into the output file
     write (reflect_unit, *) '#*********************************************'
@@ -1380,7 +1438,11 @@ contains
       write (reflect_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (reflect_unit, *) '# No of bands:', nbands
-    write (reflect_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    if (present(photo_volume)) then
+      write (reflect_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+    else
+      write (reflect_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+    end if
     write (reflect_unit, *) '#'
     write (reflect_unit, *) '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
@@ -1392,7 +1454,7 @@ contains
     end if
     write (reflect_unit, *) '#'
     do N = 1, jdos_nbins
-      write (reflect_unit, *) E(N), reflect(N)
+      write (reflect_unit, *) E(N), ',', reflect(N)
     end do
 
     ! Close output file

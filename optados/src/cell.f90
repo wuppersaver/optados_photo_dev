@@ -610,7 +610,7 @@ contains
     allocate (atoms_pos_cart_photo(3, num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_cart_photo in cell_get_atoms')
 
-    ! Making a copy to use in the photo.f90 subroutine "calc_layer"
+    ! Making a copy to use in the photo.f90 subroutine "analyse_geometry"
     atoms_pos_cart_photo = atoms_pos_cart_tmp
 
     do loop = 1, num_species
@@ -1122,7 +1122,7 @@ contains
 
     use od_comms, only: on_root
     use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
-                     io_error
+      io_error
     use od_constants, only: bohr2ang
 
     integer :: band_unit
@@ -1159,7 +1159,7 @@ contains
     use od_algorithms, only: utility_reciprocal_frac_to_cart
     use od_comms, only: my_node_id
     use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time, &
-                     io_error
+      io_error
 !    use od_electronic, only : elec_read_band_energy
 
     integer :: i, ik, loop, ierr

@@ -65,8 +65,9 @@ contains
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
     use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume,&
-                            &jdos_max_energy, jdos_spacing
-    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, efermi_set
+                            &jdos_max_energy, jdos_spacing, photo
+    use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
+      num_electrons, efermi_set
     use od_comms, only: on_root, comms_bcast
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
@@ -79,7 +80,7 @@ contains
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
 
-    integer :: N_geom, is, idos, wjdos_unit = 25
+    integer :: N_geom, is, idos, wjdos_unit = 25, pjdos_unit = 26
     logical :: print_weighted_jdos = .false.
 
     calc_weighted_jdos = .false.
@@ -109,10 +110,9 @@ contains
     time0 = io_time()
 
     call setup_energy_scale(E)
-
     if (fixed) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos)
+        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_fixed, weighted_jdos)
       else
         call calculate_jdos('f', jdos_fixed)
@@ -122,7 +122,7 @@ contains
     end if
     if (adaptive) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos)
+        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_adaptive, weighted_jdos)
       else
         call calculate_jdos('a', jdos_adaptive)
@@ -131,7 +131,7 @@ contains
     end if
     if (linear) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos)
+        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos=weighted_jdos)
         call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
         call calculate_jdos('l', jdos_linear)
@@ -270,6 +270,7 @@ contains
     !===============================================================================
     use od_electronic, only: nspins
     use od_io, only: io_error
+    use od_parameters, only: photo
     implicit none
 
     real(kind=dp), allocatable, intent(out)  :: jdos(:, :)
@@ -318,11 +319,11 @@ contains
     use od_comms, only: my_node_id, on_root
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
-    use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
+    use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, photo, &
          &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
-         & efermi
+         & efermi, elec_pdos_read, pdos_weights, pdos_mwab, elec_dealloc_pdos
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     implicit none
@@ -339,41 +340,6 @@ contains
     real(kind=dp), intent(out), allocatable :: jdos(:, :)
 
     logical :: linear, fixed, adaptive, force_adaptive
-
-    ! ! <Added by Felix Mildner, 03/2023 to reduce if statement overhead>
-    ! ! This relies on an IMPORTANT assumption: the bands file is ordered by energy
-    ! ! and not by band number (e.g. after being processed by CASTEP bands2orbitals)
-    ! integer, allocatable, dimension(:,:)  :: min_index_unocc
-
-    ! if (.not. allocated(min_index_unocc)) then
-    !   allocate(min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calculate_jdos - allocation of max_index_occ failed')
-    ! end if
-
-    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-    !   do is = 1, nspins                           ! Loop over spins
-    !     do ib = 2, nbands                        ! Loop over bands
-    !       ! TODO: Test if this is the behaviour we want and or if we have to change the condition
-    !       if (band_energy(ib -1, is, ik) .gt. band_energy(ib, is, ik)) then
-    !         call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
-    !         & which will give WRONG RESULTS!')
-    !       end if
-    !     end do
-    !   end do
-    ! end do
-
-    ! do ik = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
-    !   do is = 1, nspins                           ! Loop over spins
-    !     do ib = 1, nbands                        ! Loop over bands
-    !       if (band_energy(ib, is, ik) .ge. efermi) then
-    !         min_index_unocc(is, ik) = ib
-    !         exit
-    !       end if
-    !     end do
-    !   end do
-    ! end do
-
-    ! ! </Added by Felix Mildner, 03/2023 to reduce if statement overhead>
 
     linear = .false.
     fixed = .false.
@@ -420,13 +386,11 @@ contains
              &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- JDOS |"
       end if
       do is = 1, nspins
-        ! occ_states: do ib = 1, min_index_unocc(is,ik) - 1
         occ_states: do ib = 1, nbands
           if (num_exclude_bands > 0) then
             if (any(exclude_bands == ib)) cycle
           end if
           if (band_energy(ib, is, ik) .ge. efermi) cycle occ_states
-          ! unocc_states: do jb = min_index_unocc(is,ik), nbands
           unocc_states: do jb = 1, nbands
             if (band_energy(jb, is, ik) .lt. efermi) cycle unocc_states
             if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
@@ -470,11 +434,6 @@ contains
       end do
     end do
 
-    ! if (allocated(min_index_unocc)) then
-    !   deallocate(min_index_unocc, stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: calculate_jdos - failed to deallocate min_index_unocc')
-    ! end if
-
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -504,14 +463,15 @@ contains
     !===============================================================================
     use od_comms, only: comms_reduce
     use od_electronic, only: nspins
+    use od_parameters, only: photo
 
     implicit none
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :) ! bins.spins, orbitals
     real(kind=dp), allocatable, intent(inout) :: jdos(:, :)
-    
+
     integer :: N_geom
     if (present(weighted_jdos)) N_geom = size(weighted_jdos, 3)
-    
+
     call comms_reduce(jdos(1, 1), nspins*jdos_nbins, "SUM")
 
     if (present(weighted_jdos)) call comms_reduce(weighted_jdos(1, 1, 1), nspins*jdos_nbins*N_geom, "SUM")

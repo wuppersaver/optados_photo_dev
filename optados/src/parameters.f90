@@ -138,6 +138,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_bulk_length
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
+  integer, public, save       :: photo_len_imfp_const
   real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_const
   ! real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
@@ -497,34 +498,35 @@ contains
       call io_error('Error: please set volume of the slab for photoemission calculation')
 
     photo_layer_choice = 'optados'
-    call param_get_keyword('photo_layer_choice',found, c_value=photo_layer_choice)
+    call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
 
     photo_max_layer = -1
-    call param_get_keyword('photo_max_layer',found,i_value=photo_max_layer)
-    if (photo .and. index(photo_layer_choice,'user') .gt. 0 .and. .not. found) &
-    call io_error('Error: max # of layers was set to be supplied by user, but does not exist in input')
-
+    call param_get_keyword('photo_max_layer', found, i_value=photo_max_layer)
+    if (photo .and. index(photo_layer_choice, 'user') .gt. 0 .and. .not. found) &
+      call io_error('Error: max # of layers was set to be supplied by user, but does not exist in input')
 
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
 
     call param_get_vector_length('photo_imfp_const', found, i_temp)
     if (found) then
+      photo_len_imfp_const = i_temp
       allocate (photo_imfp_const(i_temp), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
       call param_get_keyword_vector('photo_imfp_const', found, i_temp, r_value=photo_imfp_const)
     else
-      allocate (photo_imfp_const(1),stat=ierr)
+      photo_len_imfp_const = 1
+      allocate (photo_imfp_const(1), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
       photo_imfp_const = 0.0_dp
     end if
     if (photo .and. .not. found) &
-    call io_error('Error: constant imfp, but photo_imfp_const is not set')
+      call io_error('Error: constant imfp, but photo_imfp_const is not set')
 
     num_atoms = 0
     num_species = 0
     num_crystal_symmetry_operations = 0
-    if (pdos .or. pdis .or. core .or. optics .or. photo) then
+    if (pdos .or. pdis .or. core .or. optics .or. photo .or. jdos) then
       ! try to read in the atoms from the cell file.
       ! We don't need them otherwise, so let's not bother
       !  if(index(devel_flag,'old_filename')>0) then
@@ -950,15 +952,15 @@ contains
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
-      if (index(photo_layer_choice,'user') > 0) then
-        write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :',photo_max_layer,'|'
+      if (index(photo_layer_choice, 'user') > 0) then
+        write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
       end if
-      if (size(photo_imfp_const,1) .eq. 1) then
+      if (size(photo_imfp_const, 1) .eq. 1) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const(1), '|'
       else
         write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
         write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
-      endif
+      end if
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else
@@ -1719,8 +1721,15 @@ contains
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_surface_area, 1)
     call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_layer_choice, len(photo_layer_choice))
+    call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
-    call comms_bcast(photo_imfp_const(1), size(photo_imfp_const,1))
+    call comms_bcast(photo_len_imfp_const, 1)
+    if (.not. on_root) then
+      allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_const')
+    end if
+    call comms_bcast(photo_imfp_const(1), photo_len_imfp_const)
     call comms_bcast(photo_bulk_length, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(write_photo_output, len(write_photo_output))
