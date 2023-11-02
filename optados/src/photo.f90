@@ -54,6 +54,9 @@ module od_photo
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
+
+  real(kind=dp), dimension(:), allocatable :: boxes_middle_z_coord
+
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -294,6 +297,8 @@ contains
         end if
       end do
     end do
+
+    !
 
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
