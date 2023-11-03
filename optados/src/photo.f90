@@ -56,7 +56,6 @@ module od_photo
   integer :: first_atom_second_l, last_atom_secondlast_l
 
   real(kind=dp), dimension(:), allocatable :: boxes_middle_z_coord
-
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -264,6 +263,11 @@ contains
       atom_order(i) = i
     end do
 
+    ! TODO: Check that we have a cuboid cell as that is currently assumed for a lot of calculations!! - WIP
+    if (real_lattice(3, 1) .gt. 0.000001_dp .and. real_lattice(3, 2) .gt. 0.000001_dp) then
+      call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
+    end if
+
     !SORTING ALGORITHM to sort the atoms by z-coordinate
     do atom_1 = 1, num_atoms - 1
       first = atom_order(atom_1)
@@ -298,7 +302,6 @@ contains
       end do
     end do
 
-    !
 
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
@@ -1335,7 +1338,7 @@ contains
           end do
         end do
       end do
-      deallocate (thickness_layer, stat=ierr)
+      ! deallocate (thickness_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: thickness_layer - failed to deallocate calc_elec_esc')
     elseif (size(photo_imfp_const, 1) .eq. 1) then
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -1486,7 +1489,8 @@ contains
     end if
 
   end subroutine bulk_emission
-
+  ! TODO: Introduce the 1-occ_fermi_dirac term
+  ! TODO: reimplement the choice of bands (n_eigen should be 1: n_eigen_2-1) - Done
   !===============================================================================
   subroutine calc_three_step_model
     !===============================================================================
@@ -1504,15 +1508,15 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: pi, kB
+    use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
-    qe_factor = 1.0_dp/(2*pi*photo_surface_area)
-    norm_vac = gaussian(0.0_dp, width, 0.0_dp)
+    qe_factor = 1.0_dp/(photo_surface_area)
+    norm_vac = inv_sqrt_two_pi/width
 
     time0 = io_time()
 
@@ -1543,7 +1547,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    call photo_calculate_delta(delta_temp)
+    call photo_calculate_delta(delta_temp, .false.)
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
@@ -1577,7 +1581,7 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen2 = min_index_unocc(N_spin, N), nbands
-            do n_eigen = 1, nbands
+            do n_eigen = 1, n_eigen2 - 1
 
               argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
               ! This is a bit of an arbitrary condition, but it turns out
@@ -1609,16 +1613,16 @@ contains
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
 
-              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = &
-                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                 electron_esc(n_eigen, N_spin, N, atom)* &
-                 electrons_per_state*kpoint_weight(N)* &
-                 (I_layer(layer(atom), current_index))* &
-                 qe_factor*transverse_g*vac_g*fermi_dirac* &
-                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                (1.0_dp + field_emission(n_eigen, N_spin, N))
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                 (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                  delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                  electron_esc(n_eigen, N_spin, N, atom)* &
+                  electrons_per_state*kpoint_weight(N)* &
+                  (I_layer(layer(atom), current_index))* &
+                  transverse_g*vac_g*fermi_dirac* &
+                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                   pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                 (1.0_dp + field_emission(n_eigen, N_spin, N))
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
@@ -1633,10 +1637,12 @@ contains
       end do
     end do
 
+    call photo_calculate_delta(delta_temp, .true.)
+
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen2 = min_index_unocc(N_spin, N), nbands
-          do n_eigen = 1, nbands
+          do n_eigen = 1, n_eigen2 - 1
 
             argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
             ! This is a bit of an arbitrary condition, but it turns out
@@ -1663,15 +1669,15 @@ contains
             else
               vac_g = 1.0_dp
             end if
-            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = &
-              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-               bulk_prob(n_eigen, N_spin, N)* &
-               electrons_per_state*kpoint_weight(N)* &
-               qe_factor*transverse_g*vac_g*fermi_dirac* &
-               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-                pdos_weights_k_band(n_eigen, N_spin, N)))* &
-              (1.0_dp + field_emission(n_eigen, N_spin, N))
+            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
+                                                                  (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                   delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                   bulk_prob(n_eigen, N_spin, N)* &
+                                                                   electrons_per_state*kpoint_weight(N)* &
+                                                                   transverse_g*vac_g*fermi_dirac* &
+                                                                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                                    pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                                  (1.0_dp + field_emission(n_eigen, N_spin, N))
           end do
         end do
       end do
@@ -1710,7 +1716,7 @@ contains
   end subroutine calc_three_step_model
 
   !===============================================================================
-  subroutine photo_calculate_delta(delta_temp)
+  subroutine photo_calculate_delta(delta_temp, calculate_bulk)
     !===============================================================================
     ! It is required to evaluate the delta funcion.
     ! Victor Chang, 7th February 2020
@@ -1728,6 +1734,7 @@ contains
     real(kind=dp) :: time0, time1
     integer       :: ierr
 
+    logical, intent(in)                                  :: calculate_bulk
     real(kind=dp), intent(out), allocatable, optional    :: delta_temp(:, :, :, :)  !I've added this
 
     if (iprint > 1 .and. on_root) then
@@ -1752,14 +1759,25 @@ contains
     call setup_energy_scale(E)
 
     if (fixed) then
-      call calculate_delta('f', delta_temp)
+      if (calculate_bulk) then
+        call calculate_delta('f', delta_temp, .true.)
+      else
+        call calculate_delta('f', delta_temp, .false.)
+      end if
     end if
     if (adaptive) then
-      call calculate_delta('a', delta_temp)
-
+      if (calculate_bulk) then
+        call calculate_delta('a', delta_temp, .true.)
+      else
+        call calculate_delta('a', delta_temp, .false.)
+      end if
     end if
     if (linear) then
-      call calculate_delta('l', delta_temp)
+      if (calculate_bulk) then
+        call calculate_delta('l', delta_temp, .true.)
+      else
+        call calculate_delta('l', delta_temp, .false.)
+      end if
     end if
 
     if (quad) then
@@ -1787,23 +1805,25 @@ contains
 
   end subroutine photo_calculate_delta
 
+  ! TODO: MAKE sure that the bulk contribution can be calculated with a different height - DONE
   !===============================================================================
-  subroutine calculate_delta(delta_type, delta_temp)
+  subroutine calculate_delta(delta_type, delta_temp, calculate_bulk)
     !===============================================================================
     ! This subroutine evaluates the delta function between the valence band
     ! and the conduction band using the method specified in the input.
     ! Victor Chang, 7 February 2020
     !===============================================================================
     use od_comms, only: my_node_id, on_root
-    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
+    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
          & finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
-         & jdos_max_energy
+         & jdos_max_energy, photo_slab_volume
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
     use od_jdos_utils, only: jdos_nbins
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
+    use od_constants, only: pi
     implicit none
 
     integer :: ik, is, ib, jb, i, ierr
@@ -1813,7 +1833,10 @@ contains
 
     character(len=1), intent(in)                      :: delta_type
     real(kind=dp), intent(inout), allocatable, optional :: delta_temp(:, :, :, :)
+    logical, intent(in)                               :: calculate_bulk
+
     logical :: linear, fixed, adaptive, force_adaptive
+    real(kind=dp) :: half_slab_height, cell_area, bulk_layer_height
 
     linear = .false.
     fixed = .false.
@@ -1832,12 +1855,20 @@ contains
 
     width = 0.0_dp
     delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
+    cell_area = cell_volume/real_lattice(3, 3)
+    half_slab_height = photo_slab_volume/(2*cell_area)
+    if (calculate_bulk) bulk_layer_height = thickness_layer(max_layer)
 
     if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
     if (adaptive .or. hybrid_linear) then
-      do i = 1, 3
+      do i = 1, 2
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      if (calculate_bulk) then
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/bulk_layer_height)**2)*step(3)
+      else
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/half_slab_height)**2)*step(3)
+      end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if
 
@@ -1909,7 +1940,7 @@ contains
   !===============================================================================
   subroutine make_foptical_weights
     !===============================================================================
-    ! This subroutine calclualtes the optical matrix elements for the one step
+    ! This subroutine calculates the optical matrix elements for the one step
     ! photoemission model.
     ! Victor Chang, 7th February 2020
     !===============================================================================
@@ -2086,24 +2117,34 @@ contains
     ! Victor Chang, 7th February 2020
     !===============================================================================
 
-    use od_cell, only: num_kpoints_on_node, kpoint_weight
+    use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_volume
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id
-    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
+    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
+      photo_slab_volume, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root
     use od_io, only: stdout, io_error, io_file_unit, io_time
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: pi, kB
+    use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
     integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr, i
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
+    real(kind=dp) :: volume_factor, volume_factor_bulk
+
+    ! In the current definition of the one-step OMEs they are V_cell dependent (i.e. vacuum gap dependent). To remedy this, this
+    ! volume prefactor is introduced to normalise it to the material we consider as emitting (i.e. the half slab of material)
+    ! for the bulk we are considering each of the layers as repeating and therefore take the volume of the bulk like layer (or box)
+    ! WIP: should this rather be the atom volume as we are projecting onto the atoms?
+    volume_factor = 2*cell_volume/photo_slab_volume
+    volume_factor_bulk = cell_volume/volume_layer(max_layer)
+
+    qe_factor = 1.0_dp/(photo_surface_area)
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
-    qe_factor = 1.0_dp/(2*pi*photo_surface_area)
-    norm_vac = gaussian(0.0_dp, width, 0.0_dp)
+    norm_vac = inv_sqrt_two_pi/width
 
     time0 = io_time()
     if (iprint > 1 .and. on_root) then
@@ -2162,15 +2203,15 @@ contains
               vac_g = 1.0_dp
             end if
             n_eigen2 = nbands + 1
-            qe_osm(n_eigen, N_spin, N, atom) = &
-              (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-               (electron_esc(n_eigen, N_spin, N, atom))* &
-               electrons_per_state*kpoint_weight(N)* &
-               (I_layer(layer(atom), current_index))* &
-               qe_factor*transverse_g*vac_g*fermi_dirac* &
-               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                pdos_weights_k_band(n_eigen, N_spin, N)))* &
-              (1.0_dp + field_emission(n_eigen, N_spin, N))
+            qe_osm(n_eigen, N_spin, N, atom) = volume_factor*qe_factor* &
+             (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+              (electron_esc(n_eigen, N_spin, N, atom))* &
+              electrons_per_state*kpoint_weight(N)* &
+              (I_layer(layer(atom), current_index))* &
+              transverse_g*vac_g*fermi_dirac* &
+              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+               pdos_weights_k_band(n_eigen, N_spin, N)))* &
+             (1.0_dp + field_emission(n_eigen, N_spin, N))
             if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
               write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
@@ -2212,14 +2253,14 @@ contains
             vac_g = 1.0_dp
           end if
           n_eigen2 = nbands + 1
-          qe_osm(n_eigen, N_spin, N, max_atoms + 1) = &
-            (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-             bulk_prob(n_eigen, N_spin, N)* &
-             electrons_per_state*kpoint_weight(N)* &
-             qe_factor*transverse_g*vac_g*fermi_dirac* &
-             (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-              pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
-            (1.0_dp + field_emission(n_eigen, N_spin, N))
+          qe_osm(n_eigen, N_spin, N, max_atoms + 1) = volume_factor_bulk*qe_factor* &
+                                                      (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                       bulk_prob(n_eigen, N_spin, N)* &
+                                                       electrons_per_state*kpoint_weight(N)* &
+                                                       transverse_g*vac_g*fermi_dirac* &
+                                                       (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                        pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
+                                                      (1.0_dp + field_emission(n_eigen, N_spin, N))
         end do
       end do
     end do
