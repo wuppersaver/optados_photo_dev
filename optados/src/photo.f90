@@ -261,6 +261,11 @@ contains
       atom_order(i) = i
     end do
 
+    ! TODO: Check that we have a cuboid cell as that is currently assumed for a lot of calculations!! - WIP
+    if (real_lattice(3, 1) .gt. 0.000001_dp .and. real_lattice(3, 2) .gt. 0.000001_dp) then
+      call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
+    end if
+
     !SORTING ALGORITHM to sort the atoms by z-coordinate
     do atom_1 = 1, num_atoms - 1
       first = atom_order(atom_1)
