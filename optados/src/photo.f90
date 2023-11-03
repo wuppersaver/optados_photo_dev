@@ -54,6 +54,8 @@ module od_photo
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
+
+  real(kind=dp), dimension(:), allocatable :: boxes_middle_z_coord
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -299,6 +301,7 @@ contains
         end if
       end do
     end do
+
 
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
@@ -1611,15 +1614,15 @@ contains
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
 
               qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                           (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                            delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                            electron_esc(n_eigen, N_spin, N, atom)* &
-                                                            electrons_per_state*kpoint_weight(N)* &
-                                                            (I_layer(layer(atom), current_index))* &
-                                                            transverse_g*vac_g*fermi_dirac* &
-                                                            (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                             pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                           (1.0_dp + field_emission(n_eigen, N_spin, N))
+                 (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                  delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                  electron_esc(n_eigen, N_spin, N, atom)* &
+                  electrons_per_state*kpoint_weight(N)* &
+                  (I_layer(layer(atom), current_index))* &
+                  transverse_g*vac_g*fermi_dirac* &
+                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                   pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                 (1.0_dp + field_emission(n_eigen, N_spin, N))
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
@@ -2201,14 +2204,14 @@ contains
             end if
             n_eigen2 = nbands + 1
             qe_osm(n_eigen, N_spin, N, atom) = volume_factor*qe_factor* &
-                                               (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                (electron_esc(n_eigen, N_spin, N, atom))* &
-                                                electrons_per_state*kpoint_weight(N)* &
-                                                (I_layer(layer(atom), current_index))* &
-                                                transverse_g*vac_g*fermi_dirac* &
-                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
+             (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+              (electron_esc(n_eigen, N_spin, N, atom))* &
+              electrons_per_state*kpoint_weight(N)* &
+              (I_layer(layer(atom), current_index))* &
+              transverse_g*vac_g*fermi_dirac* &
+              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+               pdos_weights_k_band(n_eigen, N_spin, N)))* &
+             (1.0_dp + field_emission(n_eigen, N_spin, N))
             if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
               write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
