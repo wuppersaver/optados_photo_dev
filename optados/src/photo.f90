@@ -1486,7 +1486,8 @@ contains
     end if
 
   end subroutine bulk_emission
-  ! TODO: Introduce the 1-occ_fermi_dirac term, reimplement the choice of bands (n_eigen should be 1: n_eigen_2-1)
+  ! TODO: Introduce the 1-occ_fermi_dirac term
+  ! TODO: reimplement the choice of bands (n_eigen should be 1: n_eigen_2-1) - Done
   !===============================================================================
   subroutine calc_three_step_model
     !===============================================================================
@@ -1577,7 +1578,7 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen2 = min_index_unocc(N_spin, N), nbands
-            do n_eigen = 1, nbands
+            do n_eigen = 1, n_eigen2 - 1
 
               argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
               ! This is a bit of an arbitrary condition, but it turns out
@@ -1609,16 +1610,16 @@ contains
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
 
-              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = &
-                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                 electron_esc(n_eigen, N_spin, N, atom)* &
-                 electrons_per_state*kpoint_weight(N)* &
-                 (I_layer(layer(atom), current_index))* &
-                 qe_factor*transverse_g*vac_g*fermi_dirac* &
-                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                (1.0_dp + field_emission(n_eigen, N_spin, N))
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                           (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                            delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                            electron_esc(n_eigen, N_spin, N, atom)* &
+                                                            electrons_per_state*kpoint_weight(N)* &
+                                                            (I_layer(layer(atom), current_index))* &
+                                                            transverse_g*vac_g*fermi_dirac* &
+                                                            (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                             pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                           (1.0_dp + field_emission(n_eigen, N_spin, N))
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
@@ -1638,7 +1639,7 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen2 = min_index_unocc(N_spin, N), nbands
-          do n_eigen = 1, nbands
+          do n_eigen = 1, n_eigen2 - 1
 
             argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
             ! This is a bit of an arbitrary condition, but it turns out
@@ -1665,15 +1666,15 @@ contains
             else
               vac_g = 1.0_dp
             end if
-            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = &
-              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-               bulk_prob(n_eigen, N_spin, N)* &
-               electrons_per_state*kpoint_weight(N)* &
-               qe_factor*transverse_g*vac_g*fermi_dirac* &
-               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-                pdos_weights_k_band(n_eigen, N_spin, N)))* &
-              (1.0_dp + field_emission(n_eigen, N_spin, N))
+            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
+                                                                  (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                   delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                   bulk_prob(n_eigen, N_spin, N)* &
+                                                                   electrons_per_state*kpoint_weight(N)* &
+                                                                   transverse_g*vac_g*fermi_dirac* &
+                                                                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                                    pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                                  (1.0_dp + field_emission(n_eigen, N_spin, N))
           end do
         end do
       end do
