@@ -145,7 +145,9 @@ module od_parameters
   ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
   real(kind=dp), public, save :: photo_surface_area
-  real(kind=dp), public, save :: photo_slab_volume
+  ! real(kind=dp), public, save :: photo_slab_volume
+  real(kind=dp), public, save :: photo_slab_min
+  real(kind=dp), public, save :: photo_slab_max
 
   real(kind=dp), public, save :: lenconfac
 
@@ -493,9 +495,23 @@ contains
     if (photo .and. .not. found) &
       call io_error('Error: please set surface area for photoemission calculation')
 
-    call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
-    if (photo .and. .not. found) &
-      call io_error('Error: please set volume of the slab for photoemission calculation')
+    ! call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
+    ! if (photo .and. .not. found) &
+    !   call io_error('Error: please set volume of the slab for photoemission calculation')
+
+    photo_slab_min = 0.0_dp
+    call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
+    ! if(photo .and. .not. found) &
+    !     call io_error('Error: please set volume of the slab for photoemission calculation')
+    photo_slab_max = 0.0_dp
+    call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
+
+    if (photo_slab_max .lt. 0.0_dp .or. photo_slab_min .lt. 0.0_dp) then
+      call io_error('Error: the supplied min or max values are negative, which causes faulty calculations!')
+    end if
+    if (photo_slab_max .lt. photo_slab_min) then
+      call io_error('Error: the supplied slab_max value is less than the slab_min value!')
+    end if
 
     photo_layer_choice = 'optados'
     call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
@@ -951,7 +967,9 @@ contains
       end if
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
       if (index(photo_layer_choice, 'user') > 0) then
         write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
       end if
@@ -1720,7 +1738,9 @@ contains
     end if
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_surface_area, 1)
-    call comms_bcast(photo_slab_volume, 1)
+    ! call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_slab_max, 1)
+    call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_layer_choice, len(photo_layer_choice))
     call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
