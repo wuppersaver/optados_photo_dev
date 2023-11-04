@@ -968,8 +968,8 @@ contains
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
       ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
       if (index(photo_layer_choice, 'user') > 0) then
         write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
       end if

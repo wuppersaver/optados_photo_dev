@@ -54,14 +54,16 @@ module od_photo
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp)                            :: box_height
   real(kind=dp)                            :: box_volume
-  real(kind=dp), dimension(:), allocatable :: box_atom
+  integer, dimension(:), allocatable       :: box_atom
   integer, dimension(:), allocatable       :: atoms_per_box
+  integer                                  :: num_boxes
   real(kind=dp)                            :: photo_slab_volume
+  real(kind=dp)                            :: slab_middle_ref
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
 
-  real(kind=dp), dimension(:), allocatable :: boxes_middle_z_coord
+  real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -252,14 +254,14 @@ contains
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const, photo_slab_max, &
-    & photo_slab_min
+    & photo_slab_min, iprint
     implicit none
-    integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter, n_max
+    integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
-    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, devel_volume, slab_middle_ref
-    real(kind=dp)                            :: diff_temp, diff_top = 0.0_dp, diff_bottom = 0.0_dp
-    integer, dimension(2)                    :: indices_top_bottom, mean_heights
-    real(kind=dp)                            :: height_guess
+    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, devel_volume
+    real(kind=dp)                            :: diff_temp, diff_top = 1000.0_dp, diff_bottom = 1000.0_dp
+    integer, dimension(2)                    :: indices_top_bottom
+    real(kind=dp), dimension(2)              :: mean_heights = 0.0_dp
 
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
@@ -269,6 +271,7 @@ contains
 
     allocate (box_atom(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_atom failed')
+    box_atom = 0
 
     allocate (layer(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer failed')
@@ -328,91 +331,101 @@ contains
       layer(atom) = i
     end do
 
-    ! determine the top and bottom z-coord of the slab - supplied by the user? (could take into account the slab's e- density)
-    ! determine the cell area, and photo_slab_volume
+    ! --------------------------------------------------------------------------------------------
+    ! *    The following code was added in Nov 2023 to test out a new layer assignment scheme   *
+    ! *    A set of boxes of the height of the central slab layer distance is created and the    *
+    ! *    atoms are sorted into those boxes by their z-coordinate.                              *
+    ! --------------------------------------------------------------------------------------------
+    ! determine the cell area, and photo_slab_volume for later use
     cell_area = cell_volume/real_lattice(3, 3)
     photo_slab_volume = (photo_slab_max - photo_slab_min)*cell_area
-    ! determine the approximate middle of slab
+    ! determine the approximate middle of slab as reference
     slab_middle_ref = (photo_slab_max + photo_slab_min)/2
-    ! find the nearest two atoms and determine their layers
+    ! find the nearest two atoms to the middle and determine their layers
     do atom = 1, num_atoms
-      diff_temp = atoms_pos_cart_photo(3, atom) - slab_middle_ref
+      diff_temp = atoms_pos_cart_photo(3, atom_order(atom)) - slab_middle_ref
       if (diff_temp .gt. 0.0_dp) then
         if (diff_temp .lt. diff_top) then
-          indices_top_bottom(1) = atom
+          indices_top_bottom(1) = atom_order(atom)
           diff_top = diff_temp
         end if
       end if
       if (diff_temp .lt. 0.0_dp) then
         if (abs(diff_temp) .lt. diff_bottom) then
-          indices_top_bottom(2) = atom
+          indices_top_bottom(2) = atom_order(atom)
           diff_bottom = abs(diff_temp)
         end if
       end if
     end do
-    ! determine the height_guess
-    height_guess = atoms_pos_cart_photo(3, indices_top_bottom(1)) - atoms_pos_cart_photo(3, indices_top_bottom(1))
     ! find potential atoms in the vicinity of the top and bottom atom within 0.5
-    ! and determing the mean z-coordinate of them
+    ! and determing the mean z-coordinate of them (to get mean z-coord of a layer of atoms)
     do i = 1, 2
       counter = 0
       diff_top = atoms_pos_cart_photo(3, indices_top_bottom(i)) + 0.5
       diff_bottom = atoms_pos_cart_photo(3, indices_top_bottom(i)) - 0.5
       do atom = 1, num_atoms
-        if (atoms_pos_cart_photo(3, atom) .gt. diff_bottom .and. atoms_pos_cart_photo(3, atom) .lt. diff_top) then
+        if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
+        & atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
           counter = counter + 1
-          mean_heights(i) = mean_heights(i) + atoms_pos_cart_photo(3, atom)
+          mean_heights(i) = mean_heights(i) + atoms_pos_cart_photo(3, atom_order(atom))
         end if
       end do
       mean_heights(i) = mean_heights(i)/counter
     end do
-    ! determine the new middle + box height
+    ! determine the box height + box_volume + new slab middle reference
     box_height = mean_heights(1) - mean_heights(2)
     box_volume = box_height*cell_area
     slab_middle_ref = sum(mean_heights)/2
     ! determine the number of boxes we need until we have reached the top of the slab
-    ! do this until midpoint + n(1...)*box_height is bigger than the slab max
-    do i = 1, 100
-      diff_temp = slab_middle_ref + i*box_height - box_height
-      if (diff_temp .gt. photo_slab_max) n_max = i - 1
-    end do
-    ! set up box middle points as midpoint + n(1...)*box_height - 0.5_dp*box_height
-    if (.not. allocated(boxes_middle_z_coord)) then
-      allocate (boxes_middle_z_coord(n_max))
+    num_boxes = ceiling((photo_slab_max - slab_middle_ref)/box_height)
+    ! set up box top points as middle_reference + n(1...)*box_height
+    if (.not. allocated(boxes_top_z_coord)) then
+      allocate (boxes_top_z_coord(num_boxes))
     end if
     if (.not. allocated(atoms_per_box)) then
-      allocate (atoms_per_box(n_max))
+      allocate (atoms_per_box(num_boxes))
     end if
-    do i = 1, n_max
-      boxes_middle_z_coord(i) = slab_middle_ref + i*box_height - 0.5_dp*box_height
+    atoms_per_box = -1
+    do i = 1, num_boxes
+      boxes_top_z_coord(i) = slab_middle_ref + i*box_height
     end do
     ! put each of the atoms into a box
-    do i = 1, n_max
+    do i = 1, num_boxes
       counter = 0
-      diff_top = boxes_middle_z_coord(i) + 0.5_dp*box_height
-      diff_bottom = boxes_middle_z_coord(i) - 0.5_dp*box_height
+      diff_top = boxes_top_z_coord(i)
+      diff_bottom = boxes_top_z_coord(i) - box_height
       do atom = 1, num_atoms
-        if (atoms_pos_cart_photo(3, atom) .gt. diff_bottom .and. atoms_pos_cart_photo(3, atom) .lt. diff_top) then
+        if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
+        & atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
           counter = counter + 1
-          box_atom(atom) = i
+          box_atom(atom_order(atom)) = i
         end if
       end do
       atoms_per_box(i) = counter
     end do
 
+    max_atoms = sum(atoms_per_box)
+
     if (on_root) then
-      write (stdout, *) 'box height [A] = ', box_height, '# of boxes = ', n_max
-      write (stdout, *) '# of atoms in each box', (atoms_per_box(i), i=1, n_max)
+      if (iprint .gt. 1) then
+        write (stdout, 420) '+', 'box height [Ang] = ', box_height, ',', '# of boxes = ', num_boxes, '+'
+420     format(1x, a1, 5x, a19, F13.9, a1, 12x, a13, I4, 9x, a1)
+        write (stdout, 421) '+', '# of atoms in each box:', (atoms_per_box(i), i=1, num_boxes)
+421     format(1x, a1, 5x, a23, 99(1x, I2))
+        write (stdout, 422) '+', 'volume of each box = ', box_volume, ' [Ang**3]', '+'
+422     format(1x, a1, 5x, a21, F14.9, a9, 27x, a1)
+      end if
       write (stdout, '(1x,a78)') '+------------------------------- Atomic Order  ------------------------------+'
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Box     |         Atom Z-Coordinate (Ang)          |'
 
       do atom = 1, num_atoms
         write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          box(atom), &
-          atoms_pos_cart_photo(3, atom_order(atom)), "|"
+          box_atom(atom_order(atom)), atoms_pos_cart_photo(3, atom_order(atom)), "|"
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
     end if
+! --------------------------------------------------------------------------------------------
 
     if (on_root) then
       write (stdout, '(1x,a78)') '+------------------------------- Atomic Order  ------------------------------+'
@@ -420,8 +433,7 @@ contains
 
       do atom = 1, num_atoms
         write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          layer(atom), &
-          atoms_pos_cart_photo(3, atom_order(atom)), "|"
+          layer(atom), atoms_pos_cart_photo(3, atom_order(atom)), "|"
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -1915,7 +1927,7 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
          & finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
-         & jdos_max_energy
+         & jdos_max_energy, photo_slab_max
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
     use od_jdos_utils, only: jdos_nbins
@@ -1934,7 +1946,7 @@ contains
     logical, intent(in)                               :: calculate_bulk
 
     logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: half_slab_height, bulk_layer_height
+    real(kind=dp) :: half_slab_height
 
     linear = .false.
     fixed = .false.
@@ -1953,8 +1965,7 @@ contains
 
     width = 0.0_dp
     delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
-    half_slab_height = photo_slab_volume/(2*cell_area)
-    if (calculate_bulk) bulk_layer_height = thickness_layer(max_layer)
+    half_slab_height = photo_slab_max - slab_middle_ref
 
     if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
     if (adaptive .or. hybrid_linear) then
@@ -1962,7 +1973,7 @@ contains
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
       if (calculate_bulk) then
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/bulk_layer_height)**2)*step(3)
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/box_height)**2)*step(3)
       else
         sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 1)**2 + (pi/half_slab_height)**2)*step(3)
       end if
@@ -2106,8 +2117,8 @@ contains
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
 
-    do N = 1, num_kpoints_on_node(my_node_id)                   ! Loop over kpoints
-      do N_spin = 1, nspins                                    ! Loop over spins
+    do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
+      do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
           factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
@@ -2178,11 +2189,11 @@ contains
                     (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
                 end do
               end do
-            end if !end polar symmetric
+            end if ! end polar symmetric
           end if ! end photo_geom
-        end do       ! Loop over state 1
-      end do           ! Loop over spins
-    end do               ! Loop over kpoints
+        end do ! loop over state 1
+      end do ! loop over spins
+    end do ! loop over kpoints
 
     if (allocated(foptical_mat) .and. current_photo_energy_index .eq. number_energies) then
       deallocate (foptical_mat, stat=ierr)
