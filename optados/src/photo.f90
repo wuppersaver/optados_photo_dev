@@ -98,6 +98,7 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
+  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
 contains
 
   subroutine photo_calculate
@@ -378,7 +379,7 @@ contains
     box_volume = box_height*cell_area
     slab_middle_ref = sum(mean_heights)/2
     ! determine the number of boxes we need until we have reached the top of the slab
-    num_boxes = ceiling((photo_slab_max - slab_middle_ref)/box_height)
+    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height)
     ! set up box top points as middle_reference + n(1...)*box_height
     if (.not. allocated(boxes_top_z_coord)) then
       allocate (boxes_top_z_coord(num_boxes))
@@ -399,13 +400,16 @@ contains
         if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
         & atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
           counter = counter + 1
-          box_atom(atom_order(atom)) = i
+          box_atom(atom) = i
         end if
       end do
       atoms_per_box(i) = counter
     end do
 
     max_atoms = sum(atoms_per_box)
+    ! do i = 1, num_atoms
+    !   write(stdout, '(1x,a6,3x,I3,1x,I3,1x,a11,I3)') 'Atom #',i,box_atom(i), 'atom order ', atom_order(i)
+    ! end do
     ! write(stdout, '(99(1x,I3))') (box_atom(atom_order(i)),i=1,max_atoms)
 
     if (on_root) then
@@ -422,7 +426,7 @@ contains
 
       do atom = 1, num_atoms
         write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          box_atom(atom_order(atom)), atoms_pos_cart_photo(3, atom_order(atom)), "|"
+          box_atom(atom), atoms_pos_cart_photo(3, atom_order(atom)), "|"
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
@@ -654,15 +658,17 @@ contains
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
 
-    allocate (pdos_weights_boxes(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_boxes), stat=ierr)
-    if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
-
     allocate (pdos_weights_k_band(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_k_band failed')
 
     pdos_weights_atoms = 0.0_dp
     pdos_weights_k_band = 0.0_dp
-    pdos_weights_boxes = 0.0_dp
+
+    if (new_geom_choice) then
+      allocate (pdos_weights_boxes(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_boxes), stat=ierr)
+      if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
+      pdos_weights_boxes = 0.0_dp
+    end if
 
     do N = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -695,21 +701,25 @@ contains
         end do
       end do
     end do
+    if (new_geom_choice) then
     do atom = 1, max_atoms
-      write (stdout, *) 'box #', box_atom(atom_order(atom))
+      ! write (stdout, *) 'atom #', atom, 'box #', box_atom(atom)
       do N = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, pdos_mwab%nbands
             if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
               pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
             end if
-            pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom_order(atom))) = &
-              pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom_order(atom))) + &
+            pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) = &
+              pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) + &
               pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
           end do
         end do
       end do
     end do
+    end if
+
+    call FLUSH()
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
@@ -784,12 +794,21 @@ contains
       ! Account for E = 0.0
       index_energy(number_energies) = int(photo_photon_energy/jdos_spacing) + 1
     end if
+    if (new_geom_choice) then
+      allocate (absorp_photo(num_boxes, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
+    else
+      allocate (absorp_photo(max_atoms, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
+    end if
 
-    allocate (absorp_photo(max_atoms, number_energies), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
-
-    allocate (reflect_photo(max_atoms, number_energies), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of reflect_photo failed')
+    if (new_geom_choice) then
+      allocate (reflect_photo(num_boxes, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
+    else
+      allocate (reflect_photo(max_atoms, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
+    end if
 
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
@@ -806,147 +825,348 @@ contains
 
     allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
+    if (new_geom_choice) then
+      do box = 1, num_boxes                           ! Loop over boxes
+        !
+        if (iprint > 1 .and. on_root) then
+          write (stdout, 145) '+------------------------ Starting BOX  # ', box, ' of ', num_boxes, ' ------------------------+'
+        end if
+        ! (Re-)Setting the weights for new box
+        projected_matrix_weights = 0.0_dp
 
-    do box = 1, num_boxes                           ! Loop over atoms
-      !
-      if (iprint > 1 .and. on_root) then
-        write (stdout, 145) '+------------------------ Starting BOX  # ', box, ' of ', num_boxes, ' ------------------------+'
-      end if
-      ! (Re-)Setting the weights for new box
-      projected_matrix_weights = 0.0_dp
-
-      do N2 = 1, N_geom
-        do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands               ! Loop over state 1
-              do n_eigen2 = n_eigen, nbands    ! Loop over state 2
-                if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
-                if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
-                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
-                  ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
-                  ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
-                  ! pdos_weights_k_band(n_eigen, N_spin, N)
-                  ! call FLUSH()
-                  cycle
-                end if
-                projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
-                  matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
-                  (pdos_weights_boxes(n_eigen, N_spin, N, box)/pdos_weights_k_band(n_eigen, N_spin, N))
-              end do                        ! Loop over state 2
-            end do                            ! Loop over state 1
-          end do                                ! Loop over spins
-        end do                                    ! Loop over kpoints
-      end do
-
-      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-        write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
-        write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
-        write (stdout, 126) shape(projected_matrix_weights)
-        write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-        write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), N2=1, N_geom), &
-                                             N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
-                                           n_eigen2=1, nbands), n_eigen=1, nbands)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      end if
-
-      ! Send matrix element to jDOS routine and get weighted jDOS back
-      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
-
-      if (on_root) then
-        N_geom = size(matrix_weights, 5)
-        write (atom_s, '(I3)') box + 100
-        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
-        write (wjdos_unit, '(1x,a28)') '############################'
-        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
-        write (wjdos_unit, '(1x,a28)') '############################'
-        do is = 1, nspins
-          write (wjdos_unit, *) 'Spin Channel :', is
-          do idos = 1, jdos_nbins
-            write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
-          end do
+        do N2 = 1, N_geom
+          do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands               ! Loop over state 1
+                do n_eigen2 = n_eigen, nbands    ! Loop over state 2
+                  if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
+                  if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
+                  if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
+                    ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+                    ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+                    ! pdos_weights_k_band(n_eigen, N_spin, N)
+                    ! call FLUSH()
+                    cycle
+                  end if
+                  projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
+                    matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
+                    (pdos_weights_boxes(n_eigen, N_spin, N, box)/pdos_weights_k_band(n_eigen, N_spin, N))
+                end do                        ! Loop over state 2
+              end do                            ! Loop over state 1
+            end do                                ! Loop over spins
+          end do                                    ! Loop over kpoints
         end do
-        close (unit=wjdos_unit)
-      end if
 
-      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-        write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
-        write (stdout, 124) shape(weighted_jdos)
-        write (stdout, 124) jdos_nbins, nspins, N_geom
-        write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
-                                          , jdos_bin=1, jdos_nbins)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      end if
-
-      if (optics_intraband) then
-        allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of dos_matrix_weights failed')
-        allocate (dos_at_e(3, nspins), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of dos_at_e failed')
-        allocate (weighted_dos_at_e(nspins, size(matrix_weights, 5)), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
-        dos_at_e = 0.0_dp
-        weighted_dos_at_e = 0.0_dp
-        do N = 1, size(matrix_weights, 5)
-          do N2 = 1, nbands
-            dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
-          end do
-        end do
-        call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
-      end if
-
-      if (on_root) then
-        if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
-          write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
-          write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
-          write (stdout, 125) shape(dos_matrix_weights)
-          write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
-          write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen2, N, s), s=1, nspins), N=1, &
-                                              num_kpoints_on_node(my_node_id)), n_eigen2=1, nbands), n_eigen=1, &
-                                            size(matrix_weights, 5))
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          write (stdout, '(1x,a78)') '+--------------------------- Printing DOS @ Energy --------------------------+'
-          write (stdout, '(9(es15.8))') ((dos_at_e(i, s), i=1, 3), s=1, nspins)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          write (stdout, '(1x,a78)') '+----------------------- Printing Weighted DOS @ Energy ---------------------+'
-          write (stdout, '(9999(es15.8))') ((weighted_dos_at_e(s, n_eigen), s=1, nspins), n_eigen=1, size(matrix_weights, 5))
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+          write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
+          write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
+          write (stdout, 126) shape(projected_matrix_weights)
+          write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
+          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), N2=1, N_geom), &
+                                               N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
+                                             n_eigen2=1, nbands), n_eigen=1, nbands)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
 
-        ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, box_volume)
+        ! Send matrix element to jDOS routine and get weighted jDOS back
+        call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
-        ! Calculate epsilon_1
-        call calc_epsilon_1
+        if (on_root) then
+          N_geom = size(matrix_weights, 5)
+          write (atom_s, '(I3)') box + 100
+          open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
+          write (wjdos_unit, '(1x,a28)') '############################'
+          write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+          write (wjdos_unit, '(1x,a28)') '############################'
+          do is = 1, nspins
+            write (wjdos_unit, *) 'Spin Channel :', is
+            do idos = 1, jdos_nbins
+              write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+            end do
+          end do
+          close (unit=wjdos_unit)
+        end if
 
-        ! Calculate other optical properties
-        call calc_refract
-        call calc_absorp
-        call calc_reflect
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+          write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
+          write (stdout, 124) shape(weighted_jdos)
+          write (stdout, 124) jdos_nbins, nspins, N_geom
+          write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
+                                            , jdos_bin=1, jdos_nbins)
+          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        end if
 
-        call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
-        call write_refract(box + 100, photo_volume=box_volume)
-        call write_absorp(box + 100, photo_volume=box_volume)
-        call write_reflect(box + 100, photo_volume=box_volume)
+        if (optics_intraband) then
+          allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of dos_matrix_weights failed')
+          allocate (dos_at_e(3, nspins), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of dos_at_e failed')
+          allocate (weighted_dos_at_e(nspins, size(matrix_weights, 5)), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
+          dos_at_e = 0.0_dp
+          weighted_dos_at_e = 0.0_dp
+          do N = 1, size(matrix_weights, 5)
+            do N2 = 1, nbands
+              dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
+            end do
+          end do
+          call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
+          weighted_dos_at_e = weighted_dos_at_e/atoms_per_box(box)
+        end if
 
-        do energy = 1, number_energies
-          absorp_photo(box, energy) = absorp(index_energy(energy))
-          reflect_photo(box, energy) = reflect(index_energy(energy))
-        end do
-
-        if (index(devel_flag, 'print_qe_constituents') > 0) then
-          write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
-          write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
-          write (stdout, 125) shape(epsilon)
-          if (.not. optics_intraband) then
-            write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
-          else
-            write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
-                & i=1, 3)
+        if (on_root) then
+          if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
+            write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
+            write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
+            write (stdout, 125) shape(dos_matrix_weights)
+            write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
+            write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen2, N, s), s=1, nspins), N=1, &
+                                                num_kpoints_on_node(my_node_id)), n_eigen2=1, nbands), n_eigen=1, &
+                                              size(matrix_weights, 5))
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+--------------------------- Printing DOS @ Energy --------------------------+'
+            write (stdout, '(9(es15.8))') ((dos_at_e(i, s), i=1, 3), s=1, nspins)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------- Printing Weighted DOS @ Energy ---------------------+'
+            write (stdout, '(9999(es15.8))') ((weighted_dos_at_e(s, n_eigen), s=1, nspins), n_eigen=1, size(matrix_weights, 5))
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
+
+          ! Calculate epsilon_2
+          call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, box_volume)
+
+          ! Calculate epsilon_1
+          call calc_epsilon_1
+
+          ! Calculate other optical properties
+          call calc_refract
+          call calc_absorp
+          call calc_reflect
+
+          call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
+          call write_refract(box + 100, photo_volume=box_volume)
+          call write_absorp(box + 100, photo_volume=box_volume)
+          call write_reflect(box + 100, photo_volume=box_volume)
+
+          do energy = 1, number_energies
+            absorp_photo(box, energy) = absorp(index_energy(energy))
+            reflect_photo(box, energy) = reflect(index_energy(energy))
+          end do
+
+          if (index(devel_flag, 'print_qe_constituents') > 0) then
+            write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
+            write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
+            write (stdout, 125) shape(epsilon)
+            if (.not. optics_intraband) then
+              write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
+            else
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
+                  & i=1, 3)
+            end if
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+            write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+            write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
+          write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
+          write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
+          write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection - box --------------------+'
+          write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
+          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          ! Deallocate extra arrays produced in the case of using optics_intraband
+          deallocate (epsilon, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
+          deallocate (refract, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate refract')
+          deallocate (absorp, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
+          deallocate (reflect, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
+          if (optics_intraband) then
+            deallocate (intra, stat=ierr)
+            if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
+          end if
+        end if
+        if (optics_intraband) then
+          deallocate (dos_matrix_weights, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
+          deallocate (dos_at_e, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
+          deallocate (weighted_dos_at_e, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
+        end if
+        call jdos_deallocate
+        deallocate (weighted_jdos, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
+        ! deallocate (E, stat=ierr)
+        ! if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
+      end do                                        ! Loop over boxes
+      call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
+      call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
+
+    else
+      do atom = 1, max_atoms                           ! Loop over atoms
+        !
+        if (iprint > 1 .and. on_root) then
+          write (stdout, 145) '+------------------------ Starting Atom # ', atom, ' of ', max_atoms, ' ------------------------+'
+145       format(1x, a42, I3, a4, I3, a26)
+        end if
+        ! (Re-)Setting the weights for new atom
+        projected_matrix_weights = 0.0_dp
+
+        do N2 = 1, N_geom
+          do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands               ! Loop over state 1
+                do n_eigen2 = n_eigen, nbands    ! Loop over state 2
+                  if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
+                  if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
+                  if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
+                    ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
+                    ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
+                    ! pdos_weights_k_band(n_eigen, N_spin, N)
+                    ! call FLUSH()
+                    cycle
+                  end if
+                  projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
+                    matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
+                    (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
+                end do                        ! Loop over state 2
+              end do                            ! Loop over state 1
+            end do                                ! Loop over spins
+          end do                                    ! Loop over kpoints
+        end do
+
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+          write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
+          write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
+          write (stdout, 126) shape(projected_matrix_weights)
+          write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
+126       format(5(1x, I4))
+          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), N2=1, N_geom), &
+                                               N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
+                                             n_eigen2=1, nbands), n_eigen=1, nbands)
+          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        end if
+
+        ! Send matrix element to jDOS routine and get weighted jDOS back
+        call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
+
+        if (on_root) then
+          N_geom = size(matrix_weights, 5)
+          write (atom_s, '(I2)') atom
+          open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
+          write (wjdos_unit, '(1x,a28)') '############################'
+          write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+          write (wjdos_unit, '(1x,a28)') '############################'
+          do is = 1, nspins
+            write (wjdos_unit, *) 'Spin Channel :', is
+            do idos = 1, jdos_nbins
+              write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+            end do
+          end do
+          close (unit=wjdos_unit)
+        end if
+
+        if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+          write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
+          write (stdout, 124) shape(weighted_jdos)
+          write (stdout, 124) jdos_nbins, nspins, N_geom
+124       format(3(1x, I4))
+          write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
+                                            , jdos_bin=1, jdos_nbins)
+          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        end if
+
+        if (optics_intraband) then
+          allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of dos_matrix_weights failed')
+          allocate (dos_at_e(3, nspins), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of dos_at_e failed')
+          allocate (weighted_dos_at_e(nspins, size(matrix_weights, 5)), stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
+          dos_at_e = 0.0_dp
+          weighted_dos_at_e = 0.0_dp
+          do N = 1, size(matrix_weights, 5)
+            do N2 = 1, nbands
+              dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
+            end do
+          end do
+          call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
+          weighted_dos_at_e = weighted_dos_at_e/atoms_per_layer(layer(atom))
+        end if
+
+        if (on_root) then
+          if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
+            write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
+            write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
+            write (stdout, 125) shape(dos_matrix_weights)
+            write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
+125         format(4(1x, I4))
+            write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen2, N, s), s=1, nspins), N=1, &
+                                                num_kpoints_on_node(my_node_id)), n_eigen2=1, nbands), n_eigen=1, &
+                                              size(matrix_weights, 5))
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+--------------------------- Printing DOS @ Energy --------------------------+'
+            write (stdout, '(9(es15.8))') ((dos_at_e(i, s), i=1, 3), s=1, nspins)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------- Printing Weighted DOS @ Energy ---------------------+'
+            write (stdout, '(9999(es15.8))') ((weighted_dos_at_e(s, n_eigen), s=1, nspins), n_eigen=1, size(matrix_weights, 5))
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
+
+          ! Calculate epsilon_2
+          call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, volume_atom(atom))
+
+          ! Calculate epsilon_1
+          call calc_epsilon_1
+
+          ! Calculate other optical properties
+          call calc_refract
+          call calc_absorp
+          call calc_reflect
+
+          call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
+          call write_refract(atom, photo_volume=volume_atom(atom))
+          call write_absorp(atom, photo_volume=volume_atom(atom))
+          call write_reflect(atom, photo_volume=volume_atom(atom))
+
+          do energy = 1, number_energies
+            absorp_photo(atom, energy) = absorp(index_energy(energy))
+            reflect_photo(atom, energy) = reflect(index_energy(energy))
+          end do
+
+          if (index(devel_flag, 'print_qe_constituents') > 0) then
+            write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
+            write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
+            write (stdout, 125) shape(epsilon)
+            if (.not. optics_intraband) then
+              write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
+            else
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
+                  & i=1, 3)
+            end if
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+            write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+            write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
           write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
           write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -954,233 +1174,37 @@ contains
           write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
           write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-        end if
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
-        write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection - box --------------------+'
-        write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-        ! Deallocate extra arrays produced in the case of using optics_intraband
-        deallocate (epsilon, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
-        deallocate (refract, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate refract')
-        deallocate (absorp, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
-        deallocate (reflect, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
-        if (optics_intraband) then
-          deallocate (intra, stat=ierr)
-          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
-        end if
-      end if
-      if (optics_intraband) then
-        deallocate (dos_matrix_weights, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
-        deallocate (dos_at_e, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
-        deallocate (weighted_dos_at_e, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
-      end if
-      call jdos_deallocate
-      deallocate (weighted_jdos, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
-      ! deallocate (E, stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
-    end do                                        ! Loop over boxes
-
-    do atom = 1, max_atoms                           ! Loop over atoms
-      !
-      if (iprint > 1 .and. on_root) then
-        write (stdout, 145) '+------------------------ Starting Atom # ', atom, ' of ', max_atoms, ' ------------------------+'
-145     format(1x, a42, I3, a4, I3, a26)
-      end if
-      ! (Re-)Setting the weights for new atom
-      projected_matrix_weights = 0.0_dp
-
-      do N2 = 1, N_geom
-        do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands               ! Loop over state 1
-              do n_eigen2 = n_eigen, nbands    ! Loop over state 2
-                if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen2) cycle
-                if (band_energy(n_eigen2, N_spin, N) < efermi .and. n_eigen /= n_eigen2) cycle
-                if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
-                  ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
-                  ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
-                  ! pdos_weights_k_band(n_eigen, N_spin, N)
-                  ! call FLUSH()
-                  cycle
-                end if
-                projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2) = &
-                  matrix_weights(n_eigen, n_eigen2, N, N_spin, N2)* &
-                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
-              end do                        ! Loop over state 2
-            end do                            ! Loop over state 1
-          end do                                ! Loop over spins
-        end do                                    ! Loop over kpoints
-      end do
-
-      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-        write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
-        write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
-        write (stdout, 126) shape(projected_matrix_weights)
-        write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-126     format(5(1x, I4))
-        write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), N2=1, N_geom), &
-                                             N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
-                                           n_eigen2=1, nbands), n_eigen=1, nbands)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      end if
-
-      ! Send matrix element to jDOS routine and get weighted jDOS back
-      call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
-
-      if (on_root) then
-        N_geom = size(matrix_weights, 5)
-        write (atom_s, '(I2)') atom
-        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
-        write (wjdos_unit, '(1x,a28)') '############################'
-        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
-        write (wjdos_unit, '(1x,a28)') '############################'
-        do is = 1, nspins
-          write (wjdos_unit, *) 'Spin Channel :', is
-          do idos = 1, jdos_nbins
-            write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
-          end do
-        end do
-        close (unit=wjdos_unit)
-      end if
-
-      if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-        write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
-        write (stdout, 124) shape(weighted_jdos)
-        write (stdout, 124) jdos_nbins, nspins, N_geom
-124     format(3(1x, I4))
-        write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
-                                          , jdos_bin=1, jdos_nbins)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      end if
-
-      if (optics_intraband) then
-        allocate (dos_matrix_weights(size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of dos_matrix_weights failed')
-        allocate (dos_at_e(3, nspins), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of dos_at_e failed')
-        allocate (weighted_dos_at_e(nspins, size(matrix_weights, 5)), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
-        dos_at_e = 0.0_dp
-        weighted_dos_at_e = 0.0_dp
-        do N = 1, size(matrix_weights, 5)
-          do N2 = 1, nbands
-            dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
-          end do
-        end do
-        call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
-      end if
-
-      if (on_root) then
-        if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
-          write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
-          write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
-          write (stdout, 125) shape(dos_matrix_weights)
-          write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
-125       format(4(1x, I4))
-          write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen2, N, s), s=1, nspins), N=1, &
-                                              num_kpoints_on_node(my_node_id)), n_eigen2=1, nbands), n_eigen=1, &
-                                            size(matrix_weights, 5))
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          write (stdout, '(1x,a78)') '+--------------------------- Printing DOS @ Energy --------------------------+'
-          write (stdout, '(9(es15.8))') ((dos_at_e(i, s), i=1, 3), s=1, nspins)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          write (stdout, '(1x,a78)') '+----------------------- Printing Weighted DOS @ Energy ---------------------+'
-          write (stdout, '(9999(es15.8))') ((weighted_dos_at_e(s, n_eigen), s=1, nspins), n_eigen=1, size(matrix_weights, 5))
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-        end if
-
-        ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, volume_atom(atom))
-
-        ! Calculate epsilon_1
-        call calc_epsilon_1
-
-        ! Calculate other optical properties
-        call calc_refract
-        call calc_absorp
-        call calc_reflect
-
-        call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
-        call write_refract(atom, photo_volume=volume_atom(atom))
-        call write_absorp(atom, photo_volume=volume_atom(atom))
-        call write_reflect(atom, photo_volume=volume_atom(atom))
-
-        do energy = 1, number_energies
-          absorp_photo(atom, energy) = absorp(index_energy(energy))
-          reflect_photo(atom, energy) = reflect(index_energy(energy))
-        end do
-
-        if (index(devel_flag, 'print_qe_constituents') > 0) then
-          write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
-          write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
-          write (stdout, 125) shape(epsilon)
-          if (.not. optics_intraband) then
-            write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
-          else
-            write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
-                & i=1, 3)
+          ! Deallocate extra arrays produced in the case of using optics_intraband
+          deallocate (epsilon, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
+          deallocate (refract, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate refract')
+          deallocate (absorp, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
+          deallocate (reflect, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
+          if (optics_intraband) then
+            deallocate (intra, stat=ierr)
+            if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
           end if
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
-          write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
-          write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
-        write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-        write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
-        write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-        ! Deallocate extra arrays produced in the case of using optics_intraband
-        deallocate (epsilon, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
-        deallocate (refract, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate refract')
-        deallocate (absorp, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate absorp')
-        deallocate (reflect, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate reflect')
         if (optics_intraband) then
-          deallocate (intra, stat=ierr)
-          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate intra')
+          deallocate (dos_matrix_weights, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
+          deallocate (dos_at_e, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
+          deallocate (weighted_dos_at_e, stat=ierr)
+          if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
         end if
-      end if
-      if (optics_intraband) then
-        deallocate (dos_matrix_weights, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_matrix_weights')
-        deallocate (dos_at_e, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate dos_at_e')
-        deallocate (weighted_dos_at_e, stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_dos_at_e')
-      end if
-      call jdos_deallocate
-      deallocate (weighted_jdos, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
-      ! deallocate (E, stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
-    end do                                        ! Loop over atoms
-
-    call comms_bcast(absorp_photo(1, 1), max_atoms*number_energies)
-    call comms_bcast(reflect_photo(1, 1), max_atoms*number_energies)
+        call jdos_deallocate
+        deallocate (weighted_jdos, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate weighted_jdos')
+        ! deallocate (E, stat=ierr)
+        ! if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate E')
+      end do                                        ! Loop over atoms
+      call comms_bcast(absorp_photo(1, 1), max_atoms*number_energies)
+      call comms_bcast(reflect_photo(1, 1), max_atoms*number_energies)
+    end if
 
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
@@ -1210,28 +1234,56 @@ contains
     use od_comms, only: on_root
     implicit none
     real(kind=dp) :: I_0
-    integer :: atom, i, ierr, num_layer
+    integer :: atom, box, i, ierr, num_layer
 
-    allocate (I_layer(max_layer, number_energies), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
-    I_layer = 0.0_dp
+    if (.not. new_geom_choice) then
+      allocate (I_layer(max_layer, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
+      I_layer = 0.0_dp
 
-    I_0 = 1.0_dp
-    I_layer = 1.0_dp
-    do i = 1, number_energies
-      I_layer(1, i) = I_0 - reflect_photo(1, i)
-    end do
-    if (max_layer .gt. 1) then
-      do atom = first_atom_second_l, max_atoms
-        do i = 1, number_energies
-          ! Thickness_atom is the thickness of each layer representing the path length the light takes through the layer
-          I_layer(layer(atom), i) = I_layer(layer(atom) - 1, i)* &
-                                    exp(-(absorp_photo(atom, i)*thickness_atom(atom)*1E-10))
-          if (I_layer(layer(atom), i) .lt. 0.0_dp) then
-            I_layer(layer(atom), i) = 0.0_dp
-          end if
-        end do
+      I_0 = 1.0_dp
+      I_layer = 1.0_dp
+
+      do i = 1, number_energies
+        I_layer(1, i) = I_0 - reflect_photo(1, i)
       end do
+      if (max_layer .gt. 1) then
+        do atom = first_atom_second_l, max_atoms
+          do i = 1, number_energies
+            ! Thickness_atom is the thickness of each layer representing the path length the light takes through the layer
+            I_layer(layer(atom), i) = I_layer(layer(atom) - 1, i)* &
+                                      exp(-(absorp_photo(atom, i)*thickness_atom(atom)*1E-10))
+            if (I_layer(layer(atom), i) .lt. 0.0_dp) then
+              I_layer(layer(atom), i) = 0.0_dp
+            end if
+          end do
+        end do
+      end if
+    else
+      allocate (I_layer(num_boxes, number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
+      I_layer = 0.0_dp
+
+      I_0 = 1.0_dp
+      I_layer = 1.0_dp
+
+      do i = 1, number_energies
+        I_layer(1, i) = I_0 - reflect_photo(1, i)
+      end do
+      ! Calculate the unreflected portion of incoming light
+      do i = 1, number_energies
+        I_layer(1, i) = I_0 - reflect_photo(1, i)
+      end do
+      ! If we have more than one box with atoms in it, calculate the incident light intensity for each
+      if (num_boxes .gt. 1) then
+        do box = 2, num_boxes
+          do i = 1, number_energies
+            I_layer(box, i) = I_layer(box - 1, i)* &
+                              exp(-(absorp_photo(box, i)*box_height*1E-10))
+            if (I_layer(box, i) .lt. 0.0_dp) I_layer(box, i) = 0.0_dp
+          end do
+        end do
+      end if
     end if
 
     if (allocated(reflect_photo)) then
@@ -1534,8 +1586,8 @@ contains
     deallocate (E_x, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate E_x')
 
-    deallocate (E_kinetic, stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate E_kinetic')
+    ! deallocate (E_kinetic, stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate E_kinetic')
 
     if (allocated(band_curvature)) then
       deallocate (band_curvature, stat=ierr)
@@ -1590,12 +1642,11 @@ contains
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
+    allocate (atom_imfp(max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
+    atom_imfp = 0.0_dp
+
     if (size(photo_imfp_const, 1) .gt. 1) then
-
-      allocate (atom_imfp(max_atoms), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
-      atom_imfp = 0.0_dp
-
       ! Calculate the mean thickness of the atoms in a layer
       do atom = 1, max_atoms
         thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
@@ -1608,7 +1659,7 @@ contains
         write (stdout, '(1x,a78)') '| Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |'
       end if
 
-      ! Calculate the layer dependent imfp constant as a list
+      ! Calculate the layer dependent imfp constant as a list for each layer
       do atom = 1, max_atoms
         do i = 1, layer(atom)
           atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_const(i)
@@ -1621,45 +1672,29 @@ contains
         end if
       end do
       if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            do atom = 1, max_atoms
-              if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
-                exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-                &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
-                if (exponent .gt. -575.0_dp) then
-                  electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
-                else
-                  electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
-                end if
-              end if
-            end do
-          end do
-        end do
-      end do
-      ! deallocate (thickness_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: thickness_layer - failed to deallocate calc_elec_esc')
-    elseif (size(photo_imfp_const, 1) .eq. 1) then
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            do atom = 1, max_atoms
-              if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
-                exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-                &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_const(1)
-                if (exponent .gt. -575.0_dp) then
-                  electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
-                else
-                  electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
-                end if
-              end if
-            end do
-          end do
-        end do
-      end do
+    else
+      atom_imfp = photo_imfp_const(1)
     end if
+
+    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      do N_spin = 1, nspins                    ! Loop over spins
+        do n_eigen = 1, nbands
+          do atom = 1, max_atoms
+            if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+              exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
+              &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
+              if (exponent .gt. -575.0_dp) then
+                electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
+              else
+                electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
+              end if
+            end if
+          end do
+        end do
+      end do
+    end do
+    ! deallocate (thickness_layer, stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: thickness_layer - failed to deallocate calc_elec_esc')
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing P(Escape) per Layer -----------------------+'
@@ -1688,7 +1723,7 @@ contains
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, photo_bulk_length, iprint
+    use od_parameters, only: photo_imfp_const, photo_bulk_cutoff, iprint
     use od_io, only: io_error, io_time, stdout
     implicit none
 
@@ -1698,25 +1733,28 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    if (size(photo_imfp_const, 1) .gt. 1) then
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_length)/thickness_atom(max_atoms))
-    elseif (size(photo_imfp_const, 1) .eq. 1) then
-      num_layers = int((photo_imfp_const(1)*photo_bulk_length)/thickness_atom(max_atoms))
-    end if
-
-    allocate (bulk_light_tmp(num_layers), stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
-    bulk_light_tmp = 0.0_dp
-
-    allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
-    bulk_prob_tmp = 0.0_dp
 
     if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
     bulk_prob = 0.0_dp
 
-    if (size(photo_imfp_const, 1) .gt. 1) then
+235 format(1x, a1, 5x, a8, I3, 5x, a10, E12.6E2, 3x, a8, E12.6E2, 10x, a1)
+    if (.not. new_geom_choice) then
+
+      if (size(photo_imfp_const, 1) .gt. 1) then
+        num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
+      elseif (size(photo_imfp_const, 1) .eq. 1) then
+        num_layers = int((photo_imfp_const(1)*photo_bulk_cutoff)/thickness_atom(max_atoms))
+      end if
+
+      allocate (bulk_light_tmp(num_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
+      bulk_light_tmp = 0.0_dp
+
+      allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
+      bulk_prob_tmp = 0.0_dp
+
       do i = 1, num_layers
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
@@ -1734,17 +1772,85 @@ contains
           end do
         end do
       end do
-      deallocate (atom_imfp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
 
-    elseif (size(photo_imfp_const, 1) .eq. 1) then
+      bulk_light_tmp(1) = I_layer(layer(max_atoms), current_photo_energy_index)* &
+                          exp(-(absorp_photo(max_atoms, current_photo_energy_index)*thickness_atom(max_atoms)*1E-10))
+      do i = 2, num_layers
+        bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
+                            exp(-(absorp_photo(max_atoms, current_photo_energy_index)*i*thickness_atom(max_atoms)*1E-10))
+      end do
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            do i = 1, num_layers
+              bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+            end do
+            bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
+          end do
+        end do
+      end do
+
+      if (iprint .gt. 1 .and. on_root) then
+        ! write out the bulk properties
+        write (stdout, '(1x,a78)') '+----------------------- Approximated Bulk Slab Info ------------------------+'
+        ! write out num_layers
+        write (stdout, '(1x,a1,5x,a18,1x,a1,1x,I5,45x,a1)') '+', 'Number Bulk layers', '=', num_layers, '+'
+        ! write out the total volume + volume per layer
+        write (stdout, '(1x,a1,5x,a14,5x,a1,1x,F10.4,40x,a1)') '+', 'Vol. per layer', '=', thickness_atom(max_atoms)*cell_area, '+'
+        write (stdout, '(1x,a1,5x,a12,7x,a1,1x,F10.4,40x,a1)') '+', 'Total Volume', '=', num_layers*&
+        & thickness_atom(max_atoms)*cell_area, '+'
+        write (stdout, '(1x,a78)') '+---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+'
+        ! write out bulk_light_tmp
+        if (num_layers .lt. 6) then
+          do i = 1, num_layers
+            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
+            ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+            ! As exp(-575) is ~1E-250, this should be more than enough precision.
+            if (exponent .gt. -575.0_dp) then
+              exponent = exp(exponent)
+            else
+              exponent = 0.0_dp
+            end if
+            write (stdout, 235) '+', 'Layer # ', i, 'I_light = ', bulk_light_tmp(i), 'P_esc = ', exponent, '+'
+          end do
+        else
+          do i = 1, num_layers
+            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
+            ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+            ! As exp(-575) is ~1E-250, this should be more than enough precision.
+            if (exponent .gt. -575.0_dp) then
+              exponent = exp(exponent)
+            else
+              exponent = 0.0_dp
+            end if
+            if (i .le. 3 .or. i .gt. num_layers - 3) then
+              write (stdout, 235) '+', 'Layer # ', i, 'I_light = ', bulk_light_tmp(i), 'P_esc = ', exponent, '+'
+            elseif (i .eq. 4) then
+              write (stdout, '(1x,a1,35x,a6,35x,a1)') '+', '......', '+'
+            end if
+          end do
+        end if
+        write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      end if
+
+    else ! choice of the new geometry definition (hardcoded)
+      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/box_height)
+
+      allocate (bulk_light_tmp(num_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
+      bulk_light_tmp = 0.0_dp
+
+      allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
+      bulk_prob_tmp = 0.0_dp
+
       do i = 1, num_layers
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
-                exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                            cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/photo_imfp_const(1)
+                exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
+                            cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
                 ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                 ! As exp(-575) is ~1E-250, this should be more than enough precision.
                 if (exponent .gt. -575.0_dp) then
@@ -1756,24 +1862,68 @@ contains
         end do
       end do
 
-    end if
-
-    bulk_light_tmp(1) = I_layer(layer(max_atoms), current_photo_energy_index)* &
-                        exp(-(absorp_photo(max_atoms, current_photo_energy_index)*thickness_atom(max_atoms)*1E-10))
-    do i = 2, num_layers
-      bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
-                          exp(-(absorp_photo(max_atoms, current_photo_energy_index)*i*thickness_atom(max_atoms)*1E-10))
-    end do
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-          do i = 1, num_layers
-            bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+      bulk_light_tmp(1) = I_layer(box_atom(max_atoms), current_photo_energy_index)* &
+                          exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_height*1E-10))
+      do i = 2, num_layers
+        bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
+                            exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*i*box_height*1E-10))
+      end do
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            do i = 1, num_layers
+              bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+            end do
+            bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
           end do
-          bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
         end do
       end do
-    end do
+
+      if (iprint .gt. 1 .and. on_root) then
+        ! write out the bulk properties
+        write (stdout, '(1x,a78)') '+---------------------- Bulk Approximation Slab Info ------------------------+'
+        ! write out num_layers
+        write (stdout, '(1x,a1,5x,a18,1x,a1,1x,I5,45x,a1)') '+', 'Number Bulk layers', '=', num_layers, '+'
+        ! write out the total volume + volume per layer
+        write (stdout, '(1x,a1,5x,a14,5x,a1,1x,F10.4,40x,a1)') '+', 'Vol. per layer', '=', box_volume, '+'
+        write (stdout, '(1x,a1,5x,a12,7x,a1,1x,F10.4,40x,a1)') '+', 'Total Volume', '=', num_layers*box_volume, '+'
+        write (stdout, '(1x,a78)') '+---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+'
+        ! write out bulk_light_tmp
+        if (num_layers .lt. 6) then
+          do i = 1, num_layers
+            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
+            ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+            ! As exp(-575) is ~1E-250, this should be more than enough precision.
+            if (exponent .gt. -575.0_dp) then
+              exponent = exp(exponent)
+            else
+              exponent = 0.0_dp
+            end if
+            write (stdout, 235) '+', 'Layer # ', i, 'I_light = ', bulk_light_tmp(i), 'P_esc = ', exponent, '+'
+          end do
+        else
+          do i = 1, num_layers
+            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
+            ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+            ! As exp(-575) is ~1E-250, this should be more than enough precision.
+            if (exponent .gt. -575.0_dp) then
+              exponent = exp(exponent)
+            else
+              exponent = 0.0_dp
+            end if
+            if (i .le. 3 .or. i .gt. num_layers - 3) then
+              write (stdout, 235) '+', 'Layer # ', i, 'I_light = ', bulk_light_tmp(i), 'P_esc = ', exponent, '+'
+            elseif (i .eq. 4) then
+              write (stdout, '(1x,a1,35x,a6,35x,a1)') '+', '......', '+'
+            end if
+          end do
+        end if
+        write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      end if
+    end if ! If statement for geometry choice
+
+    deallocate (atom_imfp, stat=ierr)
+    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
 
     deallocate (bulk_light_tmp, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_light_tmp')
@@ -1915,17 +2065,29 @@ contains
 
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
-
-              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                           (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                            delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                            electron_esc(n_eigen, N_spin, N, atom)* &
-                                                            electrons_per_state*kpoint_weight(N)* &
-                                                            (I_layer(layer(atom), current_photo_energy_index))* &
-                                                            transverse_g*vac_g*fermi_dirac* &
-                                                            (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                             pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                           (1.0_dp + field_emission(n_eigen, N_spin, N))
+              if (.not. new_geom_choice) then
+                qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                             (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                              delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                              electron_esc(n_eigen, N_spin, N, atom)* &
+                                                              electrons_per_state*kpoint_weight(N)* &
+                                                              (I_layer(layer(atom), current_photo_energy_index))* &
+                                                              transverse_g*vac_g*fermi_dirac* &
+                                                              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                               pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
+              else
+                qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                             (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                              delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                              electron_esc(n_eigen, N_spin, N, atom)* &
+                                                              electrons_per_state*kpoint_weight(N)* &
+                                                              (I_layer(box_atom(atom), current_photo_energy_index))* &
+                                                              transverse_g*vac_g*fermi_dirac* &
+                                                              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                               pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
+              end if
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
