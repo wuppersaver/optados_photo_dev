@@ -333,7 +333,7 @@ contains
     end do
 
     ! --------------------------------------------------------------------------------------------
-    ! *    The following code was added in Nov 2023 to test out a new layer assignment scheme   *
+    ! *    The following code was added in Nov 2023 to test out a new layer assignment scheme    *
     ! *    A set of boxes of the height of the central slab layer distance is created and the    *
     ! *    atoms are sorted into those boxes by their z-coordinate.                              *
     ! --------------------------------------------------------------------------------------------
@@ -1287,7 +1287,7 @@ contains
     !photo_elec_field given in V/m
 
     use od_cell, only: num_kpoints_on_node
-    use od_parameters, only: photo_work_function, photo_elec_field, photo_temperature, photo_surface_area
+    use od_parameters, only: photo_work_function, photo_elec_field, photo_temperature
     use od_electronic, only: efermi, band_energy, nbands, nspins
     use od_io, only: io_error
     use od_comms, only: my_node_id, comms_reduce
@@ -1361,7 +1361,7 @@ contains
       end do
     end do
 
-    total_field_emission = sum(temp_emission(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)))/photo_surface_area
+    total_field_emission = sum(temp_emission(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id)))/cell_area
     call comms_reduce(total_field_emission, 1, "SUM")
 
     deallocate (field_energy, stat=ierr)
@@ -1805,7 +1805,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time
@@ -1817,7 +1817,7 @@ contains
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
-    qe_factor = 1.0_dp/(photo_surface_area)
+    qe_factor = 1.0_dp/(cell_area)
     norm_vac = inv_sqrt_two_pi/width
 
     time0 = io_time()
@@ -1870,8 +1870,9 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-     write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', 'delta_temp'&
-    &'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
+      write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights',&
+      & 'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac',&
+      & 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
@@ -2421,7 +2422,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id
-    use od_parameters, only: photo_surface_area, scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
       iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2441,7 +2442,7 @@ contains
     volume_factor = 2*cell_volume/photo_slab_volume
     volume_factor_bulk = cell_volume/volume_layer(max_layer)
 
-    qe_factor = 1.0_dp/(photo_surface_area)
+    qe_factor = 1.0_dp/(cell_area)
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
