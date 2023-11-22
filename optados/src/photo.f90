@@ -2408,18 +2408,20 @@ contains
     ! Victor Chang, 7th February 2020
     !===============================================================================
 
-    use od_constants, only: dp
+    use od_constants, only: dp, hbar, e_mass
     use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat
-    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations,&
+    & real_lattice
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
     implicit none
-    complex(kind=dp), dimension(3) :: g
+    complex(kind=dp), dimension(3) :: g, temp_fome
     real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
     real(kind=dp), dimension(2) :: num_occ
-    real(kind=dp) :: q_weight1, q_weight2, factor
+    real(kind=dp) :: q_weight1, q_weight2, factor, kz, z, a, b
     integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
+    complex(kind=dp)  :: new_factor
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
       num_symm = 0
@@ -2471,19 +2473,26 @@ contains
 
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
+    z = real_lattice(3, 3)
 
     do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
+          kz = sqrt((2*e_mass/hbar)*(E_kinetic(n_eigen, N, N_spin)))
+          a = sin(kz*z)/kz
+          b = (cos(kz*z) - 1)/kz
+          new_factor = (a, b)
+          temp_fome(:) = foptical_mat(n_eigen, nbands + 1, :, N, N_spin)*new_factor
+          ! add the new factor
           factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir1(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir1(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir1(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
-              g(2) = (((qdir2(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir2(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir2(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
+              g(1) = (((qdir1(1)*temp_fome(1)) + &
+                       (qdir1(2)*temp_fome(2)) + &
+                       (qdir1(3)*temp_fome(3)))/q_weight1)
+              g(2) = (((qdir2(1)*temp_fome(1)) + &
+                       (qdir2(2)*temp_fome(2)) + &
+                       (qdir2(3)*temp_fome(3)))/q_weight2)
               foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
                 0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
             else ! begin unpolar symmetric
@@ -2496,9 +2505,9 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight1)
+                  g(1) = (((qdir(1)*temp_fome(1)) + &
+                           (qdir(2)*temp_fome(2)) + &
+                           (qdir(3)*temp_fome(3)))/q_weight1)
                   foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
                     foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
@@ -2510,9 +2519,9 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight2)
+                  g(1) = (((qdir(1)*temp_fome(1)) + &
+                           (qdir(2)*temp_fome(2)) + &
+                           (qdir(3)*temp_fome(3)))/q_weight2)
                   foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
                     foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
