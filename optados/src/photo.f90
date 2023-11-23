@@ -107,11 +107,11 @@ contains
     !
 
     use od_electronic, only: elec_dealloc_optical, elec_pdos_read, elec_read_optical_mat, &
-    & efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
+      efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep,&
-                            &photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
+    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep, &
+      photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -167,8 +167,8 @@ contains
       do i = 1, number_energies
         time_a = io_time()
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
-        if (on_root) write (stdout, '(1x,a50,f8.4,a20)') '+--------------- Starting Photoemission Sweep with', temp_photon_energy,&
-                &' eV ---------------+'
+        if (on_root) write (stdout, '(1x,a50,f8.4,a20)') '+--------------- Starting Photoemission Sweep with', temp_photon_energy, &
+          ' eV ---------------+'
         current_photo_energy_index = i
         current_energy_index = index_energy(i)
         !Calculate the photoemission angles theta/phi and transverse energy
@@ -256,7 +256,7 @@ contains
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const, photo_slab_max, &
-    & photo_slab_min, iprint
+      photo_slab_min, iprint
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
@@ -367,7 +367,7 @@ contains
       diff_bottom = atoms_pos_cart_photo(3, indices_top_bottom(i)) - 0.5
       do atom = 1, num_atoms
         if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
-        & atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
+            atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
           counter = counter + 1
           mean_heights(i) = mean_heights(i) + atoms_pos_cart_photo(3, atom_order(atom))
         end if
@@ -398,7 +398,7 @@ contains
       diff_bottom = boxes_top_z_coord(i) - box_height
       do atom = 1, num_atoms
         if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
-        & atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
+            atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
           counter = counter + 1
           box_atom(atom) = i
         end if
@@ -745,10 +745,10 @@ contains
     !***************************************************************
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-    & epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
+      epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
     use od_io, only: stdout, io_error, io_time, seedname
-    use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient,&
-    & nbands, nspins, band_energy
+    use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
+      nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
@@ -962,8 +962,8 @@ contains
             if (.not. optics_intraband) then
               write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
             else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
-                  & i=1, 3)
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom), &
+                                                 i=1, 3)
             end if
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1154,8 +1154,8 @@ contains
             if (.not. optics_intraband) then
               write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
             else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom),&
-                  & i=1, 3)
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom), &
+                                                 i=1, 3)
             end if
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1439,7 +1439,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
-    & band_curvature
+      band_curvature
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_momentum, devel_flag, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
@@ -1497,8 +1497,8 @@ contains
 
     if (index(photo_momentum, 'crystal') > 0) call cell_calc_kpoint_r_cart
 
-    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and.&
-      & on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and. &
+                                                on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       call cell_calc_kpoint_r_cart
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N = 1, num_kpoints_on_node(my_node_id)
@@ -1561,9 +1561,9 @@ contains
           !! E_transverse is positive, this causes the acos to be undefined, as the previous formula did not include the abs
           !!statements. Also the total kinetic energy has to be > 0 to have a physical emission
           if (E_kinetic(n_eigen, N, N_spin) .gt. 0.0_dp .and. E_kinetic(n_eigen, N, N_spin) .gt. &
-          & E_transverse(n_eigen, N, N_spin)) then
-            theta_arpes(n_eigen, N, N_spin) = (acos((E_kinetic(n_eigen, N, N_spin) - E_transverse(n_eigen, N, N_spin))/&
-            &abs(E_kinetic(n_eigen, N, N_spin))))*rad_to_deg
+              E_transverse(n_eigen, N, N_spin)) then
+            theta_arpes(n_eigen, N, N_spin) = (acos((E_kinetic(n_eigen, N, N_spin) - E_transverse(n_eigen, N, N_spin))/ &
+                                                    abs(E_kinetic(n_eigen, N, N_spin))))*rad_to_deg
           else
             theta_arpes(n_eigen, N, N_spin) = acos(0.0_dp)
           end if
@@ -1638,7 +1638,7 @@ contains
     end do
 
     if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, nspins, &
-    &num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
+                                                              num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     electron_esc = 0.0_dp
 
@@ -1682,7 +1682,7 @@ contains
           do atom = 1, max_atoms
             if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-              &cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
+                          cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
               if (exponent .gt. -575.0_dp) then
                 electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
               else
@@ -1702,7 +1702,7 @@ contains
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
 125   format(4(1x, I4))
       write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N, atom), atom=1, max_atoms), N=1, &
-                                          & num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
+                                          num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1797,8 +1797,8 @@ contains
         write (stdout, '(1x,a1,5x,a18,1x,a1,1x,I5,45x,a1)') '+', 'Number Bulk layers', '=', num_layers, '+'
         ! write out the total volume + volume per layer
         write (stdout, '(1x,a1,5x,a14,5x,a1,1x,F10.4,40x,a1)') '+', 'Vol. per layer', '=', thickness_atom(max_atoms)*cell_area, '+'
-        write (stdout, '(1x,a1,5x,a12,7x,a1,1x,F10.4,40x,a1)') '+', 'Total Volume', '=', num_layers*&
-        & thickness_atom(max_atoms)*cell_area, '+'
+        write (stdout, '(1x,a1,5x,a12,7x,a1,1x,F10.4,40x,a1)') '+', 'Total Volume', '=', num_layers* &
+          thickness_atom(max_atoms)*cell_area, '+'
         write (stdout, '(1x,a78)') '+---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+'
         ! write out bulk_light_tmp
         if (num_layers .lt. 6) then
@@ -1992,7 +1992,7 @@ contains
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
             write (stdout, '(99999(es15.8))') ((matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), &
-            &n_eigen2=1, nbands), n_eigen=1, nbands)
+                                                n_eigen2=1, nbands), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -2020,16 +2020,16 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-      write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights',&
-      & 'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac',&
-      & 'pdos_weights_atoms', 'pdos_weights_k_band'
+      write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', &
+        'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', &
+        'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
     do atom = 1, max_atoms
       if (iprint > 2 .and. on_root) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
-            &"Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
+          "Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
       end if
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
@@ -2165,7 +2165,7 @@ contains
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
             write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), &
-            &n_eigen2=1, nbands), n_eigen=1, nbands)
+                                                  n_eigen2=1, nbands), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -2281,8 +2281,8 @@ contains
     use od_comms, only: my_node_id, on_root
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
-         & finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
-         & jdos_max_energy, photo_slab_max
+      finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
+      jdos_max_energy, photo_slab_max
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
     use od_jdos_utils, only: jdos_nbins
@@ -2346,7 +2346,7 @@ contains
     do ik = 1, num_kpoints_on_node(my_node_id)
       if (iprint > 2 .and. on_root) then
         if (mod(real(ik, dp), 10.0_dp) == 0.0_dp) write (stdout, '(1x,a1,a38,i4,a3,i4,1x,a14,2x,a11)') '^', &
-             &"Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- Delta |"
+          "Calculating k-point ", ik, " of", num_kpoints_on_node(my_node_id), 'on this node.', "<-- Delta |"
       end if
       do is = 1, nspins
         occ_states: do ib = 1, nbands
@@ -2363,8 +2363,8 @@ contains
             force_adaptive = .false.
             if (.not. fixed) then
               if (hybrid_linear .and. (hybrid_linear_grad_tol > sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) -&
-                                                      &band_energy(ib, is, ik) + scissor_op, EV)
+              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) - &
+                                                                                  band_energy(ib, is, ik) + scissor_op, EV)
               if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
             end if
             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
@@ -2377,7 +2377,7 @@ contains
             !   delta_temp(ib, jb, ik, is) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), photo_photon_energy, cuml)
             ! else
             !   delta_temp(ib, jb, ik, is) = gaussian((band_energy(jb,is,ik)-band_energy(ib,is,ik))+scissor_op,width,&
-            !   &photo_photon_energy)
+            !   photo_photon_energy)
             ! end if
 
             ! The linear method has a special way to calculate the integrated dos
@@ -2385,8 +2385,8 @@ contains
             if (linear .and. .not. force_adaptive) then
               delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
             else
-              delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width,&
-              &E(current_energy_index))
+              delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width, &
+                                                    E(current_energy_index))
             end if
 
           end do unocc_states
@@ -2421,7 +2421,7 @@ contains
     real(kind=dp), dimension(2) :: num_occ
     real(kind=dp) :: q_weight1, q_weight2, factor, kz, z, a, b
     integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
-    complex(kind=dp)  :: new_factor
+    complex(kind=dp) :: new_factor
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
       num_symm = 0
@@ -2448,8 +2448,7 @@ contains
     if (index(optics_geom, 'polar') > 0) then
       qdir = optics_qdir
       q_weight = ((qdir(1)**2) + (qdir(2)**2) + (qdir(3)**2))**0.5_dp
-      if (q_weight < 0.001_dp) &
-        call io_error("Error:  please check optics_qdir, norm close to zero")
+      if (q_weight < 0.001_dp) call io_error("Error:  please check optics_qdir, norm close to zero")
     end if
 
     if (index(optics_geom, 'unpolar') > 0) then
@@ -2478,10 +2477,10 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
-          kz = sqrt((2*e_mass/hbar)*(E_kinetic(n_eigen, N, N_spin)))
+          kz = sqrt((2*e_mass/hbar)*E_kinetic(n_eigen, N, N_spin))
           a = sin(kz*z)/kz
           b = (cos(kz*z) - 1)/kz
-          new_factor = (a, b)
+          ! new_factor = (a,b)
           temp_fome(:) = foptical_mat(n_eigen, nbands + 1, :, N, N_spin)*new_factor
           ! add the new factor
           factor = 1.0_dp/(temp_photon_energy**2)
@@ -3202,20 +3201,20 @@ contains
       if (on_root) then
         binding_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//&
-        &'_binding_energy.dat'
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
+                   '_binding_energy.dat'
         open (unit=binding_unit, action='write', file=filename)
         call io_date(cdate, ctime)
         write (binding_unit, *) '## OptaDOS Photoemission: Printing Binding Energy Spread on ', cdate, ' at ', ctime
         write (binding_unit, *) '## Seedname: ', trim(seedname)
         write (binding_unit, *) '## Photoemission Model: ', trim(photo_model)
         write (binding_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-        write (binding_unit, *) '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE | Contributions from: atom1 &
-        &| atom2 | ... | bulk | '
+        write (binding_unit, *) '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE | Contributions from: &
+        & atom1 | atom2 | ... | bulk | '
 
         do e_scale = 1, max_energy
           write (binding_unit, '(1x,ES13.6E2,2x,ES19.12E3,1x,999(1x,ES19.12E3))') t_energy(e_scale), &
-          &sum(qe_atom(e_scale, 1:max_atoms + 1)), qe_atom(e_scale, 1:max_atoms + 1)
+            sum(qe_atom(e_scale, 1:max_atoms + 1)), qe_atom(e_scale, 1:max_atoms + 1)
         end do
 
         close (unit=binding_unit)
