@@ -1474,9 +1474,10 @@ contains
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_arpes failed')
     end if
     phi_arpes = 0.0_dp
-
-    allocate (E_kinetic(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_kinetic failed')
+    if (.not. allocated(E_kinetic)) then
+      allocate (E_kinetic(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_kinetic failed')
+    end if
     E_kinetic = 0.0_dp
 
     allocate (E_x(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
@@ -1637,13 +1638,16 @@ contains
                                                    (atoms_pos_cart_photo(3, atom_order(1)))
     end do
 
-    if (.not. allocated(electron_esc)) allocate (electron_esc(nbands, nspins, &
-                                                              num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
+    if (.not. allocated(electron_esc)) then
+      allocate (electron_esc(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
+    end if
     electron_esc = 0.0_dp
 
-    allocate (atom_imfp(max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of new_atoms_coordinates failed')
+    if (.not. allocated(atom_imfp)) then
+      allocate (atom_imfp(max_atoms), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of atom_imfp failed')
+    end if
     atom_imfp = 0.0_dp
 
     if (size(photo_imfp_const, 1) .gt. 1) then
@@ -1713,7 +1717,7 @@ contains
 
   end subroutine calc_electron_esc
 
-  ! TODO: Create some info on the bulk repeated slab to print to std file (bulk_length, num_layers, emission, intensity etc.)
+  ! TODO: Create some info on the bulk repeated slab to print to std file (bulk_length, num_layers, emission, intensity etc.)-DONE
   !***************************************************************
   subroutine bulk_emission
     !***************************************************************
@@ -1734,8 +1738,10 @@ contains
 
     time0 = io_time()
 
-    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    if (.not. allocated(bulk_prob)) then 
+      allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    end if
     bulk_prob = 0.0_dp
 
 235 format(1x, a1, 5x, a8, I3, 5x, a10, E12.6E2, 3x, a8, E12.6E2, 10x, a1)
@@ -1922,8 +1928,8 @@ contains
       end if
     end if ! If statement for geometry choice
 
-    deallocate (atom_imfp, stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
+    ! deallocate (atom_imfp, stat=ierr)
+    ! if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate atom_imfp')
 
     deallocate (bulk_light_tmp, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_light_tmp')
