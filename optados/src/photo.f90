@@ -98,7 +98,7 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
+  logical                             :: new_geom_choice = .False. ! hard coded choice of geometry definition
 contains
 
   subroutine photo_calculate
@@ -2483,10 +2483,15 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state 1
-          kz = sqrt((2*e_mass/hbar)*E_kinetic(n_eigen, N, N_spin))
+          if (E_kinetic(n_eigen, N, N_spin) .gt. 0.0_dp) then
+            kz = sqrt((2*e_mass/hbar)*E_kinetic(n_eigen, N, N_spin))
+          else
+            kz = 1.0_dp
+          end if
           a = sin(kz*z)/kz
           b = (cos(kz*z) - 1)/kz
           ! new_factor = (a,b)
+          new_factor = 1.0_dp
           temp_fome(:) = foptical_mat(n_eigen, nbands + 1, :, N, N_spin)*new_factor
           ! add the new factor
           factor = 1.0_dp/(temp_photon_energy**2)
