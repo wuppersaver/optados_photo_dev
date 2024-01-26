@@ -945,10 +945,12 @@ contains
           call calc_absorp
           call calc_reflect
 
+          if (iprint .gt. 2) then
           call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
           call write_refract(box + 100, photo_volume=box_volume)
           call write_absorp(box + 100, photo_volume=box_volume)
           call write_reflect(box + 100, photo_volume=box_volume)
+          end if
 
           do energy = 1, number_energies
             absorp_photo(box, energy) = absorp(index_energy(energy))
@@ -975,6 +977,7 @@ contains
             write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
+          if (iprint .gt. 2) then
           write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
           write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -982,6 +985,7 @@ contains
           write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection - box --------------------+'
           write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
           ! Deallocate extra arrays produced in the case of using optics_intraband
           deallocate (epsilon, stat=ierr)
           if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
@@ -1137,10 +1141,12 @@ contains
           call calc_absorp
           call calc_reflect
 
+          if (iprint .gt. 2) then
           call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
           call write_refract(atom, photo_volume=volume_atom(atom))
           call write_absorp(atom, photo_volume=volume_atom(atom))
           call write_reflect(atom, photo_volume=volume_atom(atom))
+          end if
 
           do energy = 1, number_energies
             absorp_photo(atom, energy) = absorp(index_energy(energy))
@@ -1167,6 +1173,7 @@ contains
             write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
+          if (iprint .gt. 2) then
           write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
           write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1174,6 +1181,7 @@ contains
           write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
           write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
           ! Deallocate extra arrays produced in the case of using optics_intraband
           deallocate (epsilon, stat=ierr)
           if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
