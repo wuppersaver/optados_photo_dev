@@ -1002,8 +1002,8 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -lower -          (deg)          :', photo_phi_lower, '|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
-
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+    if (len(devel_flag) > 2) write(stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
     write (stdout, *) ' '
 
   end subroutine param_write
