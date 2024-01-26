@@ -2086,30 +2086,41 @@ contains
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
               if (index(devel_flag,'reduced_pe') > 0) then
-              
+                if (index(devel_flag,'projected_pe') > 0) then
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom)= matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electrons_per_state*kpoint_weight(N)* &
+                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                pdos_weights_k_band(n_eigen, N_spin, N))
+                else
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom)= matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electrons_per_state*kpoint_weight(N)
+                end if
               else
-              if (.not. new_geom_choice) then
-                qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                             (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                              delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                              electron_esc(n_eigen, N_spin, N, atom)* &
-                                                              electrons_per_state*kpoint_weight(N)* &
-                                                              (I_layer(layer(atom), current_photo_energy_index))* &
-                                                              transverse_g*vac_g*fermi_dirac* &
-                                                              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                               pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
-              else
-                qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                             (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                              delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                              electron_esc(n_eigen, N_spin, N, atom)* &
-                                                              electrons_per_state*kpoint_weight(N)* &
-                                                              (I_layer(box_atom(atom), current_photo_energy_index))* &
-                                                              transverse_g*vac_g*fermi_dirac* &
-                                                              (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                               pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
+                if (.not. new_geom_choice) then
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electron_esc(n_eigen, N_spin, N, atom)* &
+                                                                electrons_per_state*kpoint_weight(N)* &
+                                                                (I_layer(layer(atom), current_photo_energy_index))* &
+                                                                transverse_g*vac_g*fermi_dirac* &
+                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                              (1.0_dp + field_emission(n_eigen, N_spin, N))
+                else
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electron_esc(n_eigen, N_spin, N, atom)* &
+                                                                electrons_per_state*kpoint_weight(N)* &
+                                                                (I_layer(box_atom(atom), current_photo_energy_index))* &
+                                                                transverse_g*vac_g*fermi_dirac* &
+                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                              (1.0_dp + field_emission(n_eigen, N_spin, N))
+                end if
               end if
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
