@@ -946,10 +946,10 @@ contains
           call calc_reflect
 
           if (iprint .gt. 2) then
-          call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
-          call write_refract(box + 100, photo_volume=box_volume)
-          call write_absorp(box + 100, photo_volume=box_volume)
-          call write_reflect(box + 100, photo_volume=box_volume)
+            call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
+            call write_refract(box + 100, photo_volume=box_volume)
+            call write_absorp(box + 100, photo_volume=box_volume)
+            call write_reflect(box + 100, photo_volume=box_volume)
           end if
 
           do energy = 1, number_energies
@@ -978,13 +978,13 @@ contains
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
           if (iprint .gt. 2) then
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
-          write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
+            write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection - box --------------------+'
-          write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection - box --------------------+'
+            write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
           ! Deallocate extra arrays produced in the case of using optics_intraband
           deallocate (epsilon, stat=ierr)
@@ -1142,10 +1142,10 @@ contains
           call calc_reflect
 
           if (iprint .gt. 2) then
-          call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
-          call write_refract(atom, photo_volume=volume_atom(atom))
-          call write_absorp(atom, photo_volume=volume_atom(atom))
-          call write_reflect(atom, photo_volume=volume_atom(atom))
+            call write_epsilon(atom, photo_at_e=dos_at_e, photo_volume=volume_atom(atom))
+            call write_refract(atom, photo_volume=volume_atom(atom))
+            call write_absorp(atom, photo_volume=volume_atom(atom))
+            call write_reflect(atom, photo_volume=volume_atom(atom))
           end if
 
           do energy = 1, number_energies
@@ -1174,13 +1174,13 @@ contains
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
           if (iprint .gt. 2) then
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
-          write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
+            write (stdout, '(99(E17.8E3))') (absorp_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
-          write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
-          write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+            write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
+            write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
           ! Deallocate extra arrays produced in the case of using optics_intraband
           deallocate (epsilon, stat=ierr)
@@ -1969,7 +1969,8 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
+      exclude_bands
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time
@@ -2048,6 +2049,11 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen2 = min_index_unocc(N_spin, N), nbands
+            if (num_exclude_bands .gt. 1) then
+              if (any(exclude_bands == n_eigen2)) then
+                cycle
+              end if
+            end if
             do n_eigen = 1, n_eigen2 - 1
 
               argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
@@ -2079,6 +2085,9 @@ contains
 
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
+              if (index(devel_flag,'reduced_pe') > 0) then
+              
+              else
               if (.not. new_geom_choice) then
                 qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
                                                              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
