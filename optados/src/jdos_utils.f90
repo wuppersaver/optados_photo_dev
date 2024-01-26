@@ -320,17 +320,19 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, photo, &
-         &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
+         &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
+         photo_slab_max, photo_slab_min
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
          & efermi, elec_pdos_read, pdos_weights, pdos_mwab, elec_dealloc_pdos
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
+    use od_constants, only: pi
     implicit none
 
     integer :: ik, is, ib, idos, jb, i
     integer :: N2, N_geom, ierr
-    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
+    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp, mean_height
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)                      :: jdos_type
@@ -363,6 +365,10 @@ contains
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      if (photo) then
+        mean_height = (photo_slab_min + photo_slab_max)/(2*2)
+        sub_cell_length(3) = sqrt(recip_lattice(i,1)**2 + recip_lattice(i,2)**2 + (pi/mean_height)**2)*step(3)
+      end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if
 
