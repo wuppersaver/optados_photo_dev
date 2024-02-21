@@ -98,7 +98,7 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  logical                             :: new_geom_choice = .False. ! hard coded choice of geometry definition
+  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
 contains
 
   subroutine photo_calculate

@@ -1003,7 +1003,8 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    if (len(devel_flag) > 2) write(stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
+    if (num_exclude_bands > 0) write(stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
+    if (scan(devel_flag,"AEIOUaeiou") > 0) write(stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
     write (stdout, *) ' '
 
   end subroutine param_write
