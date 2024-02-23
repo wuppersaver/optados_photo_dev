@@ -154,6 +154,7 @@ contains
 
     ! Calculate the optical properties of the slab
     call calc_photo_optics
+    if (index(devel_flag, 'output_ome_itof') > 0) return
 
     call calc_absorp_layer
 
@@ -780,10 +781,10 @@ contains
 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
       epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
-    use od_io, only: stdout, io_error, io_time, seedname
+    use od_io, only: stdout, io_error, io_time, seedname, io_date
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
       nbands, nspins, band_energy
-    use od_cell, only: num_kpoints_on_node, num_kpoints_on_node
+    use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
@@ -797,10 +798,14 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
 
-    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy, box
-    integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23
+    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy, box, initial
+    integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
     real(kind=dp)    :: num_energies, temp, time0, time1
+    logical, dimension(3) :: gam
+    character(len=9) :: ctime             ! Temp. time string
+    character(len=11):: cdate             ! Temp. date string
     character(len=3) :: atom_s
+    character(len=4) :: initial_s
 
     time0 = io_time()
 
@@ -847,6 +852,34 @@ contains
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
+
+    if (index(devel_flag, 'output_ome_itof') > 0 .and. on_root) then
+      call io_date(cdate,ctime)
+      do N = 1, size(kpoint_r,2)
+        if (all(abs(kpoint_r(:,N)) < 1.0E-10_dp)) then
+          is = N
+          exit
+        end if
+      end do
+      write (stdout,*) 'The gamma point was determined to be - ', is
+      i = index(devel_flag, 'output_ome_itof')
+      read (devel_flag(i+16:i+20), *) initial
+      write (initial_s, '(I4)') initial
+      write (stdout, '(1x,a27,I4,a32)') 'Outputting OMEs for band # ',initial, ' to the bands above it at Gamma.'
+      open (unit=ome_unit, action='write', file=trim(seedname)//'_OMEs_from_band_'//trim(adjustl(initial_s))//'.dat')
+      write (ome_unit, '(1x,a28)') '############################'
+      write (ome_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ',cdate, ' at ', ctime
+      write (ome_unit, '(1x,a16,1x,a99)') '# OM weights for' , seedname
+      write (ome_unit, '(1x,a23,1x,I4)') '# Initial Band Choice :', initial
+      write (ome_unit, '(1x,a23,1x,F15.7)') '# Band Energy        : ', (band_energy(initial, 1, is) - efermi)
+      write (ome_unit, '(1x,a28)') '############################'
+      do n_eigen = initial + 1, nbands
+        write (ome_unit, '(1x,a6,I4,1x,E20.12E3,1x,F15.7)') 'Band #', n_eigen, matrix_weights(initial, n_eigen, is, 1, 1),&
+        & (band_energy(n_eigen, 1, is) - efermi)
+      end do
+      close (unit=ome_unit)
+      return
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+-------------------------- Printing Matrix Weights -------------------------+'
