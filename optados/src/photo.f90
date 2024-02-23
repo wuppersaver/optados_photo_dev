@@ -130,6 +130,9 @@ contains
     if (index(devel_flag, 'geom_analysis') > 0) then
       write (stdout, '(1x,a78)') '+           Only performing the analysis of the supplied geometry!           +'
       call analyse_geometry
+      call elec_pdos_read
+      call make_pdos_weights_atoms
+      call elec_dealloc_pdos
       return
     end if
 
@@ -648,12 +651,14 @@ contains
     !***************************************************************
     !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
     use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
-    use od_cell, only: num_kpoints_on_node, num_atoms
+    use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, stdout
+    use od_io, only: io_error, stdout, seedname, io_date
     use od_parameters, only: devel_flag
     implicit none
-    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max
+    character(len=9) :: ctime             ! Temp. time string
+    character(len=11):: cdate             ! Temp. date string
+    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max, pdos_unit = 32
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -720,6 +725,35 @@ contains
     end if
 
     call FLUSH()
+
+    if (index(devel_flag, 'output_pdos_weights') > 0 .and. on_root) then
+      call cell_calc_kpoint_r_cart
+      write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
+      i = 0
+      do N = 1, num_kpoints_on_node(my_node_id)
+        write (stdout, '(1x,I4,4x,3(1x,E22.15))') i, kpoint_r_cart(:, N)
+        i = i + 1
+      end do
+      call io_date(cdate, ctime)
+      open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
+      write (pdos_unit, '(1x,a28)') '############################'
+      write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ',cdate, ' at ', ctime
+      write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for' , seedname
+      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_atoms, 1)
+      write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_atoms, 2)
+      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_atoms, 3)
+      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of Atoms      :', size(pdos_weights_atoms, 4)
+      write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ A T O M _ W E I G H T S'
+      write (pdos_unit, '(1x,a28)') '############################'
+      do atom = 1, num_atoms
+        do N = 1, num_kpoints_on_node(my_node_id)
+          do N_spin = 1, nspins
+            write (pdos_unit, '(9999(1x,es24.16))')(pdos_weights_atoms(n_eigen, N_spin, N, atom),n_eigen = 1, pdos_mwab%nbands)
+          end do
+        end do
+      end do
+      close (unit=pdos_unit)
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
