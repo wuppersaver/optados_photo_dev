@@ -92,13 +92,16 @@ module od_photo
   integer :: max_layer
   real(kind=dp) :: q_weight
 
-  ! Added by Felix Mildner, 12/2022
+  ! Added by Felix Mildner, 12/2022 and laters
 
   integer, allocatable, dimension(:)  :: index_energy
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
   logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
+  integer, allocatable, dimension(:, :, :) :: lgcl_box_states
+  real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
+
 contains
 
   subroutine photo_calculate
@@ -111,7 +114,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep, &
-      photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
+      photo_photon_min, jdos_spacing, photo_photon_energy, photo_remove_box_states, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -141,12 +144,17 @@ contains
       call dos_utils_deallocate
     end if
 
-    !Identify layers
+    ! Identify layers
     call analyse_geometry
     call calc_band_info
 
+    !
+    if (photo_remove_box_states) then
+      call identify_box_states
+    end if
+
     call elec_read_optical_mat
-    !THIS PART COMES FROM THE PDOS MODULE
+    ! THIS PART COMES FROM THE PDOS MODULE
     ! read in the pdos weights
     call elec_pdos_read
     call make_pdos_weights_atoms
@@ -158,7 +166,7 @@ contains
 
     call calc_absorp_layer
 
-    !Electric field and field emission
+    ! Electric field and field emission
     if (photo_elec_field .gt. 0.0_dp) then
       call effect_wf
       call calc_field_emission
@@ -647,6 +655,128 @@ contains
 
   end subroutine calc_band_info
 
+  subroutine identify_box_states
+    !=========================================================================
+    ! Read the .bands file in the kpoint list, kpoint weights and band energies
+    ! also obtain, nkpoints, nspins, num_electrons(:),nbands, efermi_castep
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables:
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None
+    !-------------------------------------------------------------------------
+    ! Known Worries: None
+    !-------------------------------------------------------------------------
+    ! Written by  F C Mildner                                         Feb 2024
+    !=========================================================================
+    use od_electronic, only: nspins, nbands, efermi_castep, band_energy
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_comms, only: my_node_id, on_root, num_nodes, root_id
+    use od_io, only: io_file_unit, io_error, filename_len, seedname, stdout
+    implicit none
+
+    real(kind=dp) :: energy_tol, diff, ref_efermi_castep
+    integer :: band_unit, ierr, nbands_ref, nkpoints_ref, nspins_ref
+    integer :: str_pos, inodes, ik, is, ib, sum_box
+    character(len=80) :: dummy
+    character(filename_len) :: band_filename
+
+    energy_tol = 1.0e-3_dp
+
+    ! allocate the reference band energies, reference tracking
+    if (.not. allocated(ref_band_energies)) then
+      allocate (lgcl_box_states(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: Problem allocating lgcl_box_states in photo_identify_box_states')
+      allocate (ref_band_energies(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: Problem allocating ref_band_energies in photo_identify_box_states')
+    end if
+
+    ! load in the reference states of the reference band file
+    band_unit = io_file_unit()
+    band_filename = trim(seedname)//"_reference.bands"
+
+    if (on_root) then
+      open (unit=band_unit, file=band_filename, status="old", form='formatted')
+      read (band_unit, '(a)') dummy
+      str_pos = index(dummy, 'k-points')
+      read (dummy(str_pos + 8:), *) nkpoints_ref
+      read (band_unit, '(a)') dummy
+      str_pos = index(dummy, 'components')
+      read (dummy(str_pos + 10:), *) nspins_ref
+      read (band_unit, '(a)') dummy
+      str_pos = index(dummy, 'electrons')
+      read (band_unit, '(a)') dummy
+      str_pos = index(dummy, 'eigenvalues')
+      read (dummy(str_pos + 11:), *) nbands_ref
+      if (nkpoints_ref .ne. nkpoints .or. nspins_ref .ne. nspins .or. nbands_ref .ne. nbands) then
+        call io_error('Error: The supplied bandstructure and reference bandstructure do not have equla dimensions!!')
+      end if
+      read (band_unit, '(a)') dummy
+      str_pos = index(dummy, 'units)')
+      read (dummy(str_pos + 6:), '(f12.4)') ref_efermi_castep
+      read (band_unit, '(a)') dummy
+      read (band_unit, *) dummy
+      read (band_unit, *) dummy
+      read (band_unit, *) dummy
+
+      do inodes = 1, num_nodes - 1
+        do ik = 1, num_kpoints_on_node(inodes)
+          read (band_unit, '(a)') dummy
+          do is = 1, nspins
+            read (band_unit, *) dummy
+            do ib = 1, nbands
+              read (band_unit, *) ref_band_energies(ib, is, ik) !NB spin <-> kpt swapped
+            end do
+          end do
+        end do
+        call comms_send(ref_band_energies(1, 1, 1), nbands*nspins*num_kpoints_on_node(inodes), inodes)
+      end do
+
+      do ik = 1, num_kpoints_on_node(0)
+        read (band_unit, '(a)') dummy
+        do is = 1, nspins
+          read (band_unit, *) dummy
+          do ib = 1, nbands
+            read (band_unit, *) ref_band_energies(ib, is, ik) !NB spin <-> kpt swapped
+          end do
+        end do
+      end do
+    end if
+
+    call comms_bcast(ref_efermi_castep, 1)
+    if (.not. on_root) then
+      call comms_recv(ref_band_energies(1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
+    end if
+    if (on_root) close (unit=band_unit)
+
+    ! compare the bands and set the removal state
+    lgcl_box_states = 1
+
+    sum_box = sum(lgcl_box_states(:, :, :))
+    call comms_reduce(sum_box)
+    if (on_root) write (stdout, *) 'sum over box before ident.: ', sum_box
+
+    do ik = 1, num_kpoints_on_node(my_node_id)
+      do is = 1, nspins
+        do ib = 1, nbands
+          diff = (band_energy(ib, is, ik) - efermi_castep) - (ref_band_energies(ib, is, ik) - ref_efermi_castep)
+          if (diff .gt. energy_tol) lgcl_box_states(ib, is, ik) = 0
+        end do
+      end do
+    end do
+
+    sum_box = sum(lgcl_box_states(:, :, :))
+    call comms_reduce(sum_box)
+    if (on_root) write (stdout, *) 'sum over box after ident.: ', sum_box
+
+    ! check for pdos contributions to catch the surface resonances
+  end subroutine identify_box_states
+
   !***************************************************************
   subroutine make_pdos_weights_atoms
     !***************************************************************
@@ -738,8 +868,8 @@ contains
       call io_date(cdate, ctime)
       open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
       write (pdos_unit, '(1x,a28)') '############################'
-      write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ',cdate, ' at ', ctime
-      write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for' , seedname
+      write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
+      write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
       write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_atoms, 1)
       write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_atoms, 2)
       write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_atoms, 3)
@@ -749,7 +879,7 @@ contains
       do atom = 1, num_atoms
         do N = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
-            write (pdos_unit, '(9999(1x,es24.16))')(pdos_weights_atoms(n_eigen, N_spin, N, atom),n_eigen = 1, pdos_mwab%nbands)
+            write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_atoms(n_eigen, N_spin, N, atom), n_eigen=1, pdos_mwab%nbands)
           end do
         end do
       end do
@@ -854,22 +984,22 @@ contains
     call elec_dealloc_optical
 
     if (index(devel_flag, 'output_ome_itof') > 0 .and. on_root) then
-      call io_date(cdate,ctime)
-      do N = 1, size(kpoint_r,2)
-        if (all(abs(kpoint_r(:,N)) < 1.0E-10_dp)) then
+      call io_date(cdate, ctime)
+      do N = 1, size(kpoint_r, 2)
+        if (all(abs(kpoint_r(:, N)) < 1.0E-10_dp)) then
           is = N
           exit
         end if
       end do
-      write (stdout,*) 'The gamma point was determined to be - ', is
+      write (stdout, *) 'The gamma point was determined to be - ', is
       i = index(devel_flag, 'output_ome_itof')
-      read (devel_flag(i+16:i+20), *) initial
+      read (devel_flag(i + 16:i + 20), *) initial
       write (initial_s, '(I4)') initial
-      write (stdout, '(1x,a27,I4,a32)') 'Outputting OMEs for band # ',initial, ' to the bands above it at Gamma.'
+      write (stdout, '(1x,a27,I4,a32)') 'Outputting OMEs for band # ', initial, ' to the bands above it at Gamma.'
       open (unit=ome_unit, action='write', file=trim(seedname)//'_OMEs_from_band_'//trim(adjustl(initial_s))//'.dat')
       write (ome_unit, '(1x,a28)') '############################'
-      write (ome_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ',cdate, ' at ', ctime
-      write (ome_unit, '(1x,a16,1x,a99)') '# OM weights for' , seedname
+      write (ome_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
+      write (ome_unit, '(1x,a16,1x,a99)') '# OM weights for', seedname
       write (ome_unit, '(1x,a23,1x,I4)') '# Initial Band Choice :', initial
       write (ome_unit, '(1x,a23,1x,F15.7)') '# Band Energy        : ', (band_energy(initial, 1, is) - efermi)
       write (ome_unit, '(1x,a28)') '############################'
@@ -1813,7 +1943,7 @@ contains
 
     time0 = io_time()
 
-    if (.not. allocated(bulk_prob)) then 
+    if (.not. allocated(bulk_prob)) then
       allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
     end if
@@ -2152,41 +2282,41 @@ contains
 
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
-              if (index(devel_flag,'reduced_pe') > 0) then
-                if (index(devel_flag,'projected_pe') > 0) then
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom)= matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
-                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+              if (index(devel_flag, 'reduced_pe') > 0) then
+                if (index(devel_flag, 'projected_pe') > 0) then
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                               electrons_per_state*kpoint_weight(N)* &
+                                                               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                                                                 pdos_weights_k_band(n_eigen, N_spin, N))
                 else
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom)= matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electrons_per_state*kpoint_weight(N)
+                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                               electrons_per_state*kpoint_weight(N)
                 end if
               else
                 if (.not. new_geom_choice) then
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
                                                                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(layer(atom), current_photo_energy_index))* &
                                                                 transverse_g*vac_g*fermi_dirac* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                              (1.0_dp + field_emission(n_eigen, N_spin, N))
+                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
                 else
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                              (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
                                                                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(box_atom(atom), current_photo_energy_index))* &
                                                                 transverse_g*vac_g*fermi_dirac* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                              (1.0_dp + field_emission(n_eigen, N_spin, N))
+                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
                 end if
               end if
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then

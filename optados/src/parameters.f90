@@ -148,6 +148,7 @@ module od_parameters
   ! real(kind=dp), public, save :: photo_slab_volume
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
+  logical, public, save       :: photo_remove_box_states
 
   real(kind=dp), public, save :: lenconfac
 
@@ -513,6 +514,9 @@ contains
     if (photo_slab_max .lt. photo_slab_min) then
       call io_error('Error: the supplied slab_max value is less than the slab_min value!')
     end if
+
+    photo_remove_box_states = .False.
+    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
     photo_layer_choice = 'optados'
     call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
@@ -1003,8 +1007,8 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    if (num_exclude_bands > 0) write(stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
-    if (scan(devel_flag,"AEIOUaeiou") > 0) write(stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
+    if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
+    if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
     write (stdout, *) ' '
 
   end subroutine param_write
