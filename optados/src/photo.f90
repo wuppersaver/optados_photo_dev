@@ -676,7 +676,8 @@ contains
     !=========================================================================
     use od_electronic, only: nspins, nbands, efermi_castep, band_energy
     use od_cell, only: num_kpoints_on_node, nkpoints
-    use od_comms, only: my_node_id, on_root, num_nodes, root_id
+    use od_comms, only: my_node_id, on_root, num_nodes, root_id, comms_bcast, &
+      comms_recv, comms_send, comms_reduce
     use od_io, only: io_file_unit, io_error, filename_len, seedname, stdout
     implicit none
 
@@ -758,7 +759,7 @@ contains
     lgcl_box_states = 1
 
     sum_box = sum(lgcl_box_states(:, :, :))
-    call comms_reduce(sum_box)
+    call comms_reduce(sum_box, 1, 'SUM')
     if (on_root) write (stdout, *) 'sum over box before ident.: ', sum_box
 
     do ik = 1, num_kpoints_on_node(my_node_id)
@@ -771,7 +772,7 @@ contains
     end do
 
     sum_box = sum(lgcl_box_states(:, :, :))
-    call comms_reduce(sum_box)
+    call comms_reduce(sum_box, 1, 'SUM')
     if (on_root) write (stdout, *) 'sum over box after ident.: ', sum_box
 
     ! check for pdos contributions to catch the surface resonances
