@@ -148,17 +148,17 @@ contains
     call analyse_geometry
     call calc_band_info
 
-    !
-    if (photo_remove_box_states) then
-      call identify_box_states
-    end if
-
     call elec_read_optical_mat
     ! THIS PART COMES FROM THE PDOS MODULE
     ! read in the pdos weights
     call elec_pdos_read
     call make_pdos_weights_atoms
     call elec_dealloc_pdos
+
+    !
+    if (photo_remove_box_states) then
+      call identify_box_states
+    end if
 
     ! Calculate the optical properties of the slab
     call calc_photo_optics
@@ -675,18 +675,20 @@ contains
     ! Written by  F C Mildner                                         Feb 2024
     !=========================================================================
     use od_electronic, only: nspins, nbands, efermi_castep, band_energy
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: num_kpoints_on_node, nkpoints,cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root, num_nodes, root_id, comms_bcast, &
       comms_recv, comms_send, comms_reduce
     use od_io, only: io_file_unit, io_error, filename_len, seedname, stdout
+    use od_constants, only: H2eV
     implicit none
 
-    real(kind=dp) :: energy_tol, diff, ref_efermi_castep
+    real(kind=dp) :: energy_tol, diff, ref_efermi_castep, a, b, tol = 1.0e-6_dp
     integer :: band_unit, ierr, nbands_ref, nkpoints_ref, nspins_ref
     integer :: str_pos, inodes, ik, is, ib, sum_box
     character(len=80) :: dummy
     character(filename_len) :: band_filename
-
+    logical  :: gamma
+    ! logical, dimension(3) :: temp_k
     energy_tol = 1.0e-3_dp
 
     ! allocate the reference band energies, reference tracking
@@ -750,10 +752,14 @@ contains
     end if
 
     call comms_bcast(ref_efermi_castep, 1)
+    if (on_root) write (stdout, *) 'ref_efermi : ', ref_efermi_castep 
     if (.not. on_root) then
       call comms_recv(ref_band_energies(1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
     if (on_root) close (unit=band_unit)
+
+    ref_band_energies = ref_band_energies*H2eV
+    ref_efermi_castep = ref_efermi_castep*H2eV
 
     ! compare the bands and set the removal state
     lgcl_box_states = 1
@@ -762,11 +768,24 @@ contains
     call comms_reduce(sum_box, 1, 'SUM')
     if (on_root) write (stdout, *) 'sum over box before ident.: ', sum_box
 
+    call cell_calc_kpoint_r_cart
+
     do ik = 1, num_kpoints_on_node(my_node_id)
+      gamma = all(abs(kpoint_r_cart(:,ik)) .lt. tol)
+      if (on_root .and. gamma) write (stdout, *) kpoint_r_cart(:,ik)
       do is = 1, nspins
         do ib = 1, nbands
-          diff = (band_energy(ib, is, ik) - efermi_castep) - (ref_band_energies(ib, is, ik) - ref_efermi_castep)
-          if (diff .gt. energy_tol) lgcl_box_states(ib, is, ik) = 0
+          a = (band_energy(ib, is, ik) - efermi_castep)
+          b = (ref_band_energies(ib, is, ik) - ref_efermi_castep)
+          diff = abs(a - b)
+          if (on_root .and. gamma) then
+            ! write (stdout, *) 'b ', ib, ' s ', is, ' k ', ik, ': og : ', a,' - ref : ', b, ' diff : ', diff
+            ! write (stdout, *) 'og : ', band_energy(ib, is, ik), ' ref : ', ref_band_energies(ib,is,ik)
+            write (stdout, *) a, b, diff
+          end if
+          if (diff .gt. energy_tol) then
+            lgcl_box_states(ib, is, ik) = 0
+          end if
         end do
       end do
     end do

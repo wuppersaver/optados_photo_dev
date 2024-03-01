@@ -992,6 +992,9 @@ contains
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
       write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      if (photo_remove_box_states) then
+        write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
+      end if
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
       if (index(write_photo_output, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
@@ -1751,6 +1754,7 @@ contains
     call comms_bcast(photo_layer_choice, len(photo_layer_choice))
     call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_remove_box_states,1)
     call comms_bcast(photo_len_imfp_const, 1)
     if (.not. on_root) then
       allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
