@@ -683,7 +683,7 @@ contains
 
     real(kind=dp) :: energy_tol, diff, ref_efermi_castep
     integer :: band_unit, ierr, nbands_ref, nkpoints_ref, nspins_ref
-    integer :: str_pos, inodes, ik, is, ib, sum_box
+    integer :: str_pos, inodes, ik, is, ib, jb, sum_box
     character(len=80) :: dummy
     character(filename_len) :: band_filename
 
@@ -765,8 +765,10 @@ contains
     do ik = 1, num_kpoints_on_node(my_node_id)
       do is = 1, nspins
         do ib = 1, nbands
-          diff = (band_energy(ib, is, ik) - efermi_castep) - (ref_band_energies(ib, is, ik) - ref_efermi_castep)
-          if (diff .gt. energy_tol) lgcl_box_states(ib, is, ik) = 0
+          do jb = 1, nbands
+            diff = (band_energy(ib, is, ik) - efermi_castep) - (ref_band_energies(jb, is, ik) - ref_efermi_castep)
+            if (diff .gt. energy_tol) lgcl_box_states(ib, is, ik) = 0
+          end do
         end do
       end do
     end do
