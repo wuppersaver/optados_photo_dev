@@ -148,6 +148,7 @@ module od_parameters
   ! real(kind=dp), public, save :: photo_slab_volume
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
+  logical, public, save       :: photo_remove_box_states
 
   real(kind=dp), public, save :: lenconfac
 
@@ -513,6 +514,9 @@ contains
     if (photo_slab_max .lt. photo_slab_min) then
       call io_error('Error: the supplied slab_max value is less than the slab_min value!')
     end if
+
+    photo_remove_box_states = .False.
+    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
     photo_layer_choice = 'optados'
     call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
@@ -988,6 +992,9 @@ contains
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
       write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      if (photo_remove_box_states) then
+        write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
+      end if
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
       if (index(write_photo_output, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
@@ -1003,7 +1010,8 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    if (len(devel_flag) > 2) write(stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
+    if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
+    if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
     write (stdout, *) ' '
 
   end subroutine param_write
@@ -1746,6 +1754,7 @@ contains
     call comms_bcast(photo_layer_choice, len(photo_layer_choice))
     call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_remove_box_states,1)
     call comms_bcast(photo_len_imfp_const, 1)
     if (.not. on_root) then
       allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
