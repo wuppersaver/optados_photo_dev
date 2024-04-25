@@ -892,7 +892,7 @@ contains
       if (new_geom_choice) then
         open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_boxes.dat')
         write (pdos_unit, '(1x,a28)') '############################'
-        write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
+        write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Boxes-Weights on ', cdate, ' at ', ctime
         write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
         write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_boxes, 1)
         write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_boxes, 2)
