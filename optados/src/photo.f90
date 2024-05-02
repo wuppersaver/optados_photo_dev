@@ -3079,6 +3079,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
+    real(kind=dp), allocatable, dimension(:) :: layer_te
     real(kind=dp)                                     :: time0, time1
     integer :: N, N_spin, n_eigen, atom, ierr
 
@@ -3094,9 +3095,15 @@ contains
     end if
     layer_qe = 0.0_dp
 
+    if (.not. allocated(layer_te)) then
+      allocate(layer_te(max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_te failed')
+    end if
+    layer_te = 0.0_dp
+
     if (index(photo_model, '3step') > 0) then
 
-      allocate (te_tsm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
       te_tsm_temp = 0.0_dp
 
@@ -3108,24 +3115,30 @@ contains
             do n_eigen = 1, min_index_unocc(N_spin, N) - 1
               !do n_eigen2 = min_index_unocc(N_spin, N), nbands
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-              te_tsm_temp(n_eigen, N, N_spin, atom) = E_transverse(n_eigen, N, N_spin) &
+              te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N, N_spin) &
                                                       *sum(qe_tsm(n_eigen, min_index_unocc(N_spin, N):nbands, N_spin, N, atom))
               !end do
             end do
           end do
         end do
         ! Calculate the qe contribution of each atom/layer
-        layer_qe(atom) = sum(qe_tsm(1:nbands, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom))
+        layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
+        layer_te(atom) = sum(te_tsm_temp(:,:,:,atom))
       end do
+      
+      call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
+      write(stdout, *) 'te_tsm per atom : ', (layer_te(atom),atom=1,max_atoms+1)
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
+      write(stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
       total_qe = sum(layer_qe)
 
-      mean_te = sum(te_tsm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      mean_te = sum(te_tsm_temp)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
+      write(stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
@@ -3133,12 +3146,17 @@ contains
         mean_te = 0.0_dp
       end if
 
+      write(stdout, *) 'mean_te after divison of QE_tot : ', mean_te
+
       deallocate (te_tsm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
 
+      deallocate (layer_te, stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_te')
+
     elseif (index(photo_model, '1step') > 0) then
 
-      allocate (te_osm_temp(nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1), stat=ierr)
+      allocate (te_osm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
       te_osm_temp = 0.0_dp
       do atom = 1, max_atoms + 1
