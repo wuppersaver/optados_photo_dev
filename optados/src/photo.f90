@@ -1560,9 +1560,9 @@ contains
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
     if (on_root) then
-    write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
-    write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
-    write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+      write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
+      write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
+      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
@@ -2226,16 +2226,20 @@ contains
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands
+      exclude_bands, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, io_time
+    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
-    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i
+    real(kind=dp), allocatable, dimension(:,:,:) :: fermi_dirac
+    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd
+    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, qe_unit
+    character(len=10)                           :: char_e
+    character(len=99)                           :: filename
+
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
     qe_factor = 1.0_dp/(cell_area)
@@ -2254,6 +2258,12 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_tsm failed')
     end if
     qe_tsm = 0.0_dp
+
+    if (.not. allocated(fermi_dirac)) then
+      allocate(fermi_dirac(nbands,nspins,num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+    end if
+    fermi_dirac = 0.0_dp
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
@@ -2297,6 +2307,26 @@ contains
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
+    do N = 1, num_kpoints_on_node(my_node_id)
+      do N_spin = 1, nspins
+        do n_eigen = 1, nbands
+            argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
+            ! This is a bit of an arbitrary condition, but it turns out
+            ! that this corresponds to a an exponent value of ~1E+/-250
+            ! and this cutoff condition saves us from running into arithmetic
+            ! issues when computing fermi_dirac due to possible underflow.
+            if (argument .gt. 575.0_dp) then
+              fermi_dirac(n_eigen,N_spin,N) = 0.0_dp
+            elseif (argument .lt. -575.0_dp) then
+              fermi_dirac(n_eigen,N_spin,N) = 1.0_dp
+            else
+              fermi_dirac(n_eigen,N_spin,N) = 1.0_dp/(exp(argument) + 1.0_dp)
+            end if
+        end do
+      end do
+    end do
+
+
     do atom = 1, max_atoms
       if (iprint > 2 .and. on_root) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
@@ -2310,21 +2340,9 @@ contains
                 cycle
               end if
             end if
+            final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
             do n_eigen = 1, n_eigen2 - 1
-
-              argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
-              ! This is a bit of an arbitrary condition, but it turns out
-              ! that this corresponds to a an exponent value of ~1E+/-250
-              ! and this cutoff condition saves us from running into arithmetic
-              ! issues when computing fermi_dirac due to possible underflow.
-              if (argument .gt. 575.0_dp) then
-                fermi_dirac = 0.0_dp
-                cycle
-              elseif (argument .lt. -575.0_dp) then
-                fermi_dirac = 1.0_dp
-              else
-                fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
-              end if
+              initial_fd = fermi_dirac(n_eigen, N_spin, N)
 
               if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
                 transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
@@ -2361,7 +2379,7 @@ contains
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(layer(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*fermi_dirac* &
+                                                                transverse_g*vac_g*initial_fd*final_fd* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
@@ -2372,18 +2390,19 @@ contains
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(box_atom(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*fermi_dirac* &
+                                                                transverse_g*vac_g*initial_fd*final_fd* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
                 end if
               end if
-              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) .gt. 0.0_dp) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
                   band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
                   delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
-                  kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, fermi_dirac, &
+                  kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, initial_fd, final_fd, &
                   pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
               end if
             end do
@@ -2397,20 +2416,9 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen2 = min_index_unocc(N_spin, N), nbands
+          final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
           do n_eigen = 1, n_eigen2 - 1
-
-            argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
-            ! This is a bit of an arbitrary condition, but it turns out
-            ! that this corresponds to a an exponent value of ~1E+/-250
-            ! and this cutoff condition saves us from running into arithmetic
-            ! issues when computing fermi_dirac due to possible underflow.
-            if (argument .gt. 575.0_dp) then
-              fermi_dirac = 0.0_dp
-            elseif (argument .lt. -575.0_dp) then
-              fermi_dirac = 1.0_dp
-            else
-              fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
-            end if
+            initial_fd = fermi_dirac(n_eigen, N_spin, N)
 
             if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
               transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
@@ -2420,17 +2428,17 @@ contains
             end if
             if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
               vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
-                               scissor_op, width, evacuum_eff)/norm_vac
+                                scissor_op, width, evacuum_eff)/norm_vac
             else
               vac_g = 1.0_dp
             end if
             qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
                                                                   (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                   delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                   bulk_prob(n_eigen, N_spin, N)* &
-                                                                   electrons_per_state*kpoint_weight(N)* &
-                                                                   transverse_g*vac_g*fermi_dirac* &
-                                                                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                                    delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                    bulk_prob(n_eigen, N_spin, N)* &
+                                                                    electrons_per_state*kpoint_weight(N)* &
+                                                                    transverse_g*vac_g*initial_fd*final_fd* &
+                                                                    (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
                                                                     pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                                   (1.0_dp + field_emission(n_eigen, N_spin, N))
           end do
@@ -2445,6 +2453,11 @@ contains
     if (allocated(delta_temp)) then
       deallocate (delta_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate delta_temp')
+    end if
+
+    if (allocated(fermi_dirac)) then
+      deallocate (fermi_dirac, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate fermi_dirac')
     end if
 
     if ((index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root)) then
@@ -2467,6 +2480,16 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
+
+    qe_unit = io_file_unit()
+    write (char_e, '(F7.3)') temp_photon_energy
+    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+    open (unit=qe_unit, action='write', file=filename)
+    write (qe_unit,*) '# The k point dependent QE values'
+    do N = 1, num_kpoints_on_node(my_node_id)
+      write (qe_unit,*)  sum(qe_tsm(:,:,:,N,:))
+    end do
+    close (unit=qe_unit)
 
   end subroutine calc_three_step_model
 
@@ -3124,11 +3147,11 @@ contains
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
         layer_te(atom) = sum(te_tsm_temp(:,:,:,atom))
-      end do
+      end do 
       
       call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
       write(stdout, *) 'te_tsm per atom : ', (layer_te(atom),atom=1,max_atoms+1)
-
+      
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
