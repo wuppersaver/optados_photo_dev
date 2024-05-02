@@ -841,7 +841,7 @@ contains
     implicit none
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
-    integer :: N, N_spin, n_eigen, np, ierr, atom, i, i_max, pdos_unit = 32
+    integer :: N, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit = 32
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -890,21 +890,21 @@ contains
       end do
     end do
     if (new_geom_choice) then
-    do atom = 1, max_atoms
-      ! write (stdout, *) 'atom #', atom, 'box #', box_atom(atom)
-      do N = 1, num_kpoints_on_node(my_node_id)
-        do N_spin = 1, nspins
-          do n_eigen = 1, pdos_mwab%nbands
-            if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
-              pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
-            end if
-            pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) = &
-              pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) + &
-              pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
+      do atom = 1, max_atoms
+        ! write (stdout, *) 'atom #', atom, 'box #', box_atom(atom)
+        do N = 1, num_kpoints_on_node(my_node_id)
+          do N_spin = 1, nspins
+            do n_eigen = 1, pdos_mwab%nbands
+              if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
+                pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
+              end if
+              pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) = &
+                pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) + &
+                pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
+            end do
           end do
         end do
       end do
-    end do
     end if
 
     call FLUSH()
@@ -918,24 +918,61 @@ contains
         i = i + 1
       end do
       call io_date(cdate, ctime)
-      open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
-      write (pdos_unit, '(1x,a28)') '############################'
-      write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
-      write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
-      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_atoms, 1)
-      write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_atoms, 2)
-      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_atoms, 3)
-      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of Atoms      :', size(pdos_weights_atoms, 4)
-      write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ A T O M _ W E I G H T S'
-      write (pdos_unit, '(1x,a28)') '############################'
-      do atom = 1, num_atoms
-        do N = 1, num_kpoints_on_node(my_node_id)
-          do N_spin = 1, nspins
-            write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_atoms(n_eigen, N_spin, N, atom), n_eigen=1, pdos_mwab%nbands)
+      ! write out atomic/box weights
+      if (new_geom_choice) then
+        open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_boxes.dat')
+        write (pdos_unit, '(1x,a28)') '############################'
+        write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Boxes-Weights on ', cdate, ' at ', ctime
+        write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_boxes, 1)
+        write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_boxes, 2)
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_boxes, 3)
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of Boxes      :', size(pdos_weights_boxes, 4)
+        write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ B O X _ W E I G H T S'
+        write (pdos_unit, '(1x,a28)') '############################'
+        do box = 1, num_boxes
+          do N = 1, num_kpoints_on_node(my_node_id)
+            do N_spin = 1, nspins
+              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_boxes(n_eigen, N_spin, N, box), n_eigen=1, pdos_mwab%nbands)
+            end do
           end do
         end do
-      end do
+      else
+        open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
+        write (pdos_unit, '(1x,a28)') '############################'
+        write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
+        write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_atoms, 1)
+        write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_atoms, 2)
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_atoms, 3)
+        write (pdos_unit, '(1x,a24,1x,I4)') '# Number of Atoms      :', size(pdos_weights_atoms, 4)
+        write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ A T O M _ W E I G H T S'
+        write (pdos_unit, '(1x,a28)') '############################'
+        do atom = 1, num_atoms
+          do N = 1, num_kpoints_on_node(my_node_id)
+            do N_spin = 1, nspins
+              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_atoms(n_eigen, N_spin, N, atom), n_eigen=1, pdos_mwab%nbands)
+            end do
+          end do
+        end do
+      end if
       close (unit=pdos_unit)
+      ! Write out the k-band weights
+      open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_k_band.dat')
+      write (pdos_unit, '(1x,a28)') '############################'
+      write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Weights-K-Band on ', cdate, ' at ', ctime
+      write (pdos_unit, '(1x,a19,1x,a99)') '# PDOS weights for', seedname
+      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of PDOS Bands :', size(pdos_weights_k_band, 1)
+      write (pdos_unit, '(1x,a24,1x,I2)') '# Number of Spins      :', size(pdos_weights_k_band, 2)
+      write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_k_band, 3)
+      write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ K _ B A N D _ W E I G H T S'
+      write (pdos_unit, '(1x,a28)') '############################'
+      do N = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_k_band(n_eigen, N_spin, N), n_eigen=1, pdos_mwab%nbands)
+        end do
+      end do
+    close (unit=pdos_unit)
     end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
