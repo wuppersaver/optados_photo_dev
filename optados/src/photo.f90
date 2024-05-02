@@ -114,7 +114,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep, &
-      photo_photon_min, jdos_spacing, photo_photon_energy, photo_remove_box_states, iprint, devel_flag
+      photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -156,9 +156,9 @@ contains
     call elec_dealloc_pdos
 
     !
-    if (photo_remove_box_states) then
-      call identify_box_states
-    end if
+    ! if (photo_remove_box_states) then
+    !   call identify_box_states
+    ! end if
 
     ! Calculate the optical properties of the slab
     call calc_photo_optics
