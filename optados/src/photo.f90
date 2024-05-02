@@ -3164,13 +3164,13 @@ contains
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               !if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
-              te_osm_temp(n_eigen, N, N_spin, atom) = &
+              te_osm_temp(n_eigen, N_spin, N, atom) = &
                 E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N_spin, N, atom)
             end do
           end do
         end do
         ! Calculate the qe contribution of each atom/layer
-        layer_qe(atom) = sum(qe_osm(1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom))
+        layer_qe(atom) = sum(qe_osm(:, :, :, atom))
       end do
 
       ! Sum the data from other nodes that have more k-points stored
@@ -3180,7 +3180,7 @@ contains
       call comms_bcast(total_qe, 1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
-      mean_te = sum(te_osm_temp(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins, 1:max_atoms + 1))
+      mean_te = sum(te_osm_temp)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
 
