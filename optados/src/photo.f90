@@ -682,14 +682,15 @@ contains
     use od_constants, only: H2eV
     implicit none
 
-    real(kind=dp) :: energy_tol, diff, ref_efermi_castep, a, b, tol = 1.0e-6_dp
+    real(kind=dp) :: energy_tol, diff, ref_efermi_castep, a, b, tol, min_diff
     integer :: band_unit, ierr, nbands_ref, nkpoints_ref, nspins_ref
-    integer :: str_pos, inodes, ik, is, ib, jb, sum_box
+    integer :: str_pos, inodes, ik, is, ib, jb, sum_box, min_i, min_j
     character(len=80) :: dummy
     character(filename_len) :: band_filename
     logical  :: gamma
     ! logical, dimension(3) :: temp_k
     energy_tol = 1.0e-3_dp
+    tol = 1.0e-6_dp
 
     ! allocate the reference band energies, reference tracking
     if (.not. allocated(ref_band_energies)) then
@@ -762,7 +763,7 @@ contains
     ref_efermi_castep = ref_efermi_castep*H2eV
 
     ! compare the bands and set the removal state
-    lgcl_box_states = 1
+    lgcl_box_states = 0
 
     sum_box = sum(lgcl_box_states(:, :, :))
     call comms_reduce(sum_box, 1, 'SUM')
@@ -775,22 +776,51 @@ contains
       if (on_root .and. gamma) write (stdout, *) kpoint_r_cart(:, ik)
       do is = 1, nspins
         do ib = 1, nbands
-          do jb = 1, nbands
-            a = (band_energy(ib, is, ik) - efermi_castep)
-            b = (ref_band_energies(jb, is, ik) - ref_efermi_castep)
-            diff = abs(a - b)
-            if (on_root .and. gamma) then
-              ! write (stdout, *) 'b ', ib, ' s ', is, ' k ', ik, ': og : ', a,' - ref : ', b, ' diff : ', diff
-              ! write (stdout, *) 'og : ', band_energy(ib, is, ik), ' ref : ', ref_band_energies(ib,is,ik)
-              write (stdout, *) a, b, diff
-            end if
-            if (diff .gt. energy_tol) then
-              lgcl_box_states(ib, is, ik) = 0
-            end if
-          end do
+          a = (band_energy(ib, is, ik) - efermi_castep)
+          b = (ref_band_energies(ib, is, ik) - ref_efermi_castep)
+          diff = abs(a - b)
+          if (on_root .and. gamma) then
+            ! write (stdout, *) 'b ', ib, ' s ', is, ' k ', ik, ': og : ', a,' - ref : ', b, ' diff : ', diff
+            ! write (stdout, *) 'og : ', band_energy(ib, is, ik), ' ref : ', ref_band_energies(ib,is,ik)
+            write (stdout, '(1x,2(f10.5,", "),e12.5)') a, b, diff
+          end if
+          if (diff .lt. energy_tol) then
+            lgcl_box_states(ib, is, ik) = 1
+          end if
         end do
       end do
     end do
+    ! Version testing against all available bands
+    ! do ik = 1, num_kpoints_on_node(my_node_id)
+    !   gamma = all(abs(kpoint_r_cart(:, ik)) .lt. tol)
+    !   if (on_root .and. gamma) write (stdout, *) kpoint_r_cart(:, ik)
+    !   do is = 1, nspins
+    !     do ib = 1, nbands
+    !       min_diff = 10000.0_dp
+    !       ! Check for all reference bands if one has a very similar energy
+    !       do jb = ib, nbands
+    !         a = (band_energy(ib, is, ik) - efermi_castep)
+    !         b = (ref_band_energies(jb, is, ik) - ref_efermi_castep)
+    !         diff = abs(a - b)
+    !         if (diff .le. min_diff) then
+    !           min_i = ib
+    !           min_j = jb
+    !           min_diff = diff
+    !         end if
+    !         if (diff .lt. energy_tol) then
+    !           lgcl_box_states(ib, is, ik) = 0
+    !         end if
+    !       end do
+    !       if (on_root .and. gamma) then
+    !         ! write (stdout, *) 'b ', ib, ' s ', is, ' k ', ik, ': og : ', a,' - ref : ', b, ' diff : ', diff
+    !         ! write (stdout, *) 'og : ', band_energy(ib, is, ik), ' ref : ', ref_band_energies(ib,is,ik)
+    !         a = (band_energy(min_i, is, ik) - efermi_castep)
+    !         b = (ref_band_energies(min_j, is, ik) - ref_efermi_castep)
+    !         write (stdout, *) min_i, a, min_j, b, min_diff
+    !       end if
+    !     end do
+    !   end do
+    ! end do
 
     sum_box = sum(lgcl_box_states(:, :, :))
     call comms_reduce(sum_box, 1, 'SUM')
