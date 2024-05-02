@@ -346,7 +346,7 @@ contains
       end do
       if (photo) then
         mean_height = (photo_slab_min + photo_slab_max)/(2*2)
-        sub_cell_length(3) = sqrt(recip_lattice(i,1)**2 + recip_lattice(i,2)**2 + (pi/mean_height)**2)*step(3)
+        sub_cell_length(3) = sqrt(recip_lattice(3,1)**2 + recip_lattice(3,2)**2 + (pi/mean_height)**2)*step(3)
       end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if

@@ -984,7 +984,7 @@ contains
         write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
         write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
       end if
-      write (stdout, '(1x,a46,5x,E10.4,16x,a1)') '|  Approx. Bulk P_escape Cutoff              :', exp(-1*photo_bulk_cutoff), '|'
+      write (stdout, '(1x,a46,4x,E11.4,16x,a1)') '|  Approx. Bulk P_escape Cutoff              :', exp(-1*photo_bulk_cutoff), '|'
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else

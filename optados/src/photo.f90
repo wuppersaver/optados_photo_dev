@@ -583,7 +583,7 @@ contains
       do atom = 1, max_atoms
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
           layer(atom), thickness_layer(layer(atom)), vdw_radii(atom), volume_atom(atom), "    |"
-225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E14.6E3, 3x, F11.4, 3x, F11.4, a5)
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -877,7 +877,7 @@ contains
       end do
     end if
 
-    call FLUSH()
+    ! call FLUSH()
 
     if (index(devel_flag, 'output_pdos_weights') > 0 .and. on_root) then
       call cell_calc_kpoint_r_cart
@@ -1559,11 +1559,11 @@ contains
       deallocate (atoms_per_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
-
+    if (on_root) then
     write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
     write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
     write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
+    end if 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
       write (stdout, '(1x,I4,1x,I4,1x)') jdos_nbins, max_layer
@@ -1936,7 +1936,7 @@ contains
         if (on_root) then
           write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
             layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
-225       format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E13.6E3, 4x, F11.4, 3x, F11.4, a5)
+225       format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E14.6E3, 3x, F11.4, 3x, F11.4, a5)
         end if
       end do
       if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -2008,7 +2008,7 @@ contains
     end if
     bulk_prob = 0.0_dp
 
-235 format(1x, a1, 5x, a8, I3, 5x, a10, E12.6E2, 3x, a8, E12.6E2, 10x, a1)
+235 format(1x, a1, 5x, a8, I3, 5x, a10, E13.6E2, 2x, a8, E13.6E2, 9x, a1)
     if (.not. new_geom_choice) then
 
       if (size(photo_imfp_const, 1) .gt. 1) then
@@ -3508,7 +3508,7 @@ contains
         & atom1 | atom2 | ... | bulk | '
 
         do e_scale = 1, max_energy
-          write (binding_unit, '(1x,ES13.6E2,2x,ES19.12E3,1x,999(1x,ES19.12E3))') t_energy(e_scale), &
+          write (binding_unit, '(1x,ES13.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))') t_energy(e_scale), &
             sum(qe_atom(e_scale, 1:max_atoms + 1)), qe_atom(e_scale, 1:max_atoms + 1)
         end do
 
