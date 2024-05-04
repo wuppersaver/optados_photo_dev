@@ -1500,7 +1500,7 @@ contains
       end do                                        ! Loop over atoms
       call comms_bcast(absorp_photo(1, 1), max_atoms*number_energies)
       call comms_bcast(reflect_photo(1, 1), max_atoms*number_energies)
-    end if
+      end if
     end if
 
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
@@ -2415,19 +2415,95 @@ contains
         end do
       end do
     else
-    do atom = 1, max_atoms
-      if (iprint > 2 .and. on_root) then
-        write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
-          "Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
-      end if
+      do atom = 1, max_atoms
+        if (iprint > 2 .and. on_root) then
+          write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
+            "Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
+        end if
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen2 = min_index_unocc(N_spin, N), nbands
+              if (num_exclude_bands .gt. 1) then
+                if (any(exclude_bands == n_eigen2)) then
+                  cycle
+                end if
+              end if
+              final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
+              do n_eigen = 1, n_eigen2 - 1
+                initial_fd = fermi_dirac(n_eigen, N_spin, N)
+
+                if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
+                  transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
+                                          width, (evacuum_eff - efermi))/norm_vac
+                else
+                  transverse_g = 1.0_dp
+                end if
+                if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
+                  vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
+                                  scissor_op, width, evacuum_eff)/norm_vac
+                else
+                  vac_g = 1.0_dp
+                end if
+
+                !! this could be checked if it has an impact on the final value
+                ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
+                if (index(devel_flag, 'reduced_pe') > 0) then
+                  if (index(devel_flag, 'projected_pe') > 0) then
+                    qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electrons_per_state*kpoint_weight(N)* &
+                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                  pdos_weights_k_band(n_eigen, N_spin, N))
+                  else
+                    qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                electrons_per_state*kpoint_weight(N)
+                  end if
+                else
+                  if (.not. new_geom_choice) then
+                    qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                  delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                  electron_esc(n_eigen, N_spin, N, atom)* &
+                                                                  electrons_per_state*kpoint_weight(N)* &
+                                                                  (I_layer(layer(atom), current_photo_energy_index))* &
+                                                                  transverse_g*vac_g*initial_fd*final_fd* &
+                                                                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
+                  else
+                    qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
+                                                                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                  delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                  electron_esc(n_eigen, N_spin, N, atom)* &
+                                                                  electrons_per_state*kpoint_weight(N)* &
+                                                                  (I_layer(box_atom(atom), current_photo_energy_index))* &
+                                                                  transverse_g*vac_g*initial_fd*final_fd* &
+                                                                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
+                  end if
+                end if
+                if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
+                qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) .gt. 0.0_dp) then
+                  write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
+                  write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
+                    band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                    delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
+                    kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, initial_fd, final_fd, &
+                    pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
+                end if
+              end do
+            end do
+          end do
+        end do
+      end do
+
+      call photo_calculate_delta(delta_temp, .true.)
+
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen2 = min_index_unocc(N_spin, N), nbands
-            if (num_exclude_bands .gt. 1) then
-              if (any(exclude_bands == n_eigen2)) then
-                cycle
-              end if
-            end if
             final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
             do n_eigen = 1, n_eigen2 - 1
               initial_fd = fermi_dirac(n_eigen, N_spin, N)
@@ -2440,99 +2516,23 @@ contains
               end if
               if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
                 vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
-                                 scissor_op, width, evacuum_eff)/norm_vac
+                                  scissor_op, width, evacuum_eff)/norm_vac
               else
                 vac_g = 1.0_dp
               end if
-
-              !! this could be checked if it has an impact on the final value
-              ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle
-              if (index(devel_flag, 'reduced_pe') > 0) then
-                if (index(devel_flag, 'projected_pe') > 0) then
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                               electrons_per_state*kpoint_weight(N)* &
-                                                               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                pdos_weights_k_band(n_eigen, N_spin, N))
-                else
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                               electrons_per_state*kpoint_weight(N)
-                end if
-              else
-                if (.not. new_geom_choice) then
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electron_esc(n_eigen, N_spin, N, atom)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
-                                                                (I_layer(layer(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
-                else
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electron_esc(n_eigen, N_spin, N, atom)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
-                                                                (I_layer(box_atom(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
-                end if
-              end if
-              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
-              qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) .gt. 0.0_dp) then
-                write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
-                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
-                  band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
-                  delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
-                  kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, initial_fd, final_fd, &
-                  pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
-              end if
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
+                                                                    (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                                      delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                      bulk_prob(n_eigen, N_spin, N)* &
+                                                                      electrons_per_state*kpoint_weight(N)* &
+                                                                      transverse_g*vac_g*initial_fd*final_fd* &
+                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                                      pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                                    (1.0_dp + field_emission(n_eigen, N_spin, N))
             end do
           end do
         end do
       end do
-    end do
-
-    call photo_calculate_delta(delta_temp, .true.)
-
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen2 = min_index_unocc(N_spin, N), nbands
-          final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
-          do n_eigen = 1, n_eigen2 - 1
-            initial_fd = fermi_dirac(n_eigen, N_spin, N)
-
-            if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
-              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
-                                      width, (evacuum_eff - efermi))/norm_vac
-            else
-              transverse_g = 1.0_dp
-            end if
-            if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
-              vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
-                                scissor_op, width, evacuum_eff)/norm_vac
-            else
-              vac_g = 1.0_dp
-            end if
-            qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
-                                                                  (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                    delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                    bulk_prob(n_eigen, N_spin, N)* &
-                                                                    electrons_per_state*kpoint_weight(N)* &
-                                                                    transverse_g*vac_g*initial_fd*final_fd* &
-                                                                    (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-                                                                    pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                                  (1.0_dp + field_emission(n_eigen, N_spin, N))
-          end do
-        end do
-      end do
-    end do
     end if
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
@@ -2572,12 +2572,12 @@ contains
 
     if (index(devel_flag, 'print_kpt_qe_data') > 0) then
       if (on_root) then
-    qe_unit = io_file_unit()
-    write (char_e, '(F7.3)') temp_photon_energy
-    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+        qe_unit = io_file_unit()
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
         write(stdout, *) 'opening file'
-    open (unit=qe_unit, action='write', file=filename)
-    write (qe_unit,*) '# The k point dependent QE values'
+        open (unit=qe_unit, action='write', file=filename)
+        write (qe_unit,*) '# The k point dependent QE values'
         call io_date(cdate, ctime)
         write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
       end if
@@ -2588,9 +2588,9 @@ contains
   
       ! allocate and sum the 3step qe matrix on non-root
       if (.not. on_root) then
-    do N = 1, num_kpoints_on_node(my_node_id)
+        do N = 1, num_kpoints_on_node(my_node_id)
           qe_k_temp(N) = sum(qe_tsm(:,:,:,N,:))
-    end do
+        end do
         ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
         ! - wait for the token
         call comms_recv(token, 1, 0)
@@ -3267,56 +3267,56 @@ contains
         mean_te = 0.5*sum(qe_tsm(:, :, :, :, 3))/sum(qe_tsm(:, :, :, :, 1))
         call comms_reduce(mean_te, 1, 'SUM')
       else
-      allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
-      te_tsm_temp = 0.0_dp
+        allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
+        if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
+        te_tsm_temp = 0.0_dp
 
-      ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
-      ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
-      do atom = 1, max_atoms + 1
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, min_index_unocc(N_spin, N) - 1
-              !do n_eigen2 = min_index_unocc(N_spin, N), nbands
-              ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-              te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N, N_spin) &
-                                                      *sum(qe_tsm(n_eigen, min_index_unocc(N_spin, N):nbands, N_spin, N, atom))
-              !end do
+        ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
+        ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
+        do atom = 1, max_atoms + 1
+          do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, min_index_unocc(N_spin, N) - 1
+                !do n_eigen2 = min_index_unocc(N_spin, N), nbands
+                ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
+                te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N, N_spin) &
+                                                        *sum(qe_tsm(n_eigen, min_index_unocc(N_spin, N):nbands, N_spin, N, atom))
+                !end do
+              end do
             end do
           end do
-        end do
-        ! Calculate the qe contribution of each atom/layer
-        layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
-        layer_te(atom) = sum(te_tsm_temp(:,:,:,atom))
-      end do 
-      
-      call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
+          ! Calculate the qe contribution of each atom/layer
+          layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
+          layer_te(atom) = sum(te_tsm_temp(:,:,:,atom))
+        end do 
+        
+        call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
         if (on_root) write(stdout, *) 'te_tsm per atom : ', (layer_te(atom),atom=1,max_atoms+1)
-      
-      ! Sum the data from other nodes that have more k-points stored
-      call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
-      ! Calculate the total QE
+        
+        ! Sum the data from other nodes that have more k-points stored
+        call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
+        ! Calculate the total QE
         if (on_root) write(stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
-      total_qe = sum(layer_qe)
+        total_qe = sum(layer_qe)
 
-      mean_te = sum(te_tsm_temp)
-      ! Sum the data from other nodes that have more k-points stored
-      call comms_reduce(mean_te, 1, 'SUM')
+        mean_te = sum(te_tsm_temp)
+        ! Sum the data from other nodes that have more k-points stored
+        call comms_reduce(mean_te, 1, 'SUM')
         if (on_root) write(stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
-      if (total_qe .gt. 0.0_dp) then
-        mean_te = mean_te/total_qe
-      else
-        mean_te = 0.0_dp
-      end if
+        if (total_qe .gt. 0.0_dp) then
+          mean_te = mean_te/total_qe
+        else
+          mean_te = 0.0_dp
+        end if
 
         if (on_root) write(stdout, *) 'mean_te after divison of QE_tot : ', mean_te
 
-      deallocate (te_tsm_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
+        deallocate (te_tsm_temp, stat=ierr)
+        if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
 
-      deallocate (layer_te, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_te')
+        deallocate (layer_te, stat=ierr)
+        if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_te')
       end if
 
     elseif (index(photo_model, '1step') > 0) then
@@ -3401,16 +3401,16 @@ contains
 
         write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
       else
-      do atom = 1, max_atoms
-        write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-          layer(atom), layer_qe(atom), "      |"
-      end do
-      write (stdout, 226) "| Bulk", layer_qe(max_atoms + 1), &
-      &"      |"
+        do atom = 1, max_atoms
+          write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
+            layer(atom), layer_qe(atom), "      |"
+        end do
+        write (stdout, 226) "| Bulk", layer_qe(max_atoms + 1), &
+        &"      |"
 
-      write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
+        write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
 
-      write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+        write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
       end if
 
       if (photo_elec_field .gt. 0.0_dp) then
