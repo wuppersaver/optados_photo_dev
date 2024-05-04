@@ -2736,7 +2736,7 @@ contains
     use od_jdos_utils, only: jdos_nbins
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_constants, only: pi
+    use od_constants, only: pi, inv_sqrt_two_pi
     implicit none
 
     integer :: ik, is, ib, jb, i, ierr
@@ -2749,7 +2749,7 @@ contains
     logical, intent(in)                               :: calculate_bulk
 
     logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: half_slab_height
+    real(kind=dp) :: half_slab_height, norm_width
 
     linear = .false.
     fixed = .false.
@@ -2818,7 +2818,7 @@ contains
             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
             ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
             if (finite_bin_correction .and. (width < delta_bins)) width = delta_bins
-
+            norm_width = inv_sqrt_two_pi/width
             ! ! The linear method has a special way to calculate the integrated dos
             ! ! we have to take account for this here.
             ! if (linear .and. .not. force_adaptive) then
@@ -2834,7 +2834,7 @@ contains
               delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
             else
               delta_temp(ib, jb, is, ik) = gaussian((band_energy(jb, is, ik) - band_energy(ib, is, ik)) + scissor_op, width, &
-                                                    E(current_energy_index))
+                                                    E(current_energy_index))/norm_width
             end if
 
           end do unocc_states
@@ -3317,6 +3317,7 @@ contains
 
       deallocate (layer_te, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_te')
+      end if
 
     elseif (index(photo_model, '1step') > 0) then
 
@@ -3372,7 +3373,7 @@ contains
 
     use od_cell, only: cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_elec_field, photo_model
+    use od_parameters, only: photo_work_function, photo_elec_field, photo_model, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
