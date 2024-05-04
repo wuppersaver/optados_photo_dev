@@ -1112,6 +1112,7 @@ contains
     allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
     if (new_geom_choice) then
+      if (.not. index(devel_flag, 'ds_like_pe') > 0) then
       do box = 1, num_boxes                           ! Loop over boxes
         !
         if (iprint > 1 .and. on_root) then
@@ -1302,8 +1303,9 @@ contains
       end do                                        ! Loop over boxes
       call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
       call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
-
+      end if
     else
+      if (.not. index(devel_flag, 'ds_like_pe') > 0) then
       do atom = 1, max_atoms                           ! Loop over atoms
         !
         if (iprint > 1 .and. on_root) then
@@ -1499,6 +1501,7 @@ contains
       call comms_bcast(absorp_photo(1, 1), max_atoms*number_energies)
       call comms_bcast(reflect_photo(1, 1), max_atoms*number_energies)
     end if
+    end if
 
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
@@ -1589,7 +1592,7 @@ contains
       deallocate (atoms_per_layer, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate atoms_per_layer')
     end if
-    if (on_root) then
+    if (on_root .and. iprint > 2) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
       write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, max_layer), i=1, number_energies)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -2251,24 +2254,29 @@ contains
     ! edited by Felix Mildner, 03/2023
     !===============================================================================
 
-    use od_cell, only: num_kpoints_on_node, kpoint_weight
+    use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
-    use od_comms, only: my_node_id, on_root
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
       exclude_bands, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname
+    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:,:,:) :: fermi_dirac
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd
-    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, qe_unit
+    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
+    real(kind=dp) :: x(1:2),y(1:2),step(1:3)
+    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
+    integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, qe_unit, token, inode
+    real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
 
 
     width = (1.0_dp/11604.45_dp)*photo_temperature
@@ -2356,7 +2364,57 @@ contains
       end do
     end do
 
-
+    if (index(devel_flag, 'ds_like_pe') > 0) then
+      ! write(stdout, *) kpoint_weight(:)
+      i = 0
+      write(stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
+      step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)
+      x(:) = recip_lattice(1:2,1)*step(1)
+      y(:) = recip_lattice(1:2,2)*step(2)
+      ! det(M), where the matrix M is the x and y as columns
+      sub_cell_area = x(1)*y(2) - y(1)*x(2) 
+      if (on_root) then
+        write (stdout,*) 'step : ', step(:)
+        write (stdout,*) 'x :', x(:), ' y :', y(:)
+        write (stdout,*) 'sub_cell_area : ', sub_cell_area
+      end if
+      ! sub_cell_area = recip_lattice(1,1)*step(1)*recip_lattice(2,2)*step(2) - recip_lattice(1,2)*step(2)*recip_lattice(2,1)*step(1)
+      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen2 = min_index_unocc(N_spin, N), nbands
+            if (num_exclude_bands .gt. 1) then
+              if (any(exclude_bands == n_eigen2)) then
+                cycle
+              end if
+            end if
+            excess_energy = band_energy(n_eigen2, N_spin, N) - evacuum_eff
+            excess_energy = max(excess_energy, 0.0_dp)
+            final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)            
+            do n_eigen = 1, n_eigen2 - 1
+              initial_fd = fermi_dirac(n_eigen, N_spin, N)
+              ! Calculating the QE numerator and MTE denominator
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                        electrons_per_state*kpoint_weight(N)* &
+                                                        final_fd*initial_fd*excess_energy*sub_cell_area
+              ! Calculating the QE denominator
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, 2) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                        electrons_per_state*kpoint_weight(N)* &
+                                                        final_fd*initial_fd*sub_cell_area
+              ! Calculating the MTE numerator
+              qe_tsm(n_eigen, n_eigen2, N_spin, N, 3) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                        electrons_per_state*kpoint_weight(N)* &
+                                                        final_fd*initial_fd*excess_energy**2*sub_cell_area
+              ! if (i .le. 10) then
+              !   if (N .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) .gt. 0.0_dp) then
+              !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen2, N_spin, N, 1:3)
+              !     i = i + 1
+              !   end if
+              ! end if
+            end do
+          end do
+        end do
+      end do
+    else
     do atom = 1, max_atoms
       if (iprint > 2 .and. on_root) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
@@ -2475,6 +2533,7 @@ contains
         end do
       end do
     end do
+    end if
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -3122,7 +3181,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
     use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
-    use od_parameters, only: photo_model, iprint
+    use od_parameters, only: photo_model, iprint, devel_flag
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
@@ -3156,6 +3215,12 @@ contains
 
     if (index(photo_model, '3step') > 0) then
 
+      if (index(devel_flag,'ds_like_pe') > 0) then
+        total_qe = sum(qe_tsm(:, :, :, :, 1))/sum(qe_tsm(:, :, :, :, 2))
+        call comms_reduce(total_qe, 1, 'SUM')
+        mean_te = 0.5*sum(qe_tsm(:, :, :, :, 3))/sum(qe_tsm(:, :, :, :, 1))
+        call comms_reduce(mean_te, 1, 'SUM')
+      else
       allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
       te_tsm_temp = 0.0_dp
@@ -3180,18 +3245,18 @@ contains
       end do 
       
       call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
-      write(stdout, *) 'te_tsm per atom : ', (layer_te(atom),atom=1,max_atoms+1)
+        if (on_root) write(stdout, *) 'te_tsm per atom : ', (layer_te(atom),atom=1,max_atoms+1)
       
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
-      write(stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
+        if (on_root) write(stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
       total_qe = sum(layer_qe)
 
       mean_te = sum(te_tsm_temp)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
-      write(stdout, *) 'mean_te before divison of QE_tot : ', mean_te
+        if (on_root) write(stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
@@ -3199,7 +3264,7 @@ contains
         mean_te = 0.0_dp
       end if
 
-      write(stdout, *) 'mean_te after divison of QE_tot : ', mean_te
+        if (on_root) write(stdout, *) 'mean_te after divison of QE_tot : ', mean_te
 
       deallocate (te_tsm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
@@ -3283,7 +3348,12 @@ contains
       end if
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
+      if (index(devel_flag,'ds_like_pe') > 0) then
+        write (stdout, '(1x,a78)') '|       ********** Calculated a simplified DS like PE model **********       |'
+        write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
 
+        write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+      else
       do atom = 1, max_atoms
         write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
           layer(atom), layer_qe(atom), "      |"
@@ -3294,6 +3364,7 @@ contains
       write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
 
       write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
+      end if
 
       if (photo_elec_field .gt. 0.0_dp) then
         write (stdout, 229) '| Total field emission (electrons/A^2):', total_field_emission, '      |'
