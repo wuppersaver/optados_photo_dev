@@ -2570,16 +2570,62 @@ contains
       write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
 
+    if (index(devel_flag, 'print_kpt_qe_data') > 0) then
+      if (on_root) then
     qe_unit = io_file_unit()
     write (char_e, '(F7.3)') temp_photon_energy
     filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+        write(stdout, *) 'opening file'
     open (unit=qe_unit, action='write', file=filename)
     write (qe_unit,*) '# The k point dependent QE values'
-    do N = 1, num_kpoints_on_node(my_node_id)
-      write (qe_unit,*)  sum(qe_tsm(:,:,:,N,:))
-    end do
-    close (unit=qe_unit)
+        call io_date(cdate, ctime)
+        write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
+      end if
 
+      allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calculate_three_step_model - failed to allocate qe_k_temp on root')
+      token = -1
+  
+      ! allocate and sum the 3step qe matrix on non-root
+      if (.not. on_root) then
+    do N = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N) = sum(qe_tsm(:,:,:,N,:))
+    end do
+        ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
+        ! - wait for the token
+        call comms_recv(token, 1, 0)
+        ! - send the respective qe_matrix for that node
+        call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
+        ! - send token back to root node
+        call comms_send(token, 1, 0)
+      end if
+
+      if (on_root) then
+        do inode = 1, num_nodes - 1
+          ! - send to the token to notes in turn
+          ! write(stdout, *) 'sending token to node', inode
+          call comms_send(token, 1, inode)
+          ! write(stdout, *) 'sent token to node and receiving data from', inode
+          ! - receive the qe_matrix from the other notes and write it to the file
+          call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
+          ! write(stdout, *) 'received data from node ', inode, 'writing to file'
+          ! write out the qe_matrix to the file
+          do N = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N)
+          end do
+          ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
+          ! - receive the token from a node
+          call comms_recv(token, 1, inode)
+        end do
+          ! - write root qe_matrix elements
+        do N = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_tsm(:,:,:,N,:))
+        end do
+        close (unit=qe_unit)
+      end if
+      deallocate (qe_k_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate qe_k_temp')
+    end if
   end subroutine calc_three_step_model
 
   !===============================================================================
