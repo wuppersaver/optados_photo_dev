@@ -2391,14 +2391,14 @@ contains
             final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)
             do n_eigen = 1, n_eigen2 - 1
               initial_fd = fermi_dirac(n_eigen, N_spin, N)
-              ! Calculating the QE numerator and MTE denominator
+              ! Calculating the QE denominator
               qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                         electrons_per_state*kpoint_weight(N)* &
-                                                        final_fd*initial_fd*excess_energy!*sub_cell_area
-              ! Calculating the QE denominator
+                                                        final_fd*initial_fd!*sub_cell_area
+              ! Calculating the QE numerator and MTE denominator
               qe_tsm(n_eigen, n_eigen2, N_spin, N, 2) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                         electrons_per_state*kpoint_weight(N)* &
-                                                        final_fd*initial_fd!*sub_cell_area
+                                                        final_fd*initial_fd*excess_energy!*sub_cell_area
               ! Calculating the MTE numerator
               qe_tsm(n_eigen, n_eigen2, N_spin, N, 3) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                         electrons_per_state*kpoint_weight(N)* &
@@ -3237,7 +3237,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp), allocatable, dimension(:) :: layer_te
-    real(kind=dp)                                     :: time0, time1
+    real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
     integer :: N, N_spin, n_eigen, atom, ierr
 
     time0 = io_time()
@@ -3261,9 +3261,20 @@ contains
     if (index(photo_model, '3step') > 0) then
 
       if (index(devel_flag, 'ds_like_pe') > 0) then
-        total_qe = sum(qe_tsm(:, :, :, :, 1))/sum(qe_tsm(:, :, :, :, 2))
+        ! qe_term1 = sum(qe_tsm(:, :, :, :, 2))
+        ! qe_term2 = sum(qe_tsm(:, :, :, :, 1))
+        ! mte_term1 = sum(qe_tsm(:, :, :, :, 3))
+        ! mte_term2 = sum(qe_tsm(:, :, :, :, 2))
+        ! call comms_reduce(qe_term1, 1, 'SUM')
+        ! call comms_reduce(qe_term2, 1, 'SUM')
+        ! call comms_reduce(mte_term1, 1, 'SUM')
+        ! call comms_reduce(mte_term2, 1, 'SUM')
+        ! total_qe = qe_term1/qe_term2
+        ! mean_te = 0.5*(mte_term1/mte_term2)
+
+        total_qe = sum(qe_tsm(:, :, :, :, 2))/sum(qe_tsm(:, :, :, :, 1))
         call comms_reduce(total_qe, 1, 'SUM')
-        mean_te = 0.5*sum(qe_tsm(:, :, :, :, 3))/sum(qe_tsm(:, :, :, :, 1))
+        mean_te = 0.5*sum(qe_tsm(:, :, :, :, 3))/sum(qe_tsm(:, :, :, :, 2))
         call comms_reduce(mean_te, 1, 'SUM')
       else
         allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
