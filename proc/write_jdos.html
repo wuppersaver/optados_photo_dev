@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>write_jdos &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>write_jdos
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 0.9% of total for procedures.">61 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/jdos.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/jdos.f90.html'>jdos.f90</a></li>
+              <li><a href='../module/od_jdos.html'>od_jdos</a></li>
+          <li class="active">write_jdos</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/write_jdos.html#src">write_jdos</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine write_jdos(E, dos, dos_name)  
+</h2>
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_electronic.html'>od_electronic</a></li>
+                <li><a href='../module/od_jdos_utils.html'>od_jdos_utils</a></li>
+                <li><a href='../module/od_io.html'>od_io</a></li>
+                <li><a href='../module/od_parameters.html'>od_parameters</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_jdos~~UsesGraph Pages: 1 -->
+<svg id="procwrite_jdosUsesGraph" width="558pt" height="232pt"
+ viewBox="0.00 0.00 558.00 232.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_jdos~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 228)">
+<title>proc~~write_jdos~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-228 554,-228 554,4 -4,4"/>
+<!-- proc~write_jdos -->
+<g id="proc~~write_jdos~~UsesGraph_node1" class="node">
+<title>proc~write_jdos</title>
+<polygon fill="none" stroke="black" points="550,-144 484,-144 484,-120 550,-120 550,-144"/>
+<text text-anchor="middle" x="517" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_jdos</text>
+</g>
+<!-- module~od_electronic -->
+<g id="proc~~write_jdos~~UsesGraph_node2" class="node">
+<title>module~od_electronic</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node2"><a xlink:href=".././module/od_electronic.html" xlink:title="od_electronic">
+<polygon fill="#337ab7" stroke="#337ab7" points="318,-224 234,-224 234,-200 318,-200 318,-224"/>
+<text text-anchor="middle" x="276" y="-209.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_electronic</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;module~od_electronic -->
+<g id="proc~~write_jdos~~UsesGraph_edge1" class="edge">
+<title>proc~write_jdos&#45;&gt;module~od_electronic</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M483.77,-142.79C442.25,-156.69 369.84,-180.92 322.67,-196.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="321.38,-193.45 313.01,-199.95 323.6,-200.09 321.38,-193.45"/>
+</g>
+<!-- module~od_parameters -->
+<g id="proc~~write_jdos~~UsesGraph_node3" class="node">
+<title>module~od_parameters</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node3"><a xlink:href=".././module/od_parameters.html" xlink:title="od_parameters">
+<polygon fill="#337ab7" stroke="#337ab7" points="448,-144 354,-144 354,-120 448,-120 448,-144"/>
+<text text-anchor="middle" x="401" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_parameters</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;module~od_parameters -->
+<g id="proc~~write_jdos~~UsesGraph_edge2" class="edge">
+<title>proc~write_jdos&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M483.94,-132C475.99,-132 467.23,-132 458.49,-132"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="458.28,-128.5 448.28,-132 458.28,-135.5 458.28,-128.5"/>
+</g>
+<!-- module~od_jdos_utils -->
+<g id="proc~~write_jdos~~UsesGraph_node4" class="node">
+<title>module~od_jdos_utils</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node4"><a xlink:href=".././module/od_jdos_utils.html" xlink:title="od_jdos_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="198,-24 118,-24 118,0 198,0 198,-24"/>
+<text text-anchor="middle" x="158" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_jdos_utils</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;module~od_jdos_utils -->
+<g id="proc~~write_jdos~~UsesGraph_edge3" class="edge">
+<title>proc~write_jdos&#45;&gt;module~od_jdos_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M491.67,-119.94C449.32,-99.9 358.74,-61.22 277,-54"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M275,-54C247.42,-48.24 217.56,-37.31 195.04,-28.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="196.13,-24.71 185.56,-24.06 193.42,-31.16 196.13,-24.71"/>
+</g>
+<!-- module~od_io -->
+<g id="proc~~write_jdos~~UsesGraph_node5" class="node">
+<title>module~od_io</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node5"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="185,-66 131,-66 131,-42 185,-42 185,-66"/>
+<text text-anchor="middle" x="158" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;module~od_io -->
+<g id="proc~~write_jdos~~UsesGraph_edge4" class="edge">
+<title>proc~write_jdos&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M275,-54C248.5,-51.66 218.47,-51.74 195.6,-52.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="195.2,-48.87 185.32,-52.68 195.42,-55.86 195.2,-48.87"/>
+</g>
+<!-- module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_node6" class="node">
+<title>module~od_constants</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node6"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-66 0,-66 0,-42 82,-42 82,-66"/>
+<text text-anchor="middle" x="41" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- module~od_electronic&#45;&gt;module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_edge5" class="edge">
+<title>module~od_electronic&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M236.14,-199.95C213.4,-192.57 184.27,-182.53 159,-172"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_io -->
+<g id="proc~~write_jdos~~UsesGraph_edge7" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M362.87,-119.98C317.09,-105.16 239.8,-80.15 194.69,-65.55"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="195.62,-62.17 185.03,-62.42 193.47,-68.83 195.62,-62.17"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_edge8" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M359.19,-144.09C300.23,-160.66 194.43,-186.76 159,-172"/>
+</g>
+<!-- module~od_cell -->
+<g id="proc~~write_jdos~~UsesGraph_node7" class="node">
+<title>module~od_cell</title>
+<g id="a_proc~~write_jdos~~UsesGraph_node7"><a xlink:href=".././module/od_cell.html" xlink:title="od_cell">
+<polygon fill="#337ab7" stroke="#337ab7" points="303,-144 249,-144 249,-120 303,-120 303,-144"/>
+<text text-anchor="middle" x="276" y="-129.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_cell</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_cell -->
+<g id="proc~~write_jdos~~UsesGraph_edge6" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M353.85,-132C340.43,-132 325.97,-132 313.25,-132"/>
+<polygon fill="#7fff00" stroke="#7fff00" points="313.04,-128.5 303.04,-132 313.04,-135.5 313.04,-128.5"/>
+</g>
+<!-- module~od_jdos_utils&#45;&gt;module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_edge9" class="edge">
+<title>module~od_jdos_utils&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M124.05,-24.04C111.78,-28.52 97.67,-33.67 84.65,-38.42"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="83.15,-35.24 74.96,-41.96 85.55,-41.82 83.15,-35.24"/>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_edge10" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#7f00ff" stroke-dasharray="5,2" d="M130.9,-54C119.5,-54 105.71,-54 92.44,-54"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="92.43,-50.5 82.43,-54 92.43,-57.5 92.43,-50.5"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_io -->
+<g id="proc~~write_jdos~~UsesGraph_edge11" class="edge">
+<title>module~od_cell&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M255.71,-119.99C248.82,-115.65 241.02,-110.66 234,-106 217.38,-94.98 198.97,-82.22 184.55,-72.1"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="186.33,-69.08 176.14,-66.18 182.3,-74.8 186.33,-69.08"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_constants -->
+<g id="proc~~write_jdos~~UsesGraph_edge12" class="edge">
+<title>module~od_cell&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M251.69,-144.12C223,-158.33 176.01,-179.09 159,-172"/>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M157,-172C110.03,-152.43 72.81,-103.08 54.47,-74.79"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="57.27,-72.67 48.98,-66.07 51.35,-76.4 57.27,-72.67"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th>Type</th>
+<th>Intent</th><th>Optional</th>        <th>Attributes</th>
+        <th></th>
+        <th>Name</th>
+        <th></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>E</strong>(jdos_nbins)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dos</strong>(jdos_nbins,nspins)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_name"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dos_name</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_jdos~~CallsGraph Pages: 1 -->
+<svg id="procwrite_jdosCallsGraph" width="469pt" height="421pt"
+ viewBox="0.00 0.00 469.00 420.83" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_jdos~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 416.83)">
+<title>proc~~write_jdos~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-416.83 465,-416.83 465,4 -4,4"/>
+<!-- proc~write_jdos -->
+<g id="proc~~write_jdos~~CallsGraph_node1" class="node">
+<title>proc~write_jdos</title>
+<polygon fill="none" stroke="black" points="66,-316.69 0,-316.69 0,-292.69 66,-292.69 66,-316.69"/>
+<text text-anchor="middle" x="33" y="-302.29" font-family="Helvetica,sans-Serif" font-size="10.50">write_jdos</text>
+</g>
+<!-- proc~io_file_unit -->
+<g id="proc~~write_jdos~~CallsGraph_node2" class="node">
+<title>proc~io_file_unit</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node2"><a xlink:href=".././proc/io_file_unit.html" xlink:title="io_file_unit">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="348.5,-379.69 278.5,-379.69 278.5,-355.69 348.5,-355.69 348.5,-379.69"/>
+<text text-anchor="middle" x="313.5" y="-365.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_file_unit</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;proc~io_file_unit -->
+<g id="proc~~write_jdos~~CallsGraph_edge1" class="edge">
+<title>proc~write_jdos&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0000" d="M66.22,-311.98C116.09,-323.26 212.09,-344.98 268.37,-357.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="267.88,-361.18 278.4,-359.98 269.42,-354.36 267.88,-361.18"/>
+</g>
+<!-- proc~io_date -->
+<g id="proc~~write_jdos~~CallsGraph_node3" class="node">
+<title>proc~io_date</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node3"><a xlink:href=".././proc/io_date.html" xlink:title="io_date">
+<polygon fill="#d9534f" stroke="#d9534f" points="461,-27.69 407,-27.69 407,-3.69 461,-3.69 461,-27.69"/>
+<text text-anchor="middle" x="434" y="-13.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_date</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;proc~io_date -->
+<g id="proc~~write_jdos~~CallsGraph_edge2" class="edge">
+<title>proc~write_jdos&#45;&gt;proc~io_date</title>
+<path fill="none" stroke="#ff0000" d="M38.44,-292.61C56.52,-245.51 129.69,-73.89 256,-14.69 301.02,6.41 359.83,0.44 397.02,-6.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="396.4,-10.26 406.91,-8.87 397.83,-3.4 396.4,-10.26"/>
+</g>
+<!-- proc~io_error -->
+<g id="proc~~write_jdos~~CallsGraph_node4" class="node">
+<title>proc~io_error</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node4"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="461,-253.69 407,-253.69 407,-229.69 461,-229.69 461,-253.69"/>
+<text text-anchor="middle" x="434" y="-239.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;proc~io_error -->
+<g id="proc~~write_jdos~~CallsGraph_edge4" class="edge">
+<title>proc~write_jdos&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M49.91,-316.75C100.99,-353.9 263.73,-459.87 371,-388.69 413.09,-360.76 426.68,-298.02 431.01,-264.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="434.52,-264.31 432.15,-253.99 427.57,-263.54 434.52,-264.31"/>
+</g>
+<!-- proc~write_jdos_xmgrace -->
+<g id="proc~~write_jdos~~CallsGraph_node5" class="node">
+<title>proc~write_jdos_xmgrace</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node5"><a xlink:href=".././proc/write_jdos_xmgrace.html" xlink:title="write_jdos_xmgrace">
+<polygon fill="#d9534f" stroke="#d9534f" points="220,-232.69 102,-232.69 102,-208.69 220,-208.69 220,-232.69"/>
+<text text-anchor="middle" x="161" y="-218.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_jdos_xmgrace</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;proc~write_jdos_xmgrace -->
+<g id="proc~~write_jdos~~CallsGraph_edge3" class="edge">
+<title>proc~write_jdos&#45;&gt;proc~write_jdos_xmgrace</title>
+<path fill="none" stroke="#ff0000" d="M52.05,-292.66C73.39,-278.43 109.07,-254.65 133.52,-238.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="135.6,-241.16 141.98,-232.7 131.72,-235.34 135.6,-241.16"/>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~io_file_unit -->
+<g id="proc~~write_jdos~~CallsGraph_edge5" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#7f00ff" d="M168.01,-232.93C180.83,-257.8 213.19,-314.62 256,-346.69 259.93,-349.63 264.31,-352.2 268.86,-354.44"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="267.75,-357.77 278.31,-358.56 270.55,-351.35 267.75,-357.77"/>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~io_error -->
+<g id="proc~~write_jdos~~CallsGraph_edge9" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#7f00ff" d="M182.97,-208.66C221.55,-188.2 305.8,-151.38 371,-178.69 391.59,-187.31 408.8,-206.48 419.82,-221.42"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="416.96,-223.44 425.57,-229.62 422.69,-219.42 416.96,-223.44"/>
+</g>
+<!-- proc~xmgu_legend -->
+<g id="proc~~write_jdos~~CallsGraph_node6" class="node">
+<title>proc~xmgu_legend</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node6"><a xlink:href=".././proc/xmgu_legend.html" xlink:title="xmgu_legend">
+<polygon fill="#d9534f" stroke="#d9534f" points="356,-89.69 271,-89.69 271,-65.69 356,-65.69 356,-89.69"/>
+<text text-anchor="middle" x="313.5" y="-75.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_legend</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_legend -->
+<g id="proc~~write_jdos~~CallsGraph_edge6" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_legend</title>
+<path fill="none" stroke="#7f00ff" d="M168.32,-208.48C181.46,-184.22 214.03,-129.62 256,-98.69 258.06,-97.17 260.25,-95.75 262.52,-94.42"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="264.28,-97.45 271.57,-89.75 261.07,-91.22 264.28,-97.45"/>
+</g>
+<!-- proc~xmgu_subtitle -->
+<g id="proc~~write_jdos~~CallsGraph_node7" class="node">
+<title>proc~xmgu_subtitle</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node7"><a xlink:href=".././proc/xmgu_subtitle.html" xlink:title="xmgu_subtitle">
+<polygon fill="#d9534f" stroke="#d9534f" points="357,-337.69 270,-337.69 270,-313.69 357,-313.69 357,-337.69"/>
+<text text-anchor="middle" x="313.5" y="-323.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_subtitle</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_subtitle -->
+<g id="proc~~write_jdos~~CallsGraph_edge10" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_subtitle</title>
+<path fill="none" stroke="#7f00ff" d="M172.74,-232.83C189.13,-250.71 222.08,-284.24 256,-304.69 258.82,-306.39 261.81,-307.99 264.87,-309.49"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="263.65,-312.78 274.21,-313.68 266.52,-306.4 263.65,-312.78"/>
+</g>
+<!-- proc~xmgu_title -->
+<g id="proc~~write_jdos~~CallsGraph_node8" class="node">
+<title>proc~xmgu_title</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node8"><a xlink:href=".././proc/xmgu_title.html" xlink:title="xmgu_title">
+<polygon fill="#d9534f" stroke="#d9534f" points="347.5,-295.69 279.5,-295.69 279.5,-271.69 347.5,-271.69 347.5,-295.69"/>
+<text text-anchor="middle" x="313.5" y="-281.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_title</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_title -->
+<g id="proc~~write_jdos~~CallsGraph_edge8" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_title</title>
+<path fill="none" stroke="#7f00ff" d="M187.74,-232.73C206.52,-241.38 232.67,-253.15 256,-262.69 260.49,-264.52 265.2,-266.38 269.91,-268.19"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="268.91,-271.56 279.5,-271.83 271.39,-265.01 268.91,-271.56"/>
+</g>
+<!-- proc~xmgu_axis -->
+<g id="proc~~write_jdos~~CallsGraph_node9" class="node">
+<title>proc~xmgu_axis</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node9"><a xlink:href=".././proc/xmgu_axis.html" xlink:title="xmgu_axis">
+<polygon fill="#d9534f" stroke="#d9534f" points="348,-211.69 279,-211.69 279,-187.69 348,-187.69 348,-211.69"/>
+<text text-anchor="middle" x="313.5" y="-197.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_axis</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_axis -->
+<g id="proc~~write_jdos~~CallsGraph_edge11" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_axis</title>
+<path fill="none" stroke="#7f00ff" d="M220.19,-212.57C236.32,-210.32 253.55,-207.92 268.71,-205.8"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="269.41,-209.24 278.83,-204.39 268.44,-202.3 269.41,-209.24"/>
+</g>
+<!-- proc~xmgu_setup -->
+<g id="proc~~write_jdos~~CallsGraph_node10" class="node">
+<title>proc~xmgu_setup</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node10"><a xlink:href=".././proc/xmgu_setup.html" xlink:title="xmgu_setup">
+<polygon fill="#d9534f" stroke="#d9534f" points="352,-47.69 275,-47.69 275,-23.69 352,-23.69 352,-47.69"/>
+<text text-anchor="middle" x="313.5" y="-33.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_setup</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_setup -->
+<g id="proc~~write_jdos~~CallsGraph_edge7" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_setup</title>
+<path fill="none" stroke="#7f00ff" d="M165.74,-208.5C175.56,-178.42 204.93,-99.98 256,-56.69 259.01,-54.14 262.36,-51.88 265.89,-49.89"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="267.48,-53.01 274.92,-45.46 264.4,-46.72 267.48,-53.01"/>
+</g>
+<!-- proc~xmgu_data_header -->
+<g id="proc~~write_jdos~~CallsGraph_node11" class="node">
+<title>proc~xmgu_data_header</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node11"><a xlink:href=".././proc/xmgu_data_header.html" xlink:title="xmgu_data_header">
+<polygon fill="#d9534f" stroke="#d9534f" points="371,-131.69 256,-131.69 256,-107.69 371,-107.69 371,-131.69"/>
+<text text-anchor="middle" x="313.5" y="-117.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_data_header</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_data_header -->
+<g id="proc~~write_jdos~~CallsGraph_edge12" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_data_header</title>
+<path fill="none" stroke="#7f00ff" d="M174.94,-208.67C192.39,-192.87 224.9,-164.86 256,-145.69 261.49,-142.31 267.49,-139.09 273.47,-136.14"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="275.22,-139.18 282.77,-131.75 272.23,-132.85 275.22,-139.18"/>
+</g>
+<!-- proc~xmgu_data -->
+<g id="proc~~write_jdos~~CallsGraph_node12" class="node">
+<title>proc~xmgu_data</title>
+<g id="a_proc~~write_jdos~~CallsGraph_node12"><a xlink:href=".././proc/xmgu_data.html" xlink:title="xmgu_data">
+<polygon fill="#d9534f" stroke="#d9534f" points="349.5,-253.69 277.5,-253.69 277.5,-229.69 349.5,-229.69 349.5,-253.69"/>
+<text text-anchor="middle" x="313.5" y="-239.29" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgu_data</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_data -->
+<g id="proc~~write_jdos~~CallsGraph_edge13" class="edge">
+<title>proc~write_jdos_xmgrace&#45;&gt;proc~xmgu_data</title>
+<path fill="none" stroke="#7f00ff" d="M220.19,-228.81C235.78,-230.99 252.4,-233.31 267.19,-235.37"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="266.7,-238.83 277.09,-236.75 267.67,-231.9 266.7,-238.83"/>
+</g>
+<!-- proc~xmgu_setup&#45;&gt;proc~io_date -->
+<g id="proc~~write_jdos~~CallsGraph_edge14" class="edge">
+<title>proc~xmgu_setup&#45;&gt;proc~io_date</title>
+<path fill="none" stroke="#0091ff" d="M352.32,-29.31C366.46,-26.92 382.49,-24.22 396.51,-21.85"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="397.49,-25.23 406.77,-20.12 396.33,-18.33 397.49,-25.23"/>
+</g>
+<!-- proc~xmgu_data&#45;&gt;proc~io_error -->
+<g id="proc~~write_jdos~~CallsGraph_edge15" class="edge">
+<title>proc~xmgu_data&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff00da" d="M349.73,-241.69C364.45,-241.69 381.54,-241.69 396.39,-241.69"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="396.75,-245.19 406.75,-241.69 396.75,-238.19 396.75,-245.19"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~write_jdos~~CalledByGraph Pages: 1 -->
+<svg id="procwrite_jdosCalledByGraph" width="289pt" height="32pt"
+ viewBox="0.00 0.00 289.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~write_jdos~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~write_jdos~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 285,-28 285,4 -4,4"/>
+<!-- proc~write_jdos -->
+<g id="proc~~write_jdos~~CalledByGraph_node1" class="node">
+<title>proc~write_jdos</title>
+<polygon fill="none" stroke="black" points="281,-24 215,-24 215,0 281,0 281,-24"/>
+<text text-anchor="middle" x="248" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">write_jdos</text>
+</g>
+<!-- proc~jdos_calculate -->
+<g id="proc~~write_jdos~~CalledByGraph_node2" class="node">
+<title>proc~jdos_calculate</title>
+<g id="a_proc~~write_jdos~~CalledByGraph_node2"><a xlink:href=".././proc/jdos_calculate.html" xlink:title="jdos_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="179,-24 91,-24 91,0 179,0 179,-24"/>
+<text text-anchor="middle" x="135" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">jdos_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~jdos_calculate&#45;&gt;proc~write_jdos -->
+<g id="proc~~write_jdos~~CalledByGraph_edge1" class="edge">
+<title>proc~jdos_calculate&#45;&gt;proc~write_jdos</title>
+<path fill="none" stroke="#ff0000" d="M179.23,-12C187.54,-12 196.23,-12 204.51,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="204.71,-15.5 214.71,-12 204.71,-8.5 204.71,-15.5"/>
+</g>
+<!-- program~optados -->
+<g id="proc~~write_jdos~~CalledByGraph_node3" class="node">
+<title>program~optados</title>
+<g id="a_proc~~write_jdos~~CalledByGraph_node3"><a xlink:href=".././program/optados.html" xlink:title="optados">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="55,-24 0,-24 0,0 55,0 55,-24"/>
+<text text-anchor="middle" x="27.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optados</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;proc~jdos_calculate -->
+<g id="proc~~write_jdos~~CalledByGraph_edge2" class="edge">
+<title>program~optados&#45;&gt;proc~jdos_calculate</title>
+<path fill="none" stroke="#ff0000" d="M55.12,-12C63.02,-12 71.96,-12 80.91,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.97,-15.5 90.97,-12 80.97,-8.5 80.97,-15.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/write_jdos.html#src">write_jdos</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    
+    
+
+    
+    
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="w">  </span><span class="k">subroutine </span><span class="n">write_jdos</span><span class="p">(</span><span class="n">E</span><span class="p">,</span><span class="w"> </span><span class="n">dos</span><span class="p">,</span><span class="w"> </span><span class="n">dos_name</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_parameters</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dos_per_volume</span><span class="p">,</span><span class="w"> </span><span class="n">output_format</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_jdos_utils</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">jdos_nbins</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_electronic</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">nspins</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">,</span><span class="w"> </span><span class="n">seedname</span><span class="p">,</span><span class="w"> </span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">io_error</span><span class="p">,</span><span class="w"> </span><span class="n">io_date</span><span class="w"></span>
+<span class="w">    </span><span class="c">!===============================================================================</span>
+<span class="w">    </span><span class="c">! This routine receives an energy scale, a density of states and a file name</span>
+<span class="w">    </span><span class="c">! and writes out the DOS to disk</span>
+<span class="w">    </span><span class="c">!===============================================================================</span>
+<span class="w">    </span><span class="k">implicit none</span>
+<span class="k">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">E</span><span class="p">(</span><span class="n">jdos_nbins</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dos</span><span class="p">(</span><span class="n">jdos_nbins</span><span class="p">,</span><span class="w"> </span><span class="n">nspins</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dos_name</span><span class="w"></span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="n">ierr</span><span class="w"></span>
+<span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cdate</span><span class="w"></span>
+<span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">ctime</span>
+<span class="nb">    </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">22</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dos_units</span><span class="p">,</span><span class="w"> </span><span class="n">intdos_units</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">dos_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.j&#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">dos_name</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.dat&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">iostat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="p">.</span><span class="n">ne</span><span class="p">.</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s2">&quot; ERROR: Cannot open output file in dos: write_dos&quot;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">dos_units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;(electrons per eV)&quot;</span><span class="p">;</span><span class="w"> </span><span class="n">intdos_units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;(electrons)&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dos_per_volume</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      </span><span class="n">dos_units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;(electrons per eV/A^3)&quot;</span><span class="w"></span>
+<span class="w">      </span><span class="n">intdos_units</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;(electrons per A^3)&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;##############################################################################&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#                  O p t a D O S   o u t p u t   f i l e &quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a1)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    Density of States using &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">dos_name</span><span class="p">),</span><span class="w"> </span><span class="s2">&quot; broadening&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">io_date</span><span class="p">(</span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;#  Generated on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+<span class="nb">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;# Column        Data&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    1        Energy (eV)&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nspins</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    2        Up-spin DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">dos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    3        Down-spin DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">dos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    4        Up-spin Integrated DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">intdos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    5        Down-spin Integrated DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">intdos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    2        DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">dos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#    3        Integrated DOS &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">intdos_units</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+<span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a1)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;#&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;##############################################################################&quot;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nspins</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">jdos_nbins</span><span class="w"></span>
+<span class="w">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(3(E21.13,2x))&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">E</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="o">-</span><span class="n">dos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">    else</span>
+<span class="k">      do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">jdos_nbins</span><span class="w"></span>
+<span class="w">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(2(E21.13,2x))&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">E</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">dos</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">    end if</span>
+<span class="k">    close</span><span class="w"> </span><span class="p">(</span><span class="n">dos_file</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_format</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;xmgrace&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      call </span><span class="n">write_jdos_xmgrace</span><span class="p">(</span><span class="n">dos_name</span><span class="p">,</span><span class="w"> </span><span class="n">E</span><span class="p">,</span><span class="w"> </span><span class="n">dos</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">elseif</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">output_format</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;gnuplot&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; WARNING: GNUPLOT output not yet available, calling xmgrace&quot;</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">write_jdos_xmgrace</span><span class="p">(</span><span class="n">dos_name</span><span class="p">,</span><span class="w"> </span><span class="n">E</span><span class="p">,</span><span class="w"> </span><span class="n">dos</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="c">!     call write_dos_gnuplot(dos_name,E,dos)</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; WARNING: Unknown output format requested, continuing...&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">  end subroutine </span><span class="n">write_jdos</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2024 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

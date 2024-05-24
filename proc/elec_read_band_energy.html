@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>elec_read_band_energy &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>elec_read_band_energy
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 1.9% of total for procedures.">126 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/electronic.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/electronic.f90.html'>electronic.f90</a></li>
+              <li><a href='../module/od_electronic.html'>od_electronic</a></li>
+          <li class="active">elec_read_band_energy</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/elec_read_band_energy.html#src">elec_read_band_energy</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine elec_read_band_energy()  
+</h2>
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_algorithms.html'>od_algorithms</a></li>
+                <li><a href='../module/od_parameters.html'>od_parameters</a></li>
+                <li><a href='../module/od_comms.html'>od_comms</a></li>
+                <li><a href='../module/od_cell.html'>od_cell</a></li>
+                <li><a href='../module/od_constants.html'>od_constants</a></li>
+                <li><a href='../module/od_io.html'>od_io</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~elec_read_band_energy~~UsesGraph Pages: 1 -->
+<svg id="procelec_read_band_energyUsesGraph" width="625pt" height="225pt"
+ viewBox="0.00 0.00 625.00 225.40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~elec_read_band_energy~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 221.4)">
+<title>proc~~elec_read_band_energy~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-221.4 621,-221.4 621,4 -4,4"/>
+<!-- proc~elec_read_band_energy -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node1" class="node">
+<title>proc~elec_read_band_energy</title>
+<polygon fill="none" stroke="black" points="617,-117.93 478,-117.93 478,-93.93 617,-93.93 617,-117.93"/>
+<text text-anchor="middle" x="547.5" y="-103.53" font-family="Helvetica,sans-Serif" font-size="10.50">elec_read_band_energy</text>
+</g>
+<!-- module~od_algorithms -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node2" class="node">
+<title>module~od_algorithms</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node2"><a xlink:href=".././module/od_algorithms.html" xlink:title="od_algorithms">
+<polygon fill="#337ab7" stroke="#337ab7" points="312,-177.93 224,-177.93 224,-153.93 312,-153.93 312,-177.93"/>
+<text text-anchor="middle" x="268" y="-163.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_algorithms</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_algorithms -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge1" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_algorithms</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M394,-125.93C362.29,-128 328.02,-139.69 303.4,-149.91"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="301.95,-146.72 294.14,-153.87 304.71,-153.15 301.95,-146.72"/>
+</g>
+<!-- module~od_parameters -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node3" class="node">
+<title>module~od_parameters</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node3"><a xlink:href=".././module/od_parameters.html" xlink:title="od_parameters">
+<polygon fill="#337ab7" stroke="#337ab7" points="442,-97.93 348,-97.93 348,-73.93 442,-73.93 442,-97.93"/>
+<text text-anchor="middle" x="395" y="-83.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_parameters</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_parameters -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge2" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M477.86,-96.81C469.26,-95.67 460.54,-94.51 452.17,-93.4"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="452.52,-89.91 442.15,-92.07 451.6,-96.85 452.52,-89.91"/>
+</g>
+<!-- module~od_comms -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node4" class="node">
+<title>module~od_comms</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node4"><a xlink:href=".././module/od_comms.html" xlink:title="od_comms">
+<polygon fill="#337ab7" stroke="#337ab7" points="188,-138.93 118,-138.93 118,-114.93 188,-114.93 188,-138.93"/>
+<text text-anchor="middle" x="153" y="-124.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_comms</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_comms -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge4" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_comms</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M394,-125.93C325.82,-130.39 246.52,-129.54 198.32,-128.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="198.31,-124.86 188.23,-128.1 198.13,-131.86 198.31,-124.86"/>
+</g>
+<!-- module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node5" class="node">
+<title>module~od_constants</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node5"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-98.93 0,-98.93 0,-74.93 82,-74.93 82,-98.93"/>
+<text text-anchor="middle" x="41" y="-84.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge3" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M394,-125.93C348.7,-129.29 354.19,-170.1 312,-186.93 246.31,-213.14 221.1,-228.3 154,-205.93"/>
+</g>
+<!-- module~od_cell -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node6" class="node">
+<title>module~od_cell</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node6"><a xlink:href=".././module/od_cell.html" xlink:title="od_cell">
+<polygon fill="#337ab7" stroke="#337ab7" points="295,-97.93 241,-97.93 241,-73.93 295,-73.93 295,-97.93"/>
+<text text-anchor="middle" x="268" y="-83.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_cell</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_cell -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge5" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M394,-125.93C360.48,-128.12 324.11,-114.52 299.29,-102.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="300.56,-99.32 290.05,-97.98 297.43,-105.58 300.56,-99.32"/>
+</g>
+<!-- module~od_io -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_node7" class="node">
+<title>module~od_io</title>
+<g id="a_proc~~elec_read_band_energy~~UsesGraph_node7"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="180,-58.93 126,-58.93 126,-34.93 180,-34.93 180,-58.93"/>
+<text text-anchor="middle" x="153" y="-44.53" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_io -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge6" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M477.76,-116.97C452.16,-120.58 422.82,-124.12 396,-125.93"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M394,-125.93C371.93,-127.43 365.91,-119.91 348,-106.93 328.09,-92.51 333.72,-76.46 312,-64.93 274.04,-44.79 223.83,-42.49 190.3,-43.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="189.84,-40.3 180.04,-44.31 190.2,-47.29 189.84,-40.3"/>
+</g>
+<!-- module~od_algorithms&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge7" class="edge">
+<title>module~od_algorithms&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M243.48,-178.1C215.63,-191.82 170.88,-211.56 154,-205.93"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M152,-205.93C104.04,-189.95 69.21,-137.78 52.71,-108.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="55.63,-106.13 47.83,-98.97 49.46,-109.44 55.63,-106.13"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge10" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M381.92,-73.81C361.1,-54.03 316.12,-16.1 269,-6.93"/>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M267,-6.93C201.47,5.81 179.45,0.16 118,-25.93 95.66,-35.42 74.5,-53.43 60.2,-67.43"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="57.54,-65.14 53.01,-74.71 62.52,-70.06 57.54,-65.14"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_cell -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge8" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M347.81,-85.93C333.76,-85.93 318.53,-85.93 305.24,-85.93"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="305.05,-82.43 295.05,-85.93 305.05,-89.43 305.05,-82.43"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_io -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge9" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ffff00" stroke-dasharray="5,2" d="M267,-6.93C235.94,-0.89 201.91,-16.14 179.4,-29.52"/>
+<polygon fill="#ffff00" stroke="#ffff00" points="177.43,-26.62 170.79,-34.88 181.13,-32.56 177.43,-26.62"/>
+</g>
+<!-- module~od_comms&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge11" class="edge">
+<title>module~od_comms&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M119,-114.93C108.33,-111.05 96.33,-106.69 85.05,-102.59"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="85.95,-99.19 75.36,-99.07 83.56,-105.77 85.95,-99.19"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge13" class="edge">
+<title>module~od_cell&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M240.75,-86.05C204.43,-86.21 138.14,-86.51 92.16,-86.71"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="92.08,-83.21 82.09,-86.76 92.11,-90.21 92.08,-83.21"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_io -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge12" class="edge">
+<title>module~od_cell&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M240.79,-76.89C225.67,-71.67 206.45,-65.04 189.94,-59.34"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="190.66,-55.88 180.07,-55.93 188.38,-62.5 190.66,-55.88"/>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="proc~~elec_read_band_energy~~UsesGraph_edge14" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff00ff" stroke-dasharray="5,2" d="M125.93,-56.41C113.76,-60.84 98.96,-66.22 85.18,-71.23"/>
+<polygon fill="#ff00ff" stroke="#ff00ff" points="83.6,-68.08 75.39,-74.79 85.99,-74.66 83.6,-68.08"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+
+
+    <h3>Arguments</h3>
+    <em>None</em>
+    <br>
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~elec_read_band_energy~~CallsGraph Pages: 1 -->
+<svg id="procelec_read_band_energyCallsGraph" width="376pt" height="322pt"
+ viewBox="0.00 0.00 376.00 322.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~elec_read_band_energy~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 318)">
+<title>proc~~elec_read_band_energy~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-318 372,-318 372,4 -4,4"/>
+<!-- proc~elec_read_band_energy -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node1" class="node">
+<title>proc~elec_read_band_energy</title>
+<polygon fill="none" stroke="black" points="139,-168 0,-168 0,-144 139,-144 139,-168"/>
+<text text-anchor="middle" x="69.5" y="-153.6" font-family="Helvetica,sans-Serif" font-size="10.50">elec_read_band_energy</text>
+</g>
+<!-- proc~io_time -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node2" class="node">
+<title>proc~io_time</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node2"><a xlink:href=".././proc/io_time.html" xlink:title="io_time">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="253.5,-314 199.5,-314 199.5,-290 253.5,-290 253.5,-314"/>
+<text text-anchor="middle" x="226.5" y="-299.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_time</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_time -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge1" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff0000" d="M77.9,-168.34C93.19,-192.9 130.57,-248.31 175,-281 179.54,-284.34 184.69,-287.26 189.93,-289.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="188.76,-293.09 199.32,-293.87 191.55,-286.67 188.76,-293.09"/>
+</g>
+<!-- proc~io_file_unit -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node3" class="node">
+<title>proc~io_file_unit</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node3"><a xlink:href=".././proc/io_file_unit.html" xlink:title="io_file_unit">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="261.5,-272 191.5,-272 191.5,-248 261.5,-248 261.5,-272"/>
+<text text-anchor="middle" x="226.5" y="-257.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_file_unit</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_file_unit -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge5" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0000" d="M83.16,-168C102.01,-185.39 139.07,-217.82 175,-239 177.78,-240.64 180.71,-242.21 183.71,-243.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.25,-246.89 192.8,-247.96 185.22,-240.55 182.25,-246.89"/>
+</g>
+<!-- interface~comms_bcast -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node4" class="node">
+<title>interface~comms_bcast</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node4"><a xlink:href=".././interface/comms_bcast.html" xlink:title="comms_bcast">
+<polygon fill="#a7506f" stroke="#a7506f" points="269,-230 184,-230 184,-206 269,-206 269,-230"/>
+<text text-anchor="middle" x="226.5" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_bcast</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_bcast -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge3" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ff0000" d="M100.75,-168.1C125.08,-177.83 159.44,-191.58 185.95,-202.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="184.74,-205.46 195.32,-205.93 187.34,-198.97 184.74,-205.46"/>
+</g>
+<!-- proc~algor_dist_array -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node5" class="node">
+<title>proc~algor_dist_array</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node5"><a xlink:href=".././proc/algor_dist_array.html" xlink:title="algor_dist_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="275.5,-188 177.5,-188 177.5,-164 275.5,-164 275.5,-188"/>
+<text text-anchor="middle" x="226.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">algor_dist_array</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge4" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#ff0000" d="M139.39,-164.89C148.67,-166.09 158.12,-167.31 167.19,-168.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="166.88,-171.97 177.25,-169.77 167.78,-165.02 166.88,-171.97"/>
+</g>
+<!-- proc~io_error -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node6" class="node">
+<title>proc~io_error</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node6"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="368,-148 314,-148 314,-124 368,-124 368,-148"/>
+<text text-anchor="middle" x="341" y="-133.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_error -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge2" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M139.2,-150.9C191.68,-147.01 261.91,-141.8 303.89,-138.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="304.21,-142.17 313.92,-137.94 303.69,-135.18 304.21,-142.17"/>
+</g>
+<!-- interface~comms_send -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node7" class="node">
+<title>interface~comms_send</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node7"><a xlink:href=".././interface/comms_send.html" xlink:title="comms_send">
+<polygon fill="#a7506f" stroke="#a7506f" points="267.5,-108 185.5,-108 185.5,-84 267.5,-84 267.5,-108"/>
+<text text-anchor="middle" x="226.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_send</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_send -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge6" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff0000" d="M101.87,-143.86C125.79,-134.6 158.94,-121.77 184.89,-111.72"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="186.38,-114.9 194.44,-108.02 183.86,-108.37 186.38,-114.9"/>
+</g>
+<!-- proc~cell_find_mp_grid -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node8" class="node">
+<title>proc~cell_find_mp_grid</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node8"><a xlink:href=".././proc/cell_find_mp_grid.html" xlink:title="cell_find_MP_grid">
+<polygon fill="#d9534f" stroke="#d9534f" points="278,-66 175,-66 175,-42 278,-42 278,-66"/>
+<text text-anchor="middle" x="226.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_find_MP_grid</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge7" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid</title>
+<path fill="none" stroke="#ff0000" d="M83.86,-143.74C102.96,-126.68 139.68,-95.54 175,-75 177.79,-73.38 180.73,-71.81 183.73,-70.33"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="185.24,-73.48 192.83,-66.09 182.28,-67.14 185.24,-73.48"/>
+</g>
+<!-- interface~comms_recv -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_node9" class="node">
+<title>interface~comms_recv</title>
+<g id="a_proc~~elec_read_band_energy~~CallsGraph_node9"><a xlink:href=".././interface/comms_recv.html" xlink:title="comms_recv">
+<polygon fill="#a7506f" stroke="#a7506f" points="266,-24 187,-24 187,0 266,0 266,-24"/>
+<text text-anchor="middle" x="226.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_recv</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_recv -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge8" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff0000" d="M77.95,-143.86C93.33,-119.71 130.86,-65.2 175,-33 177.05,-31.51 179.22,-30.1 181.46,-28.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="183.18,-31.82 190.38,-24.05 179.9,-25.63 183.18,-31.82"/>
+</g>
+<!-- proc~algor_dist_array&#45;&gt;proc~io_error -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge9" class="edge">
+<title>proc~algor_dist_array&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#00ff3f" d="M261.25,-164C274.79,-159.18 290.42,-153.63 304.16,-148.74"/>
+<polygon fill="#00ff3f" stroke="#00ff3f" points="305.53,-151.97 313.78,-145.32 303.18,-145.38 305.53,-151.97"/>
+</g>
+<!-- proc~cell_find_mp_grid&#45;&gt;proc~io_error -->
+<g id="proc~~elec_read_band_energy~~CallsGraph_edge10" class="edge">
+<title>proc~cell_find_mp_grid&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#7f00ff" d="M261.56,-66.05C267.25,-68.65 272.94,-71.64 278,-75 295.3,-86.47 311.9,-103.22 323.56,-116.26"/>
+<polygon fill="#7f00ff" stroke="#7f00ff" points="320.94,-118.58 330.14,-123.82 326.22,-113.98 320.94,-118.58"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~elec_read_band_energy~~CalledByGraph Pages: 1 -->
+<svg id="procelec_read_band_energyCalledByGraph" width="378pt" height="74pt"
+ viewBox="0.00 0.00 378.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~elec_read_band_energy~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~elec_read_band_energy~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 374,-70 374,4 -4,4"/>
+<!-- proc~elec_read_band_energy -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_node1" class="node">
+<title>proc~elec_read_band_energy</title>
+<polygon fill="none" stroke="black" points="370,-45 231,-45 231,-21 370,-21 370,-45"/>
+<text text-anchor="middle" x="300.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">elec_read_band_energy</text>
+</g>
+<!-- proc~get_band_energy -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_node2" class="node">
+<title>proc~get_band_energy</title>
+<g id="a_proc~~elec_read_band_energy~~CalledByGraph_node2"><a xlink:href=".././proc/get_band_energy.html" xlink:title="get_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="195,-66 90,-66 90,-42 195,-42 195,-66"/>
+<text text-anchor="middle" x="142.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_band_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~get_band_energy&#45;&gt;proc~elec_read_band_energy -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_edge1" class="edge">
+<title>proc~get_band_energy&#45;&gt;proc~elec_read_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M195.01,-47.07C203.24,-45.96 211.92,-44.79 220.61,-43.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="221.34,-47.05 230.79,-42.25 220.41,-40.12 221.34,-47.05"/>
+</g>
+<!-- program~optados -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_node3" class="node">
+<title>program~optados</title>
+<g id="a_proc~~elec_read_band_energy~~CalledByGraph_node3"><a xlink:href=".././program/optados.html" xlink:title="optados">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="170,-24 115,-24 115,0 170,0 170,-24"/>
+<text text-anchor="middle" x="142.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optados</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;proc~elec_read_band_energy -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_edge2" class="edge">
+<title>program~optados&#45;&gt;proc~elec_read_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M170.32,-15.61C184.43,-17.51 202.54,-19.95 220.72,-22.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="220.41,-25.89 230.79,-23.75 221.35,-18.95 220.41,-25.89"/>
+</g>
+<!-- program~od2od -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_node4" class="node">
+<title>program~od2od</title>
+<g id="a_proc~~elec_read_band_energy~~CalledByGraph_node4"><a xlink:href=".././program/od2od.html" xlink:title="od2od">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
+<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od2od</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~get_band_energy -->
+<g id="proc~~elec_read_band_energy~~CalledByGraph_edge3" class="edge">
+<title>program~od2od&#45;&gt;proc~get_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M54.04,-54C61.74,-54 70.53,-54 79.49,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.63,-57.5 89.63,-54 79.63,-50.5 79.63,-57.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/elec_read_band_energy.html#src">elec_read_band_energy</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    
+    
+
+    
+    
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="w">  </span><span class="k">subroutine </span><span class="n">elec_read_band_energy</span><span class="w"> </span><span class="c">!(band_energy,kpoint_r,kpoint_weight)</span>
+<span class="w">    </span><span class="c">!=========================================================================</span>
+<span class="w">    </span><span class="c">! Read the .bands file in the kpoint list, kpoint weights and band energies</span>
+<span class="w">    </span><span class="c">! also obtain, nkpoints, nspins, num_electrons(:),nbands, efermi_castep</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Arguments: None</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Parent module variables: band_energy, efermi_castep, num_electrons</span>
+<span class="w">    </span><span class="c">! spin_polarised, electrons_per_state, nspins,nbands</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Modules used:  See below</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Key Internal Variables: None</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Necessary conditions: None</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Known Worries: None</span>
+<span class="w">    </span><span class="c">!-------------------------------------------------------------------------</span>
+<span class="w">    </span><span class="c">! Written by  A J Morris                                         Dec 2010</span>
+<span class="w">    </span><span class="c">!=========================================================================</span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_constants</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">H2eV</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_cell</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">nkpoints</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_weight</span><span class="p">,</span><span class="w"> </span><span class="n">cell_find_MP_grid</span><span class="p">,&amp;</span><span class="w"></span>
+<span class="w">         </span><span class="p">&amp;</span><span class="w"> </span><span class="n">real_lattice</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_grid_dim</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_comms</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">comms_bcast</span><span class="p">,</span><span class="w"> </span><span class="n">comms_send</span><span class="p">,</span><span class="w"> </span><span class="n">comms_recv</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">,</span><span class="w"> </span><span class="n">my_node_id</span><span class="p">,&amp;</span><span class="w"></span>
+<span class="w">         </span><span class="p">&amp;</span><span class="w"> </span><span class="n">on_root</span><span class="p">,</span><span class="w"> </span><span class="n">root_id</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">,</span><span class="w"> </span><span class="n">seedname</span><span class="p">,</span><span class="w"> </span><span class="n">filename_len</span><span class="p">,</span><span class="w"> </span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">io_time</span><span class="p">,&amp;</span><span class="w"></span>
+<span class="w">         </span><span class="p">&amp;</span><span class="w"> </span><span class="n">io_error</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_algorithms</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">algor_dist_array</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_parameters</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">iprint</span><span class="p">,</span><span class="w"> </span><span class="n">compute_band_gap</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_mp_grid</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">implicit none</span>
+
+<span class="k">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">inodes</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">,</span><span class="w"> </span><span class="k">is</span><span class="p">,</span><span class="w"> </span><span class="n">ib</span><span class="p">,</span><span class="w"> </span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="n">iall_kpoints</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dum_i1</span><span class="p">,</span><span class="w"> </span><span class="n">ierr</span><span class="p">,</span><span class="w"> </span><span class="n">str_pos</span><span class="w"></span>
+<span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="n">filename_len</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">band_filename</span><span class="w"></span>
+<span class="w">    </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Check that we haven&#39;t already read in the energies</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">allocated</span><span class="p">(</span><span class="n">band_energy</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">!Open the bands file</span>
+<span class="w">    </span><span class="n">band_unit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="n">band_filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.bands&quot;</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Read the header from the bands file</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">band_filename</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;old&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">form</span><span class="o">=</span><span class="s1">&#39;formatted&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">      </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;k-points&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">8</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">nkpoints</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">      </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;components&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">nspins</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">num_electrons</span><span class="p">(</span><span class="n">nspins</span><span class="p">),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">stop</span><span class="w"> </span><span class="s2">&quot; Error : cannot allocate num_electrons&quot;</span><span class="w"></span>
+<span class="w">      </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;electrons&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">num_electrons</span><span class="p">(:)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">      </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;eigenvalues&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">11</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">nbands</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">      </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;units)&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">6</span><span class="p">:),</span><span class="w"> </span><span class="s1">&#39;(f12.4)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">efermi_castep</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">real_lattice</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">real_lattice</span><span class="p">(:,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">real_lattice</span><span class="p">(:,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    call </span><span class="n">comms_bcast</span><span class="p">(</span><span class="n">nspins</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">num_electrons</span><span class="p">(</span><span class="n">nspins</span><span class="p">),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">stop</span><span class="w"> </span><span class="s2">&quot; Error : cannot allocate num_electrons&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+<span class="k">    call </span><span class="n">comms_bcast</span><span class="p">(</span><span class="n">num_electrons</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">nspins</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">comms_bcast</span><span class="p">(</span><span class="n">nkpoints</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">comms_bcast</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">comms_bcast</span><span class="p">(</span><span class="n">efermi_castep</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="k">call </span><span class="n">algor_dist_array</span><span class="p">(</span><span class="n">nkpoints</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">band_energy</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">nbands</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">nspins</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">)),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem allocating band_energy in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">kpoint_weight</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">)),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem allocating kpoint_weight in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">allocate</span><span class="w"> </span><span class="p">(</span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">)),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem allocating kpoint_r in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      allocate</span><span class="w"> </span><span class="p">(</span><span class="n">all_kpoints</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">nkpoints</span><span class="p">),</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem allocating all_kpoints in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="n">iall_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">      </span><span class="k">do </span><span class="n">inodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">ik</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">inodes</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">          </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;K-point&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">7</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">dum_i1</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_weight</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">            </span><span class="n">all_kpoints</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">iall_kpoints</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="k">end do</span>
+<span class="k">          </span><span class="n">iall_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iall_kpoints</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">          </span><span class="k">do is</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nspins</span><span class="w"></span>
+<span class="w">            </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">            </span><span class="k">do </span><span class="n">ib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nbands</span><span class="w"></span>
+<span class="w">              </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">band_energy</span><span class="p">(</span><span class="n">ib</span><span class="p">,</span><span class="w"> </span><span class="k">is</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="c">!NB spin &lt;-&gt; kpt swapped</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">          end do</span>
+<span class="k">        end do</span>
+<span class="k">        call </span><span class="n">comms_send</span><span class="p">(</span><span class="n">band_energy</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">nbands</span><span class="o">*</span><span class="n">nspins</span><span class="o">*</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">inodes</span><span class="p">),</span><span class="w"> </span><span class="n">inodes</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">call </span><span class="n">comms_send</span><span class="p">(</span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">inodes</span><span class="p">),</span><span class="w"> </span><span class="n">inodes</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">call </span><span class="n">comms_send</span><span class="p">(</span><span class="n">kpoint_weight</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">inodes</span><span class="p">),</span><span class="w"> </span><span class="n">inodes</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end do</span>
+
+<span class="k">      do </span><span class="n">ik</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">        </span><span class="n">str_pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">dummy</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;K-point&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">dummy</span><span class="p">(</span><span class="n">str_pos</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">7</span><span class="p">:),</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">dum_i1</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">),</span><span class="w"> </span><span class="n">kpoint_weight</span><span class="p">(</span><span class="n">ik</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">          </span><span class="n">all_kpoints</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">iall_kpoints</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_r</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">        </span><span class="n">iall_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iall_kpoints</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="k">do is</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nspins</span><span class="w"></span>
+<span class="w">          </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">dummy</span><span class="w"></span>
+<span class="w">          </span><span class="k">do </span><span class="n">ib</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nbands</span><span class="w"></span>
+<span class="w">            </span><span class="k">read</span><span class="w"> </span><span class="p">(</span><span class="n">band_unit</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">band_energy</span><span class="p">(</span><span class="n">ib</span><span class="p">,</span><span class="w"> </span><span class="k">is</span><span class="p">,</span><span class="w"> </span><span class="n">ik</span><span class="p">)</span><span class="w"> </span><span class="c">!NB spin &lt;-&gt; kpt swapped</span>
+<span class="w">          </span><span class="k">end do</span>
+<span class="k">        end do</span>
+<span class="k">      end do</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Do this here so we can free up the all_kpoints memory, unless we need it to calculate</span>
+<span class="w">      </span><span class="c">! the kpoints at the band-gap.</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">kpoint_mp_grid</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">! we must have set this manually</span>
+<span class="w">        </span><span class="n">kpoint_grid_dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_mp_grid</span><span class="w"></span>
+<span class="w">      </span><span class="k">else</span>
+<span class="k">        call </span><span class="n">cell_find_MP_grid</span><span class="p">(</span><span class="n">all_kpoints</span><span class="p">,</span><span class="w"> </span><span class="n">nkpoints</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_grid_dim</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">((.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">compute_band_gap</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<span class="k">        deallocate</span><span class="w"> </span><span class="p">(</span><span class="n">all_kpoints</span><span class="p">,</span><span class="w"> </span><span class="nb">stat</span><span class="o">=</span><span class="n">ierr</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ierr</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem deallocating all_kpoints in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end if</span>
+<span class="k">    end if</span>
+
+<span class="k">    if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      call </span><span class="n">comms_recv</span><span class="p">(</span><span class="n">band_energy</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">nbands</span><span class="o">*</span><span class="n">nspins</span><span class="o">*</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">),</span><span class="w"> </span><span class="n">root_id</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">comms_recv</span><span class="p">(</span><span class="n">kpoint_r</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="mi">3</span><span class="o">*</span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">),</span><span class="w"> </span><span class="n">root_id</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">comms_recv</span><span class="p">(</span><span class="n">kpoint_weight</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">num_kpoints_on_node</span><span class="p">(</span><span class="n">my_node_id</span><span class="p">),</span><span class="w"> </span><span class="n">root_id</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">band_unit</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">band_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">band_energy</span><span class="o">*</span><span class="n">H2eV</span><span class="w"></span>
+<span class="w">    </span><span class="n">efermi_castep</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">efermi_castep</span><span class="o">*</span><span class="n">H2eV</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Things that follow</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nspins</span><span class="w"> </span><span class="p">.</span><span class="n">lt</span><span class="p">.</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      </span><span class="n">spin_polarised</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">      </span><span class="n">electrons_per_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0_dp</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span>
+<span class="k">      </span><span class="n">spin_polarised</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">      </span><span class="n">electrons_per_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a40,f11.3,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;Time to read band energies  &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec)&#39;</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">return</span>
+<span class="mi">100</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Error: Problem opening bands file in read_band_energy&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end subroutine </span><span class="n">elec_read_band_energy</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2024 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

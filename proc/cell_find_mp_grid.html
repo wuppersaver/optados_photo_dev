@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>cell_find_MP_grid &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>cell_find_MP_grid
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 1.8% of total for procedures.">117 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/cell.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/cell.f90.html'>cell.f90</a></li>
+              <li><a href='../module/od_cell.html'>od_cell</a></li>
+          <li class="active">cell_find_MP_grid</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/cell_find_mp_grid.html#src">cell_find_MP_grid</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine cell_find_MP_grid(kpoints, num_kpts, kpoint_grid_dim, kpoint_offset)  
+</h2>
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_io.html'>od_io</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~cell_find_mp_grid~~UsesGraph Pages: 1 -->
+<svg id="proccell_find_mp_gridUsesGraph" width="319pt" height="32pt"
+ viewBox="0.00 0.00 319.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~cell_find_mp_grid~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~cell_find_mp_grid~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 315,-28 315,4 -4,4"/>
+<!-- proc~cell_find_mp_grid -->
+<g id="proc~~cell_find_mp_grid~~UsesGraph_node1" class="node">
+<title>proc~cell_find_mp_grid</title>
+<polygon fill="none" stroke="black" points="311,-24 208,-24 208,0 311,0 311,-24"/>
+<text text-anchor="middle" x="259.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">cell_find_MP_grid</text>
+</g>
+<!-- module~od_io -->
+<g id="proc~~cell_find_mp_grid~~UsesGraph_node2" class="node">
+<title>module~od_io</title>
+<g id="a_proc~~cell_find_mp_grid~~UsesGraph_node2"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="172,-24 118,-24 118,0 172,0 172,-24"/>
+<text text-anchor="middle" x="145" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- proc~cell_find_mp_grid&#45;&gt;module~od_io -->
+<g id="proc~~cell_find_mp_grid~~UsesGraph_edge1" class="edge">
+<title>proc~cell_find_mp_grid&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M207.84,-12C199.25,-12 190.47,-12 182.34,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.08,-8.5 172.08,-12 182.08,-15.5 182.08,-8.5"/>
+</g>
+<!-- module~od_constants -->
+<g id="proc~~cell_find_mp_grid~~UsesGraph_node3" class="node">
+<title>module~od_constants</title>
+<g id="a_proc~~cell_find_mp_grid~~UsesGraph_node3"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-24 0,-24 0,0 82,0 82,-24"/>
+<text text-anchor="middle" x="41" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="proc~~cell_find_mp_grid~~UsesGraph_edge2" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M118,-12C110.19,-12 101.35,-12 92.52,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="92.24,-8.5 82.24,-12 92.24,-15.5 92.24,-8.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+
+    <p>AJM COMMENTED OUT AS A TEST AGAINST
+HEXAGONAL CELLS</p>
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th>Type</th>
+<th>Intent</th><th>Optional</th>        <th>Attributes</th>
+        <th></th>
+        <th>Name</th>
+        <th></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kpoints"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kpoints</strong>(1:3,1:num_kpts)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-num_kpts"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>num_kpts</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kpoint_grid_dim"></span>
+              integer,
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kpoint_grid_dim</strong>(1:3)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kpoint_offset"></span>
+              real(kind=dp),
+            </td>
+<td>intent(out),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kpoint_offset</strong>(1:3)</td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~cell_find_mp_grid~~CallsGraph Pages: 1 -->
+<svg id="proccell_find_mp_gridCallsGraph" width="201pt" height="32pt"
+ viewBox="0.00 0.00 201.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~cell_find_mp_grid~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~cell_find_mp_grid~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197,-28 197,4 -4,4"/>
+<!-- proc~cell_find_mp_grid -->
+<g id="proc~~cell_find_mp_grid~~CallsGraph_node1" class="node">
+<title>proc~cell_find_mp_grid</title>
+<polygon fill="none" stroke="black" points="103,-24 0,-24 0,0 103,0 103,-24"/>
+<text text-anchor="middle" x="51.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">cell_find_MP_grid</text>
+</g>
+<!-- proc~io_error -->
+<g id="proc~~cell_find_mp_grid~~CallsGraph_node2" class="node">
+<title>proc~io_error</title>
+<g id="a_proc~~cell_find_mp_grid~~CallsGraph_node2"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="193,-24 139,-24 139,0 193,0 193,-24"/>
+<text text-anchor="middle" x="166" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- proc~cell_find_mp_grid&#45;&gt;proc~io_error -->
+<g id="proc~~cell_find_mp_grid~~CallsGraph_edge1" class="edge">
+<title>proc~cell_find_mp_grid&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M103.16,-12C111.75,-12 120.53,-12 128.66,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="128.92,-15.5 138.92,-12 128.92,-8.5 128.92,-15.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~cell_find_mp_grid~~CalledByGraph Pages: 1 -->
+<svg id="proccell_find_mp_gridCalledByGraph" width="565pt" height="74pt"
+ viewBox="0.00 0.00 565.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~cell_find_mp_grid~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>proc~~cell_find_mp_grid~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 561,-70 561,4 -4,4"/>
+<!-- proc~cell_find_mp_grid -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node1" class="node">
+<title>proc~cell_find_mp_grid</title>
+<polygon fill="none" stroke="black" points="557,-45 454,-45 454,-21 557,-21 557,-45"/>
+<text text-anchor="middle" x="505.5" y="-30.6" font-family="Helvetica,sans-Serif" font-size="10.50">cell_find_MP_grid</text>
+</g>
+<!-- proc~elec_read_band_energy -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node2" class="node">
+<title>proc~elec_read_band_energy</title>
+<g id="a_proc~~cell_find_mp_grid~~CalledByGraph_node2"><a xlink:href=".././proc/elec_read_band_energy.html" xlink:title="elec_read_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="394,-66 255,-66 255,-42 394,-42 394,-66"/>
+<text text-anchor="middle" x="324.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge1" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid</title>
+<path fill="none" stroke="#ff0000" d="M394.19,-45.94C410.45,-44.03 427.68,-42.01 443.56,-40.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="444.26,-43.59 453.78,-38.95 443.44,-36.64 444.26,-43.59"/>
+</g>
+<!-- proc~elec_read_band_energy_ordered -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node3" class="node">
+<title>proc~elec_read_band_energy_ordered</title>
+<g id="a_proc~~cell_find_mp_grid~~CalledByGraph_node3"><a xlink:href=".././proc/elec_read_band_energy_ordered.html" xlink:title="elec_read_band_energy_ordered">
+<polygon fill="#d9534f" stroke="#d9534f" points="418,-24 231,-24 231,0 418,0 418,-24"/>
+<text text-anchor="middle" x="324.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_energy_ordered</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy_ordered&#45;&gt;proc~cell_find_mp_grid -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge2" class="edge">
+<title>proc~elec_read_band_energy_ordered&#45;&gt;proc~cell_find_mp_grid</title>
+<path fill="none" stroke="#ff0000" d="M418.15,-22.87C426.88,-23.89 435.57,-24.91 443.89,-25.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="443.49,-29.37 453.83,-27.06 444.31,-22.41 443.49,-29.37"/>
+</g>
+<!-- proc~get_band_energy -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node4" class="node">
+<title>proc~get_band_energy</title>
+<g id="a_proc~~cell_find_mp_grid~~CalledByGraph_node4"><a xlink:href=".././proc/get_band_energy.html" xlink:title="get_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="195,-66 90,-66 90,-42 195,-42 195,-66"/>
+<text text-anchor="middle" x="142.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_band_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~get_band_energy&#45;&gt;proc~elec_read_band_energy -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge3" class="edge">
+<title>proc~get_band_energy&#45;&gt;proc~elec_read_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M195.08,-54C210.48,-54 227.73,-54 244.46,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="244.79,-57.5 254.79,-54 244.79,-50.5 244.79,-57.5"/>
+</g>
+<!-- program~optados -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node5" class="node">
+<title>program~optados</title>
+<g id="a_proc~~cell_find_mp_grid~~CalledByGraph_node5"><a xlink:href=".././program/optados.html" xlink:title="optados">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="170,-24 115,-24 115,0 170,0 170,-24"/>
+<text text-anchor="middle" x="142.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optados</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;proc~elec_read_band_energy -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge4" class="edge">
+<title>program~optados&#45;&gt;proc~elec_read_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M170.29,-18.52C187.6,-22.71 210.61,-28.24 231,-33 240.28,-35.17 250.1,-37.43 259.73,-39.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="259.14,-43.09 269.67,-41.9 260.7,-36.26 259.14,-43.09"/>
+</g>
+<!-- program~optados&#45;&gt;proc~elec_read_band_energy_ordered -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge5" class="edge">
+<title>program~optados&#45;&gt;proc~elec_read_band_energy_ordered</title>
+<path fill="none" stroke="#00ffff" d="M170.06,-12C183.9,-12 201.82,-12 220.5,-12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="220.63,-15.5 230.63,-12 220.63,-8.5 220.63,-15.5"/>
+</g>
+<!-- program~od2od -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_node6" class="node">
+<title>program~od2od</title>
+<g id="a_proc~~cell_find_mp_grid~~CalledByGraph_node6"><a xlink:href=".././program/od2od.html" xlink:title="od2od">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
+<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od2od</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~get_band_energy -->
+<g id="proc~~cell_find_mp_grid~~CalledByGraph_edge6" class="edge">
+<title>program~od2od&#45;&gt;proc~get_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M54.04,-54C61.74,-54 70.53,-54 79.49,-54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.63,-57.5 89.63,-54 79.63,-50.5 79.63,-57.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/cell_find_mp_grid.html#src">cell_find_MP_grid</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    
+    
+
+    
+    
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="w">  </span><span class="k">subroutine </span><span class="n">cell_find_MP_grid</span><span class="p">(</span><span class="n">kpoints</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpts</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_grid_dim</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="c">! WARNING the kpoint_offset is only +/- the true kpoint offset. We need to</span>
+<span class="w">    </span><span class="c">! do some more work to find out its sign</span>
+<span class="w">    </span><span class="c">! A J Morris 29th September 2011</span>
+<span class="w">    </span><span class="c">!=========================================================================!</span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">io_error</span><span class="p">,</span><span class="w"> </span><span class="n">stdout</span><span class="w"></span>
+<span class="w">    </span><span class="k">implicit none</span>
+<span class="k">    </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="kd">::</span><span class="w"> </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">num_kpts</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">     </span><span class="kd">::</span><span class="w"> </span><span class="n">kpoints</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span><span class="w"> </span><span class="k">optional</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w">            </span><span class="kd">::</span><span class="w"> </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w">            </span><span class="kd">::</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpts</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="kt">integer</span><span class="w">                  </span><span class="kd">::</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="p">,</span><span class="w"> </span><span class="n">iunique_kpoints</span><span class="w"></span>
+<span class="w">    </span><span class="kt">integer</span><span class="w">                  </span><span class="kd">::</span><span class="w"> </span><span class="n">ikpt</span><span class="p">,</span><span class="w"> </span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">jkpt</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w">    </span><span class="kd">::</span><span class="w"> </span><span class="n">subtraction_tol</span><span class="p">,</span><span class="w"> </span><span class="n">min_img</span><span class="p">,</span><span class="w"> </span><span class="n">min_img2</span><span class="w"></span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w">    </span><span class="kd">::</span><span class="w"> </span><span class="n">min_img3</span><span class="p">,</span><span class="w"> </span><span class="n">image</span><span class="p">,</span><span class="w"> </span><span class="n">min_img_tol</span><span class="w"></span>
+
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">iprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="c">! We can&#39;t use the global iprint as it&#39;s higher that this</span>
+<span class="w">    </span><span class="c">! in the module heirarchy.</span>
+
+<span class="w">    </span><span class="c">! Before time reversal symmetry we could any combintaion of kpoints</span>
+<span class="w">    </span><span class="c">!--------------------X-------------</span>
+<span class="w">    </span><span class="c">!                  0.25</span>
+
+<span class="w">    </span><span class="c">! We apply TR to make we have a complete set (and add periodic images)</span>
+<span class="w">    </span><span class="c">!------X------X------X------X------</span>
+<span class="w">    </span><span class="c">!    -0.75  -0.25   0.25  0.75</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! In this case the answer is easy. The minimim image is 0.5. Hence the grid is</span>
+<span class="w">    </span><span class="c">! 1/0.5 = 2x MP.</span>
+
+<span class="w">    </span><span class="c">! However the fun comes when shifts are applied. In this case applying TR makes</span>
+<span class="w">    </span><span class="c">! things more complicated. Consider the same grid with a +ve 0.05 shift.</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! Now CASTEP had to give us more kpoints</span>
+<span class="w">    </span><span class="c">!------------------X------X------</span>
+<span class="w">    </span><span class="c">!                0.20   0.70</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! We couldn&#39;t know that an offset had been applied so we appy TR and get</span>
+<span class="w">    </span><span class="c">!   -0.70     -0.20  0.30    0.80</span>
+<span class="w">    </span><span class="c">!----X-X-----X-X----X-X----X-X----</span>
+<span class="w">    </span><span class="c">!  -0.80  -0.30  0.20   0.70</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! Hence now the 1st minimum image is 0.10, double the offset</span>
+<span class="w">    </span><span class="c">!           the 2nd    &quot;      &quot;   is 0.40</span>
+<span class="w">    </span><span class="c">!           the 3rd    &quot;      &quot;   is 0.50  the reciprocal of the MP grid</span>
+
+<span class="w">    </span><span class="c">! One can now image the case where the offset is 3/(4n) where n is the MP grid number.</span>
+<span class="w">    </span><span class="c">! in this case 3/8=0.375</span>
+<span class="w">    </span><span class="c">!                 (shifted -0.75)  (shifted -0.25)</span>
+<span class="w">    </span><span class="c">!------------------------X-------------X-------------------------</span>
+<span class="w">    </span><span class="c">!                     -0.375        0.125</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! After TR</span>
+<span class="w">    </span><span class="c">!                           -0.125        0.375</span>
+<span class="w">    </span><span class="c">!------------------------X-----X------X-----X--------------------</span>
+<span class="w">    </span><span class="c">!                     -0.375        0.125</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! So these are all equally spaced so algorithm sees this like the first example, easy, 0.25. Hence</span>
+<span class="w">    </span><span class="c">! grid is 1/0.25 = 4x MP. Wrong!</span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">! This is a known bug -- and without having the symmetry ops, we can&#39;t build the shifted 2xMP grid to</span>
+<span class="w">    </span><span class="c">! show that it is not a 4x MP.  AJM 15/9/2014</span>
+
+<span class="w">    </span><span class="c">! When two numbers are the same</span>
+<span class="w">    </span><span class="n">subtraction_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">epsilon</span><span class="p">(</span><span class="n">subtraction_tol</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="c">!write(*,*) &quot;subtraction_tol=&quot;, subtraction_tol</span>
+<span class="w">    </span><span class="c">! When one number is larger than another one</span>
+<span class="w">    </span><span class="n">min_img_tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.000001_dp</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+----------------------------------------------------------------------------+&quot;</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;                              MP grid finder &quot;</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Kpoints found:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpts</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Add time reversal</span>
+<span class="w">    </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoints</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="n">kpoints</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">num_kpts</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Act on each dimension independently</span>
+<span class="w">    </span><span class="k">do </span><span class="nb">idim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">      </span><span class="c">! Fold all kpoints between (-0.5,0.5]</span>
+<span class="w">      </span><span class="k">do </span><span class="n">ikpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">num_kpts</span><span class="o">*</span><span class="mi">2</span><span class="w"></span>
+<span class="w">        </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">floor</span><span class="p">(</span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end do</span>
+<span class="k">    end do</span>
+
+<span class="k">    </span><span class="n">unique_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">over_dim</span><span class="p">:</span><span class="w"> </span><span class="k">do </span><span class="nb">idim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"></span>
+<span class="w">      </span><span class="c">! Make unique</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; ----- Dimension &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; -----&quot;</span><span class="w"></span>
+
+<span class="w">      </span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">      </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">      </span><span class="n">over_kpts</span><span class="p">:</span><span class="w"> </span><span class="k">do </span><span class="n">ikpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">num_kpts</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">iunique_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">iunique_kpoints</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">))</span><span class="w"> </span><span class="p">.</span><span class="n">le</span><span class="p">.</span><span class="w"> </span><span class="n">subtraction_tol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">            </span><span class="c">!We&#39;ve seen this before</span>
+<span class="w">            </span><span class="k">cycle </span><span class="n">over_kpts</span><span class="w"></span>
+<span class="w">          </span><span class="k">end if</span>
+<span class="k">        end do</span><span class="w"></span>
+<span class="w">        </span><span class="c">! If we ended up here then, this is new</span>
+<span class="w">        </span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; ikpt= &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;nunique_kpoints= &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">        </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kpoint_TR</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end do </span><span class="n">over_kpts</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Number of unique kpoints:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! write(*,*) &quot;------------------------ KPOINTS IN+TR+FOLDING+UNIQUE -----------&quot;</span>
+<span class="w">      </span><span class="c">! do i=1,nunique_kpoints</span>
+<span class="w">      </span><span class="c">!    write(*,*) i, idim, unique_kpoints(idim,i)</span>
+<span class="w">      </span><span class="c">! enddo</span>
+<span class="w">      </span><span class="c">! write(*,*) &quot;-----------------------------------------------------------&quot;</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Looking for special cases for dimension:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">idim</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Look at special cases. These are largely necessary because the general finder needs to get to</span>
+<span class="w">      </span><span class="c">! second nearest neighbour before it can work correctly. Except in the case of</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">! There is only 1 k-point</span>
+<span class="w">        </span><span class="c">! The shift is it&#39;s position (either 0 or 0.5)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">kpoint_offset</span><span class="p">))</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">        </span><span class="k">cycle </span><span class="n">over_dim</span><span class="w"></span>
+<span class="w">      </span><span class="n">elseif</span><span class="w"> </span><span class="p">(</span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">        </span><span class="n">min_img</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">min_img</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">0.5_dp</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="n">le</span><span class="p">.</span><span class="w"> </span><span class="n">min_img_tol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">          </span><span class="c">! If the 1stMI is 0.5 then there are 2 k-points</span>
+<span class="w">          </span><span class="c">! The shift is it&#39;s position (either 0 or 0.25)</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">kpoint_offset</span><span class="p">))</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">          </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w"></span>
+<span class="w">          </span><span class="k">cycle </span><span class="n">over_dim</span><span class="w"></span>
+<span class="w">        </span><span class="k">else</span><span class="w"></span>
+<span class="w">          </span><span class="c">! If the 1stMI .ne.0.5 then there is 1 kpoint</span>
+<span class="w">          </span><span class="c">! It&#39;s offset is min_img/2</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">kpoint_offset</span><span class="p">))</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">min_img</span><span class="o">/</span><span class="mi">2</span><span class="w"></span>
+<span class="w">          </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">          </span><span class="k">cycle </span><span class="n">over_dim</span><span class="w"></span>
+<span class="w">        </span><span class="k">end if</span>
+<span class="k">      </span><span class="n">elseif</span><span class="w"> </span><span class="p">(</span><span class="n">nunique_kpoints</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">! This is the case of a MP3 grid with a point at Gamma</span>
+<span class="w">        </span><span class="c">!! AJM COMMENTED OUT AS A TEST AGAINST</span>
+<span class="w">        </span><span class="c">!! HEXAGONAL CELLS</span>
+<span class="w">        </span><span class="c">!      if(present(kpoint_offset)) kpoint_offset(idim)=0.0_dp</span>
+<span class="w">        </span><span class="c">!      kpoint_grid_dim(idim)=3</span>
+<span class="w">        </span><span class="c">!      cycle over_dim</span>
+<span class="w">        </span><span class="k">continue</span>
+<span class="k">      end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Left the special-case kpoint finder for dimension:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">idim</span>
+<span class="nb">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Now trying to use the general solver...&quot;</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Get 1st, 2nd and 3rd minimum images</span>
+<span class="w">      </span><span class="c">! Get 1st min image</span>
+<span class="w">      </span><span class="n">min_img</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">do </span><span class="n">ikpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">jkpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ikpt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">          </span><span class="n">image</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">jkpt</span><span class="p">))</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">image</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">min_img</span><span class="p">)</span><span class="w"> </span><span class="n">min_img</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="w"></span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">      end do</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">min_img</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img</span><span class="p">))</span><span class="w"> </span><span class="p">.</span><span class="n">le</span><span class="p">.</span><span class="w"> </span><span class="n">subtraction_tol</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">           </span><span class="p">&amp;</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;cell_find_MP_grid: Failed to find a 1st min image&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Get 2nd min image</span>
+<span class="w">      </span><span class="n">min_img2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img2</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">do </span><span class="n">ikpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">jkpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ikpt</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">          </span><span class="n">image</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">jkpt</span><span class="p">))</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">image</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">min_img2</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">image</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">min_img</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">min_img_tol</span><span class="p">)</span><span class="w"> </span><span class="n">min_img2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="w"></span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">      end do</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">min_img2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img2</span><span class="p">))</span><span class="w"> </span><span class="p">.</span><span class="n">le</span><span class="p">.</span><span class="w"> </span><span class="n">subtraction_tol</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">           </span><span class="p">&amp;</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;cell_find_MP_grid: Failed to find a 2nd min image&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Get 3rd min image</span>
+<span class="w">      </span><span class="n">min_img3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img3</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">do </span><span class="n">ikpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">        </span><span class="k">do </span><span class="n">jkpt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ikpt</span><span class="p">,</span><span class="w"> </span><span class="n">nunique_kpoints</span><span class="w"></span>
+<span class="w">          </span><span class="n">image</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">abs</span><span class="p">(</span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">ikpt</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unique_kpoints</span><span class="p">(</span><span class="nb">idim</span><span class="p">,</span><span class="w"> </span><span class="n">jkpt</span><span class="p">))</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">image</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">min_img3</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">image</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">min_img2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">min_img_tol</span><span class="p">)</span><span class="w"> </span><span class="n">min_img3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">image</span><span class="w"></span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">      end do</span>
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">min_img3</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">huge</span><span class="p">(</span><span class="n">min_img3</span><span class="p">))</span><span class="w"> </span><span class="p">.</span><span class="n">le</span><span class="p">.</span><span class="w"> </span><span class="n">subtraction_tol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">! It&#39;s possible in CASTEP 6 and 7 to have 3 kpoints only for a 5 MP grid</span>
+<span class="w">        </span><span class="c">! the specieal case solver then got confused.</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">2.0_dp</span><span class="o">*</span><span class="n">min_img</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">min_img2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">min_img_tol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">          </span><span class="c">! If 1stMI==2ndMI then 1/1stMP is the grid density and we&#39;re still ok. Carry on.</span>
+<span class="w">          </span><span class="c">! we&#39;ll catch this scenario further down the code.</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Couldn&#39;t find a third minimum image, but since we don&#39;t think&quot;</span><span class="w"></span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; there&#39;s an offset, it looks like a&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="o">/</span><span class="n">min_img</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot; kpoint grid&quot;</span><span class="w"></span>
+<span class="w">          </span><span class="k">continue</span>
+<span class="k">        else</span>
+<span class="k">          call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;cell_find_MP_grid: Failed to find a 3rd min image&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">end if</span>
+<span class="k">      end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">        write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Min images for dimension:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">idim</span>
+<span class="nb">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; 1st:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min_img</span><span class="w"></span>
+<span class="w">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; 2nd:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min_img2</span><span class="w"></span>
+<span class="w">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; 3rd:&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">min_img3</span><span class="w"></span>
+<span class="w">        </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; 1st^-1:&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="o">/</span><span class="n">min_img</span><span class="w"></span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">      if</span><span class="w"> </span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">2.0_dp</span><span class="o">*</span><span class="n">min_img</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">min_img2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">min_img_tol</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">! If 1stMI==2ndMI then 1/1stMP is the grid density</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">kpoint_offset</span><span class="p">))</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"></span>
+<span class="w">        </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="o">/</span><span class="n">min_img</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="c">! WARNING could also have a shifted grid with a perfect shift 3/(4n)</span>
+<span class="w">        </span><span class="c">! this would be a known bug</span>
+<span class="w">      </span><span class="k">else</span><span class="w"></span>
+<span class="w">        </span><span class="c">! If 1stMI.ne.2ndMI then 1/3rdMP is the grid density</span>
+<span class="w">        </span><span class="c">! and 1stMI/2 is the shift</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">present</span><span class="p">(</span><span class="n">kpoint_offset</span><span class="p">))</span><span class="w"> </span><span class="n">kpoint_offset</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">min_img</span><span class="o">/</span><span class="mf">2.0_dp</span><span class="w"></span>
+<span class="w">        </span><span class="n">kpoint_grid_dim</span><span class="p">(</span><span class="nb">idim</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="mf">1.0_dp</span><span class="o">/</span><span class="n">min_img3</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">    end do </span><span class="n">over_dim</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Conclusion = kpoint_grid_dim: &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">kpoint_grid_dim</span><span class="w"></span>
+<span class="w">    </span><span class="c">! if(present(kpoint_offset))  write(*,*) &quot;kpoint_offset= &quot;,  kpoint_offset</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">         </span><span class="p">&amp;</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+----------------------------------------------------------------------------+&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">end subroutine </span><span class="n">cell_find_MP_grid</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2024 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

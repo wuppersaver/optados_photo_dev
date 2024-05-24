@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>read_dome_bin &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>read_dome_bin
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 0.1% of total for procedures.">5 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/od2od.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/od2od.f90.html'>od2od.f90</a></li>
+              <li><a href='../module/od_conv.html'>od_conv</a></li>
+          <li class="active">read_dome_bin</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_dome_bin.html#src">read_dome_bin</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine read_dome_bin()  
+</h2>
+    
+
+    <p>Read a diagonal ome file. Wrapper to keep the naming scheme tidy.</p>
+
+    <h3>Arguments</h3>
+    <em>None</em>
+    <br>
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_dome_bin~~CallsGraph Pages: 1 -->
+<svg id="procread_dome_binCallsGraph" width="641pt" height="337pt"
+ viewBox="0.00 0.00 641.00 337.07" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_dome_bin~~CallsGraph" class="graph" transform="scale(1.06 1.06) rotate(0) translate(4 352)">
+<title>proc~~read_dome_bin~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-352 673,-352 673,4 -4,4"/>
+<!-- proc~read_dome_bin -->
+<g id="proc~~read_dome_bin~~CallsGraph_node1" class="node">
+<title>proc~read_dome_bin</title>
+<polygon fill="none" stroke="black" points="94,-188 0,-188 0,-164 94,-164 94,-188"/>
+<text text-anchor="middle" x="47" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_dome_bin</text>
+</g>
+<!-- proc~elec_read_band_gradient -->
+<g id="proc~~read_dome_bin~~CallsGraph_node2" class="node">
+<title>proc~elec_read_band_gradient</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node2"><a xlink:href=".././proc/elec_read_band_gradient.html" xlink:title="elec_read_band_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-188 130,-188 130,-164 277,-164 277,-188"/>
+<text text-anchor="middle" x="203.5" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~read_dome_bin&#45;&gt;proc~elec_read_band_gradient -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge1" class="edge">
+<title>proc~read_dome_bin&#45;&gt;proc~elec_read_band_gradient</title>
+<path fill="none" stroke="#ff0000" d="M94.36,-176C102.4,-176 110.99,-176 119.67,-176"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="119.88,-179.5 129.88,-176 119.88,-172.5 119.88,-179.5"/>
+</g>
+<!-- interface~comms_bcast -->
+<g id="proc~~read_dome_bin~~CallsGraph_node3" class="node">
+<title>interface~comms_bcast</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node3"><a xlink:href=".././interface/comms_bcast.html" xlink:title="comms_bcast">
+<polygon fill="#a7506f" stroke="#a7506f" points="421.5,-348 336.5,-348 336.5,-324 421.5,-324 421.5,-348"/>
+<text text-anchor="middle" x="379" y="-333.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_bcast</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge2" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ff0000" d="M211.34,-188.1C226.48,-213.9 265.3,-274.83 313,-310 318.01,-313.69 323.61,-316.95 329.37,-319.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="327.94,-322.99 338.49,-323.93 330.83,-316.61 327.94,-322.99"/>
+</g>
+<!-- proc~io_time -->
+<g id="proc~~read_dome_bin~~CallsGraph_node4" class="node">
+<title>proc~io_time</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node4"><a xlink:href=".././proc/io_time.html" xlink:title="io_time">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="557,-230 503,-230 503,-206 557,-206 557,-230"/>
+<text text-anchor="middle" x="530" y="-215.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_time</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_time -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge6" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff0000" d="M277.32,-185.43C344.28,-194.09 440.78,-206.58 492.68,-213.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="492.38,-216.79 502.75,-214.6 493.28,-209.85 492.38,-216.79"/>
+</g>
+<!-- proc~io_error -->
+<g id="proc~~read_dome_bin~~CallsGraph_node5" class="node">
+<title>proc~io_error</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node5"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="669,-229 615,-229 615,-205 669,-205 669,-229"/>
+<text text-anchor="middle" x="642" y="-214.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_error -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge4" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M212.58,-188.04C228.58,-210.64 266.78,-258.82 313,-277 423.27,-320.38 468.29,-301.24 579,-259 593.52,-253.46 608,-243.94 619.31,-235.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="621.6,-238.01 627.29,-229.06 617.27,-232.51 621.6,-238.01"/>
+</g>
+<!-- proc~algor_dist_array -->
+<g id="proc~~read_dome_bin~~CallsGraph_node6" class="node">
+<title>proc~algor_dist_array</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node6"><a xlink:href=".././proc/algor_dist_array.html" xlink:title="algor_dist_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="579,-188 481,-188 481,-164 579,-164 579,-188"/>
+<text text-anchor="middle" x="530" y="-173.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">algor_dist_array</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge5" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#ff0000" d="M277.32,-176C335.61,-176 416.28,-176 470.43,-176"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="470.56,-179.5 480.56,-176 470.56,-172.5 470.56,-179.5"/>
+</g>
+<!-- proc~io_file_unit -->
+<g id="proc~~read_dome_bin~~CallsGraph_node7" class="node">
+<title>proc~io_file_unit</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node7"><a xlink:href=".././proc/io_file_unit.html" xlink:title="io_file_unit">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="565,-108 495,-108 495,-84 565,-84 565,-108"/>
+<text text-anchor="middle" x="530" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_file_unit</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge3" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0000" d="M220.77,-163.9C241.15,-149.47 277.7,-125.92 313,-115 370.43,-97.24 440.27,-94.24 484.68,-94.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="484.81,-98 494.85,-94.62 484.89,-91 484.81,-98"/>
+</g>
+<!-- interface~comms_send -->
+<g id="proc~~read_dome_bin~~CallsGraph_node8" class="node">
+<title>interface~comms_send</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node8"><a xlink:href=".././interface/comms_send.html" xlink:title="comms_send">
+<polygon fill="#a7506f" stroke="#a7506f" points="571,-66 489,-66 489,-42 571,-42 571,-66"/>
+<text text-anchor="middle" x="530" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_send</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_send -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge7" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff0000" d="M216.21,-163.71C234.82,-144.98 273.13,-109.64 313,-92 366.46,-68.35 433.5,-59.4 478.59,-56.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="478.97,-59.51 488.71,-55.33 478.49,-52.52 478.97,-59.51"/>
+</g>
+<!-- interface~comms_recv -->
+<g id="proc~~read_dome_bin~~CallsGraph_node9" class="node">
+<title>interface~comms_recv</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node9"><a xlink:href=".././interface/comms_recv.html" xlink:title="comms_recv">
+<polygon fill="#a7506f" stroke="#a7506f" points="569.5,-24 490.5,-24 490.5,0 569.5,0 569.5,-24"/>
+<text text-anchor="middle" x="530" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_recv</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_recv -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge8" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff0000" d="M211.71,-163.81C226.98,-139.13 265.18,-83.27 313,-56 365.08,-26.3 434.3,-16.47 480.19,-13.32"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="480.41,-16.81 490.18,-12.71 479.99,-9.82 480.41,-16.81"/>
+</g>
+<!-- proc~elec_read_optical_mat -->
+<g id="proc~~read_dome_bin~~CallsGraph_node10" class="node">
+<title>proc~elec_read_optical_mat</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node10"><a xlink:href=".././proc/elec_read_optical_mat.html" xlink:title="elec_read_optical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="445,-148 313,-148 313,-124 445,-124 445,-148"/>
+<text text-anchor="middle" x="379" y="-133.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_optical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge9" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat</title>
+<path fill="none" stroke="#ff0000" d="M256.56,-164C275.17,-159.71 296.34,-154.83 315.73,-150.36"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="316.72,-153.72 325.68,-148.06 315.15,-146.9 316.72,-153.72"/>
+</g>
+<!-- proc~elec_dealloc_optical -->
+<g id="proc~~read_dome_bin~~CallsGraph_node11" class="node">
+<title>proc~elec_dealloc_optical</title>
+<g id="a_proc~~read_dome_bin~~CallsGraph_node11"><a xlink:href=".././proc/elec_dealloc_optical.html" xlink:title="elec_dealloc_optical">
+<polygon fill="#d9534f" stroke="#d9534f" points="439.5,-268 318.5,-268 318.5,-244 439.5,-244 439.5,-268"/>
+<text text-anchor="middle" x="379" y="-253.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_dealloc_optical</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge10" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical</title>
+<path fill="none" stroke="#ff0000" d="M228.43,-188.21C250.29,-199.24 283.57,-215.72 313,-229 321.17,-232.69 330,-236.48 338.44,-240.02"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="337.16,-243.28 347.74,-243.88 339.85,-236.81 337.16,-243.28"/>
+</g>
+<!-- proc~algor_dist_array&#45;&gt;proc~io_error -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge11" class="edge">
+<title>proc~algor_dist_array&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#00ff00" d="M563.41,-188.08C576.57,-192.98 591.81,-198.67 605.29,-203.69"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="604.14,-207 614.73,-207.21 606.58,-200.44 604.14,-207"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_time -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge12" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#aa00ff" d="M398.56,-148.22C418.51,-161.11 451.35,-181.64 481,-197 485.02,-199.08 489.28,-201.14 493.55,-203.12"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="492.24,-206.37 502.8,-207.28 495.11,-199.99 492.24,-206.37"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_error -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge13" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#aa00ff" d="M445.21,-131.32C485.55,-131 537.4,-135.4 579,-155 598.61,-164.24 615.6,-182.39 626.8,-196.68"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="624.21,-199.05 633.01,-204.96 629.81,-194.86 624.21,-199.05"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge14" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#aa00ff" d="M424.7,-148C440.25,-152.17 457.87,-156.9 474.14,-161.27"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="473.5,-164.73 484.07,-163.94 475.32,-157.96 473.5,-164.73"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge16" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#aa00ff" d="M424.7,-124C443.74,-118.89 465.89,-112.94 484.86,-107.85"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="486,-111.17 494.75,-105.19 484.18,-104.41 486,-111.17"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_send -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge15" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#aa00ff" d="M398.56,-123.78C418.51,-110.89 451.35,-90.36 481,-75 484.08,-73.4 487.31,-71.82 490.58,-70.27"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="492.14,-73.4 499.78,-66.06 489.23,-67.04 492.14,-73.4"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_recv -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge17" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#aa00ff" d="M389.39,-123.72C405.94,-102.75 442.24,-59.73 481,-33 483.13,-31.53 485.38,-30.13 487.69,-28.8"/>
+<polygon fill="#aa00ff" stroke="#aa00ff" points="489.6,-31.75 496.84,-24.02 486.36,-25.55 489.6,-31.75"/>
+</g>
+<!-- proc~elec_dealloc_optical&#45;&gt;proc~io_error -->
+<g id="proc~~read_dome_bin~~CallsGraph_edge18" class="edge">
+<title>proc~elec_dealloc_optical&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff00aa" d="M439.8,-254.87C479.63,-253.15 532.91,-248.97 579,-239 587.67,-237.12 596.78,-234.36 605.27,-231.43"/>
+<polygon fill="#ff00aa" stroke="#ff00aa" points="606.67,-234.64 614.88,-227.94 604.29,-228.06 606.67,-234.64"/>
+</g>
+</g>
+</svg>
+</div><script>var panprocread_dome_binCallsGraph = svgPanZoom('#procread_dome_binCallsGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~read_dome_bin~~CalledByGraph Pages: 1 -->
+<svg id="procread_dome_binCalledByGraph" width="192pt" height="32pt"
+ viewBox="0.00 0.00 192.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~read_dome_bin~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~read_dome_bin~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 188,-28 188,4 -4,4"/>
+<!-- proc~read_dome_bin -->
+<g id="proc~~read_dome_bin~~CalledByGraph_node1" class="node">
+<title>proc~read_dome_bin</title>
+<polygon fill="none" stroke="black" points="184,-24 90,-24 90,0 184,0 184,-24"/>
+<text text-anchor="middle" x="137" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">read_dome_bin</text>
+</g>
+<!-- program~od2od -->
+<g id="proc~~read_dome_bin~~CalledByGraph_node2" class="node">
+<title>program~od2od</title>
+<g id="a_proc~~read_dome_bin~~CalledByGraph_node2"><a xlink:href=".././program/od2od.html" xlink:title="od2od">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od2od</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_dome_bin -->
+<g id="proc~~read_dome_bin~~CalledByGraph_edge1" class="edge">
+<title>program~od2od&#45;&gt;proc~read_dome_bin</title>
+<path fill="none" stroke="#ff0000" d="M54.14,-12C61.95,-12 70.81,-12 79.77,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="79.86,-15.5 89.86,-12 79.86,-8.5 79.86,-15.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/read_dome_bin.html#src">read_dome_bin</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    
+    
+
+    
+    
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="w">  </span><span class="k">subroutine </span><span class="n">read_dome_bin</span><span class="p">()</span><span class="w"></span>
+<span class="w">    </span><span class="c">!! Read a diagonal ome file. Wrapper to keep the naming scheme tidy.</span>
+<span class="w">    </span><span class="k">implicit none</span>
+<span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Read a binary dome file.&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">elec_read_band_gradient</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">end subroutine </span><span class="n">read_dome_bin</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2024 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>
