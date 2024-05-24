@@ -462,8 +462,11 @@ contains
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
-    if (index(photo_model, '3step') == 0 .and. index(photo_model, '1step') == 0) &
+    if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
+        index(photo_model, '3step') > 0 .and. index(photo_model, 'ds_like_pe') > 0 .or. &
+        index(photo_model, '1step') > 0 .and. index(photo_model, 'ds_like_pe') > 0) then
       call io_error('Error: value of photoemission model not recognised in param_read')
+    end if
 
     call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
     if (photo .and. .not. found) &
@@ -963,6 +966,8 @@ contains
       elseif (index(photo_model, '3step') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+      elseif (index(photo_model, 'ds_like_pe') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
       end if
       if (photo_photon_sweep) then
         write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
