@@ -149,7 +149,7 @@ contains
     call calc_band_info
     call calc_photon_energies
 
-    if (.not. index(photo_model, 'ds_like_pe') > 0) then 
+    if (.not. index(photo_model, 'ds_like_pe') > 0) then
       call elec_read_optical_mat
       ! THIS PART COMES FROM THE PDOS MODULE
       ! read in the pdos weights
@@ -187,7 +187,7 @@ contains
         current_photo_energy_index = i
         current_energy_index = index_energy(i)
         !Calculate the photoemission angles theta/phi and transverse energy
-        if (.not. index(photo_model, 'ds_like_pe') > 0) then 
+        if (.not. index(photo_model, 'ds_like_pe') > 0) then
           call calc_angle
 
           !Calculate the electron escape length
@@ -229,7 +229,7 @@ contains
       current_photo_energy_index = 1
       current_energy_index = index_energy(1)
       !Calculate the photoemission angles theta/phi and transverse energy
-      if (.not. index(photo_model, 'ds_like_pe') > 0) then 
+      if (.not. index(photo_model, 'ds_like_pe') > 0) then
         call calc_angle
 
         !Calculate the electron escape length
@@ -334,15 +334,6 @@ contains
         atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
     end do
 
-    ! Retreive the van-der-Waals radii from the constants
-    do atom_1 = 1, num_atoms
-      do i = 1, 109
-        if (atoms_label_tmp(atom_order(atom_1)) .eq. periodic_table_name(i)) then
-          vdw_radii(atom_1) = periodic_table_vdw(i)
-        end if
-      end do
-    end do
-
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
     ! the atom is more than 0.5 Angstrom lower than the current layer
@@ -358,7 +349,7 @@ contains
 
     ! --------------------------------------------------------------------------------------------
     ! *    The following code was added in Nov 2023 to test out a new layer assignment scheme    *
-    ! *    A set of boxes of the height of the central slab layer distance is created and the    *
+    ! *    A set of boxes with the height of the central slab layer distance is created and the  *
     ! *    atoms are sorted into those boxes by their z-coordinate.                              *
     ! --------------------------------------------------------------------------------------------
     ! determine the cell area, and photo_slab_volume for later use
@@ -382,7 +373,7 @@ contains
         end if
       end if
     end do
-    ! find potential atoms in the vicinity of the top and bottom atom within 0.5
+    ! find potential atoms in the vicinity of the top and bottom atom within 0.5 A
     ! and determing the mean z-coordinate of them (to get mean z-coord of a layer of atoms)
     do i = 1, 2
       counter = 0
@@ -454,7 +445,9 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
     end if
-! --------------------------------------------------------------------------------------------
+
+    ! This is the older code to define layers and sort atoms into their respective layers
+    ! --------------------------------------------------------------------------------------------
 
     if (on_root) then
       write (stdout, '(1x,a78)') '+------------------------------- Atomic Order  ------------------------------+'
@@ -512,6 +505,15 @@ contains
     ! do i = 1, max_layer
     !   write (stdout, *) 'Layer: ', i, atoms_per_layer(i), ' |'
     ! end do
+
+    ! Retreive the van-der-Waals radii from the constants
+    do atom_1 = 1, num_atoms
+      do i = 1, 109
+        if (atoms_label_tmp(atom_order(atom_1)) .eq. periodic_table_name(i)) then
+          vdw_radii(atom_1) = periodic_table_vdw(i)
+        end if
+      end do
+    end do
 
     ! Redefine z=0 (i.e. surface) to the top part of the atom sticking out of the surface the most
     do atom = 1, max_atoms
@@ -2588,7 +2590,6 @@ contains
       end do
     end do
 
-    
     do atom = 1, max_atoms
       if (iprint > 2 .and. on_root) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
@@ -2614,7 +2615,7 @@ contains
               end if
               if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
                 vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
-                                  scissor_op, width, evacuum_eff)/norm_vac
+                                 scissor_op, width, evacuum_eff)/norm_vac
               else
                 vac_g = 1.0_dp
               end if
@@ -2624,38 +2625,38 @@ contains
               if (index(devel_flag, 'reduced_pe') > 0) then
                 if (index(devel_flag, 'projected_pe') > 0) then
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
-                                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                               electrons_per_state*kpoint_weight(N)* &
+                                                               (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                                                                 pdos_weights_k_band(n_eigen, N_spin, N))
                 else
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                electrons_per_state*kpoint_weight(N)
+                                                               delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                               electrons_per_state*kpoint_weight(N)
                 end if
               else
                 if (.not. new_geom_choice) then
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
                                                                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(layer(atom), current_photo_energy_index))* &
                                                                 transverse_g*vac_g*initial_fd*final_fd* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
+                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
                 else
                   qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) = qe_factor* &
-                                                                (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
+                                                               (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
                                                                 delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                                 electron_esc(n_eigen, N_spin, N, atom)* &
                                                                 electrons_per_state*kpoint_weight(N)* &
                                                                 (I_layer(box_atom(atom), current_photo_energy_index))* &
                                                                 transverse_g*vac_g*initial_fd*final_fd* &
                                                                 (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                                  pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
+                                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
+                                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
                 end if
               end if
               if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
@@ -2690,17 +2691,17 @@ contains
             end if
             if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
               vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
-                                scissor_op, width, evacuum_eff)/norm_vac
+                               scissor_op, width, evacuum_eff)/norm_vac
             else
               vac_g = 1.0_dp
             end if
             qe_tsm(n_eigen, n_eigen2, N_spin, N, max_atoms + 1) = qe_factor* &
                                                                   (matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                                    delta_temp(n_eigen, n_eigen2, N_spin, N)* &
-                                                                    bulk_prob(n_eigen, N_spin, N)* &
-                                                                    electrons_per_state*kpoint_weight(N)* &
-                                                                    transverse_g*vac_g*initial_fd*final_fd* &
-                                                                  (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                                   delta_temp(n_eigen, n_eigen2, N_spin, N)* &
+                                                                   bulk_prob(n_eigen, N_spin, N)* &
+                                                                   electrons_per_state*kpoint_weight(N)* &
+                                                                   transverse_g*vac_g*initial_fd*final_fd* &
+                                                                   (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
                                                                     pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                                   (1.0_dp + field_emission(n_eigen, N_spin, N))
           end do
@@ -3523,8 +3524,8 @@ contains
       deallocate (te_osm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
 
-    else if (index(photo_model,'ds_like_pe') > 0) then
-      
+    else if (index(photo_model, 'ds_like_pe') > 0) then
+
       qe_term1 = sum(qe_tsm(:, :, :, :, 2))
       call comms_reduce(qe_term1, 1, 'SUM')
       qe_term2 = sum(qe_tsm(:, :, :, :, 1))
@@ -3535,7 +3536,7 @@ contains
       call comms_reduce(mte_term2, 1, 'SUM')
       total_qe = qe_term1/qe_term2
       mean_te = 0.5*(mte_term1/mte_term2)
-    
+
     end if
 
     time1 = io_time()
