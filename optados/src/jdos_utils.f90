@@ -64,8 +64,8 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, photo_slab_volume,&
-                            &jdos_max_energy, jdos_spacing, photo
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo,&
+      jdos_max_energy, jdos_spacing, photo
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
       num_electrons, efermi_set
     use od_comms, only: on_root, comms_bcast
@@ -79,10 +79,6 @@ contains
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
-
-    integer :: N_geom, is, idos, wjdos_unit = 25, pjdos_unit = 26
-    logical :: print_weighted_jdos = .false.
-
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
 
@@ -157,35 +153,17 @@ contains
            &      ', time1 - time0, ' (sec) +'
     end if
     !-------------------------------------------------------------------------------
-    if (print_weighted_jdos) then
-      if (on_root) then
-        N_geom = size(matrix_weights, 5)
-        open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos.dat')
-        write (wjdos_unit, '(1x,a28)') '############################'
-        write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
-        write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
-        write (wjdos_unit, '(1x,a28)') '############################'
-        do is = 1, nspins
-          write (wjdos_unit, *) 'Spin Channel :', is
-          do idos = 1, jdos_nbins
-            write (wjdos_unit, *) idos*jdos_spacing, ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
-          end do
-        end do
-        close (unit=wjdos_unit)
-      end if
-    end if
 
     if (dos_per_volume) then
       if (photo) then
         if (fixed) then
-          jdos_fixed = jdos_fixed/photo_slab_volume
+          jdos_fixed = jdos_fixed
         end if
         if (adaptive) then
-          jdos_adaptive = jdos_adaptive/photo_slab_volume
+          jdos_adaptive = jdos_adaptive
         end if
         if (linear) then
-          jdos_linear = jdos_linear/photo_slab_volume
+          jdos_linear = jdos_linear
         end if
       else
         if (fixed) then
@@ -320,17 +298,19 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, photo, &
-         &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands
+         finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
+         photo_slab_max, photo_slab_min
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
          & efermi, elec_pdos_read, pdos_weights, pdos_mwab, elec_dealloc_pdos
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
+    use od_constants, only: pi
     implicit none
 
     integer :: ik, is, ib, idos, jb, i
     integer :: N2, N_geom, ierr
-    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
+    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp, mean_height
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)                      :: jdos_type
@@ -363,6 +343,10 @@ contains
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      if (photo) then
+        mean_height = (photo_slab_min + photo_slab_max)/(2*2)
+        sub_cell_length(3) = sqrt(recip_lattice(3,1)**2 + recip_lattice(3,2)**2 + (pi/mean_height)**2)*step(3)
+      end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if
 

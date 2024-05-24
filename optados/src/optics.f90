@@ -78,6 +78,7 @@ module od_optics
   real(kind=dp) :: e_fermi
   integer :: N
   integer :: N2
+  real(kind=dp) :: slab_volume
 
 contains
 
@@ -88,11 +89,11 @@ contains
 
     use od_electronic, only: optical_mat, elec_read_optical_mat, nbands, nspins, &
       efermi, efermi_set, elec_dealloc_optical
-    use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r
+    use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r, real_lattice
     use od_jdos_utils, only: jdos_utils_calculate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_geom, adaptive, linear, fixed, optics_intraband, &
-      optics_drude_broadening
+      optics_drude_broadening, photo_slab_min, photo_slab_max, devel_flag
     use od_dos_utils, only: dos_utils_calculate_at_e, dos_utils_set_efermi
     use od_io, only: stdout
 
@@ -131,12 +132,16 @@ contains
     call elec_dealloc_optical ! don't need this large array anymore
 
     if (on_root) then
-      ! Calculate epsilon_2
-      call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
-
+      if (index(devel_flag,'slab_volume') > 0) then
+        slab_volume = (cell_volume/real_lattice(3, 3))*(photo_slab_max - photo_slab_min)
+        ! Calculate epsilon_2
+        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e,slab_volume)
+      else
+        ! Calculate epsilon_2
+        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
+      end if
       ! Calculate epsilon_1
       call calc_epsilon_1
-
       ! Calculate other optical properties
       if (.not. index(optics_geom, 'tensor') > 0) then
         call calc_conduct
@@ -147,13 +152,23 @@ contains
       end if
 
       ! Write everything out
-      call write_epsilon(0)
-      if (.not. index(optics_geom, 'tensor') > 0) then
+      if (index(devel_flag,'slab_volume') > 0) then
+        call write_epsilon(atom = 0,photo_volume = slab_volume)
+      else
+        call write_epsilon(0)
+      end if
+        if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
-        call write_refract(0)
         call write_loss_fn
-        call write_absorp(0)
-        call write_reflect(0)
+        if (index(devel_flag,'slab_volume') > 0) then
+          call write_refract(atom = 0,photo_volume = slab_volume)
+          call write_absorp(atom = 0,photo_volume = slab_volume)
+          call write_reflect(atom = 0,photo_volume = slab_volume)
+        else
+          call write_refract(0)
+          call write_absorp(0)
+          call write_reflect(0)
+        end if
       end if
     end if
 
@@ -510,7 +525,7 @@ contains
     use od_cell, only: nkpoints, cell_volume
     use od_electronic, only: nspins, electrons_per_state, nbands
     use od_jdos_utils, only: E, jdos_nbins
-    use od_parameters, only: optics_intraband, optics_drude_broadening, photo, photo_slab_volume, iprint
+    use od_parameters, only: optics_intraband, optics_drude_broadening, photo, iprint
     use od_io, only: stdout
     use od_comms, only: on_root
 

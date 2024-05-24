@@ -242,7 +242,7 @@ contains
           if ((file_version - file_ver) > 0.001_dp) &
             call io_error('Error: Trying to read newer version of dome_bin file. Update optados!')
           read (gradient_unit) domefile_header
-          if (iprint > 1) write (stdout, *) trim(domefile_header)
+          if (iprint > 1) write (stdout, '(1x,a)') trim(domefile_header)
         end if
       end if
 
@@ -590,19 +590,21 @@ contains
     ! Written by  V Chang                                             Nov 2020
     !=========================================================================
     use od_comms, only: on_root, my_node_id, num_nodes, root_id,&
-         & comms_recv, comms_send
+         & comms_recv, comms_send, comms_reduce
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
     use od_constants, only: bohr2ang, H2eV
     use od_parameters, only: legacy_file_format, iprint, devel_flag
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: gradient_unit, i, ib, jb, is, ik, inodes, ierr
+    integer :: gradient_unit, i, ib, jb, is, ik, inodes, ierr, gam_unit = 23, inode = 0, ktmp
     character(filename_len) :: gradient_filename
-    real(kind=dp) :: time0, time1, file_version
+    real(kind=dp) :: time0, time1, file_version, tolerance = 0.000001_dp
     real(kind=dp), parameter :: file_ver = 1.0_dp
+    complex(kind=dp),dimension(:,:,:),allocatable :: foptical_mat_temp
+    logical :: have_gamma = .False.
 
     ! Check that we haven't already done this.
 
@@ -654,6 +656,68 @@ contains
       foptical_mat = foptical_mat*bohr2ang*H2eV
     end if
 
+    if (index(devel_flag,'write_gam_fome') .gt. 0) then
+      do ik = 1, num_kpoints_on_node(my_node_id)
+        if (kpoint_r(1,ik) .lt. tolerance .and. kpoint_r(2,ik) .lt. tolerance .and. kpoint_r(3,ik) .lt. tolerance) then
+          inode = my_node_id
+          ktmp = ik
+          have_gamma = .True.
+          write (stdout,*) 'node',my_node_id,'k#',ktmp
+        end if
+      end do
+      call comms_reduce(inode, 1,'SUM')
+      if (have_gamma .and. .not. on_root) then
+        ! allocate the tmp array
+        allocate (foptical_mat_temp(1:nbands + 1, 1:3, 1:nspins), stat=ierr)
+        if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
+        ! write to tmp array
+        foptical_mat_temp = foptical_mat(:, nbands + 1,:,ktmp,:)
+        ! send the tmp array to root node
+        call comms_send(foptical_mat_temp(1,1,1),(nbands + 1)*3*nspins,root_id)
+        ! deallocate the tmp array
+        deallocate (foptical_mat_temp, stat=ierr)
+        if (ierr /= 0) call io_error('Error: Problem deallocating foptical_mat_temp in elec_read_foptical_mat')
+      end if
+      if (on_root) then
+        if (have_gamma) then
+          ! Write out the fomes
+          open (unit=gam_unit, action='write', file=trim(seedname)//'_gamma_fomes.dat')
+          write (gam_unit, '(1x,a28)') '############################'
+          write (gam_unit, *) '# Free electron OMEs for', seedname
+          write (gam_unit, '(1x,a28)') '############################'
+          do is = 1, nspins
+            write (gam_unit, *) 'Spin Channel', is
+            write (gam_unit, *) '# bands + free electron band', nbands + 1
+            do ib = 1, nbands + 1
+              write (gam_unit, '(1x, I3, 6(1x,ES24.16E2))') ib, (foptical_mat(ib,nbands + 1, i, ktmp, is),i=1, 3)
+            end do
+          end do
+          close (unit=gam_unit)
+        else
+          ! allocate the tmp array
+          allocate (foptical_mat_temp(1:nbands + 1, 1:3, 1:nspins), stat=ierr)
+          if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
+          ! receive the tmp array to root node
+          call comms_recv(foptical_mat_temp(1,1,1),(nbands + 1)*3*nspins,inode)
+          ! write out the tmp array
+          open (unit=gam_unit, action='write', file=trim(seedname)//'_gamma_fomes.dat')
+          write (gam_unit, '(1x,a28)') '############################'
+          write (gam_unit, *) '# Free electron OMEs for', seedname
+          write (gam_unit, '(1x,a28)') '############################'
+          do is = 1, nspins
+            write (gam_unit, *) 'Spin Channel', is
+            write (gam_unit, *) '# bands + free electron band', nbands 
+            do ib = 1, nbands + 1
+              write (gam_unit, '(1x, I3, 3(1x,ES24.16E2))') ib, (foptical_mat_temp(ib, i, is),i=1, 3)
+            end do
+          end do
+          close (unit=gam_unit)
+          ! deallocate the tmp array
+          deallocate (foptical_mat_temp, stat=ierr)
+          if (ierr /= 0) call io_error('Error: Problem deallocating foptical_mat_temp in elec_read_foptical_mat')
+        end if
+      end if
+    end if
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a59,f11.3,a8)') &

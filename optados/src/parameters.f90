@@ -135,7 +135,7 @@ module od_parameters
   logical, public, save       :: photo_photon_sweep
   real(kind=dp), public, save :: photo_photon_min
   real(kind=dp), public, save :: photo_photon_max
-  real(kind=dp), public, save :: photo_bulk_length
+  real(kind=dp), public, save :: photo_bulk_cutoff
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
   integer, public, save       :: photo_len_imfp_const
@@ -144,8 +144,11 @@ module od_parameters
   ! logical, public, save :: photo_e_units
   ! logical, public, save :: photo_mte
   real(kind=dp), public, save :: photo_work_function
-  real(kind=dp), public, save :: photo_surface_area
-  real(kind=dp), public, save :: photo_slab_volume
+  ! real(kind=dp), public, save :: photo_surface_area
+  ! real(kind=dp), public, save :: photo_slab_volume
+  real(kind=dp), public, save :: photo_slab_min
+  real(kind=dp), public, save :: photo_slab_max
+  logical, public, save       :: photo_remove_box_states
 
   real(kind=dp), public, save :: lenconfac
 
@@ -459,8 +462,11 @@ contains
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
-    if (index(photo_model, '3step') == 0 .and. index(photo_model, '1step') == 0) &
+    if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
+        index(photo_model, '3step') > 0 .and. index(photo_model, 'ds_like_pe') > 0 .or. &
+        index(photo_model, '1step') > 0 .and. index(photo_model, 'ds_like_pe') > 0) then
       call io_error('Error: value of photoemission model not recognised in param_read')
+    end if
 
     call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
     if (photo .and. .not. found) &
@@ -484,18 +490,36 @@ contains
     if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
     if (photo .and. .not. found .and. .not. photo_photon_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
-    photo_bulk_length = 10.0_dp
-    call param_get_keyword('photo_bulk_length', found, r_value=photo_bulk_length)
+    photo_bulk_cutoff = 10.0_dp
+    call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
+    if (found) photo_bulk_cutoff = -1*log(photo_bulk_cutoff)
     photo_temperature = 298.0_dp
     call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
 
-    call param_get_keyword('photo_surface_area', found, r_value=photo_surface_area)
-    if (photo .and. .not. found) &
-      call io_error('Error: please set surface area for photoemission calculation')
+    ! call param_get_keyword('photo_surface_area', found, r_value=photo_surface_area)
+    ! if (photo .and. .not. found) &
+    ! call io_error('Error: please set surface area for photoemission calculation')
 
-    call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
-    if (photo .and. .not. found) &
-      call io_error('Error: please set volume of the slab for photoemission calculation')
+    ! call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
+    ! if (photo .and. .not. found) &
+    !   call io_error('Error: please set volume of the slab for photoemission calculation')
+
+    photo_slab_min = 0.0_dp
+    call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
+    ! if(photo .and. .not. found) &
+    !     call io_error('Error: please set volume of the slab for photoemission calculation')
+    photo_slab_max = 0.0_dp
+    call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
+
+    if (photo_slab_max .lt. 0.0_dp .or. photo_slab_min .lt. 0.0_dp) then
+      call io_error('Error: the supplied min or max values are negative, which causes faulty calculations!')
+    end if
+    if (photo_slab_max .lt. photo_slab_min) then
+      call io_error('Error: the supplied slab_max value is less than the slab_min value!')
+    end if
+
+    photo_remove_box_states = .False.
+    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
     photo_layer_choice = 'optados'
     call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
@@ -942,6 +966,8 @@ contains
       elseif (index(photo_model, '3step') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+      elseif (index(photo_model, 'ds_like_pe') > 0) then
+        write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
       end if
       if (photo_photon_sweep) then
         write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
@@ -950,8 +976,10 @@ contains
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Photon Energy              (eV)           :', photo_photon_energy, '|'
       end if
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Work Function              (eV)           :', photo_work_function, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
-      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Surface Area               (Ang**2)       :', photo_surface_area, '|'
+      ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
+      write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
       if (index(photo_layer_choice, 'user') > 0) then
         write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
       end if
@@ -961,13 +989,17 @@ contains
         write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
         write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
       end if
+      write (stdout, '(1x,a46,4x,E11.4,16x,a1)') '|  Approx. Bulk P_escape Cutoff              :', exp(-1*photo_bulk_cutoff), '|'
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else
         write (stdout, '(1x,a46,1x,E17.9,13x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       end if
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Smearing Temperature       (K)            :', photo_temperature, '|'
-      write (stdout, '(1x,a46,1x,a9,21x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      write (stdout, '(1x,a46,5x,a9,17x,a1)') '|  Transverse Momentum Scheme                :', photo_momentum, '|'
+      if (photo_remove_box_states) then
+        write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
+      end if
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
       if (index(write_photo_output, 'slab') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
@@ -982,8 +1014,9 @@ contains
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -lower -          (deg)          :', photo_phi_lower, '|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
     end if
-
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+    if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
+    if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
     write (stdout, *) ' '
 
   end subroutine param_write
@@ -1719,18 +1752,21 @@ contains
       call comms_bcast(photo_photon_max, 1)
     end if
     call comms_bcast(photo_work_function, 1)
-    call comms_bcast(photo_surface_area, 1)
-    call comms_bcast(photo_slab_volume, 1)
+    ! call comms_bcast(photo_surface_area, 1)
+    ! call comms_bcast(photo_slab_volume, 1)
+    call comms_bcast(photo_slab_max, 1)
+    call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_layer_choice, len(photo_layer_choice))
     call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
+    call comms_bcast(photo_remove_box_states,1)
     call comms_bcast(photo_len_imfp_const, 1)
     if (.not. on_root) then
       allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
       if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_const')
     end if
     call comms_bcast(photo_imfp_const(1), photo_len_imfp_const)
-    call comms_bcast(photo_bulk_length, 1)
+    call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(write_photo_output, len(write_photo_output))
     call comms_bcast(photo_theta_lower, 1)

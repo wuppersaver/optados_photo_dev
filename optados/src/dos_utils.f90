@@ -120,7 +120,7 @@ contains
     use od_electronic, only: band_gradient, band_energy, efermi, efermi_castep, nspins, &
          & elec_read_band_gradient, unshifted_efermi
     use od_parameters, only: linear, adaptive, fixed, quad, &
-         & dos_per_volume, iprint, set_efermi_zero, efermi_choice, iprint, photo, photo_slab_volume
+         & dos_per_volume, iprint, set_efermi_zero, efermi_choice, iprint, photo
     use od_cell, only: cell_volume, num_kpoints_on_node
 
     implicit none
@@ -282,7 +282,7 @@ contains
         end if
         if (calc_weighted_dos) then
           if (photo) then
-            weighted_dos = weighted_dos/photo_slab_volume
+            weighted_dos = weighted_dos
           else
             weighted_dos = weighted_dos/cell_volume
           end if
