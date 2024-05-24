@@ -147,6 +147,7 @@ contains
     ! Identify layers
     call analyse_geometry
     call calc_band_info
+    call calc_photon_energies
 
     call elec_read_optical_mat
     ! THIS PART COMES FROM THE PDOS MODULE
@@ -654,6 +655,41 @@ contains
     end if
 
   end subroutine calc_band_info
+
+  subroutine calc_photon_energies
+    use od_constants, only: dp
+    use od_parameters, only: photo_photon_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy
+    use od_io, only: io_error
+    implicit none
+    real(kind=dp)        ::   num_energies, temp
+    integer              ::   ierr, i
+
+    if (photo_photon_sweep) then
+      num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
+      number_energies = int(num_energies) + 1
+      if (photo_photon_max - photo_photon_min .eq. 0.0_dp) then
+        number_energies = 1
+      else if (mod(num_energies, 1.0_dp) > 1.0E-10_dp) then
+        number_energies = number_energies + 1
+        if (abs(mod(num_energies, 1.0_dp) - 1) > 1.0E-10_dp) &
+          call io_error('Error: calc_photon_energies - given photon sweep min/max values do not give integer # of photon steps')
+      end if
+      allocate (index_energy(number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
+      do i = 1, number_energies
+        temp = (i - 1)*jdos_spacing + photo_photon_min
+        ! Account for E = 0.0
+        index_energy(i) = int(temp/jdos_spacing) + 1
+      end do
+    else
+      number_energies = 1
+      allocate (index_energy(number_energies), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
+      ! Account for E = 0.0
+      index_energy(number_energies) = int(photo_photon_energy/jdos_spacing) + 1
+    end if
+
+  end subroutine calc_photon_energies
 
   subroutine identify_box_states
     !=========================================================================
