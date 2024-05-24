@@ -65,7 +65,7 @@ contains
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
     use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo,&
-                            &jdos_max_energy, jdos_spacing, photo
+      jdos_max_energy, jdos_spacing, photo
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
       num_electrons, efermi_set
     use od_comms, only: on_root, comms_bcast
@@ -79,7 +79,6 @@ contains
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
-
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
 
@@ -299,7 +298,7 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, photo, &
-         &finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
+         finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
          photo_slab_max, photo_slab_min
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &

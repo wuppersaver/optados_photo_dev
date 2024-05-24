@@ -65,6 +65,8 @@ module od_photo
   integer :: first_atom_second_l, last_atom_secondlast_l
 
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
+  real(kind=dp), dimension(:), allocatable :: atom_imfp
+  integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -333,7 +335,7 @@ contains
       if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
         atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
     end do
-
+    
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
     ! the atom is more than 0.5 Angstrom lower than the current layer
@@ -1039,7 +1041,6 @@ contains
                                           N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
-
   end subroutine make_pdos_weights_atoms
 
   !***************************************************************
@@ -1064,7 +1065,6 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: dos_matrix_weights
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
-
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy, box, initial
     integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
     real(kind=dp)    :: num_energies, temp, time0, time1
@@ -1561,7 +1561,6 @@ contains
       allocate (I_layer(max_layer, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
       I_layer = 0.0_dp
-
       I_0 = 1.0_dp
       I_layer = 1.0_dp
 
@@ -2058,10 +2057,13 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-
     if (.not. allocated(bulk_prob)) then
       allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    if (size(photo_imfp_const, 1) .gt. 1) then
+      num_layers = int((atom_imfp(max_atoms)*photo_bulk_length)/thickness_atom(max_atoms))
+    elseif (size(photo_imfp_const, 1) .eq. 1) then
+      num_layers = int((photo_imfp_const(1)*photo_bulk_length)/thickness_atom(max_atoms))
     end if
     bulk_prob = 0.0_dp
 
@@ -2082,6 +2084,8 @@ contains
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
       bulk_prob_tmp = 0.0_dp
 
+
+    if (size(photo_imfp_const, 1) .gt. 1) then
       do i = 1, num_layers
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
@@ -2682,7 +2686,6 @@ contains
           final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)
           do n_eigen = 1, n_eigen2 - 1
             initial_fd = fermi_dirac(n_eigen, N_spin, N)
-
             if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
               transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
                                       width, (evacuum_eff - efermi))/norm_vac
