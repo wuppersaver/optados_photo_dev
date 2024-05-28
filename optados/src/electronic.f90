@@ -41,10 +41,12 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:, :, :, :, :)
 
   !Additional variables for photoemission.- V.Chang Nov-2020
-  real(kind=dp), allocatable, public, save  :: band_curvature(:, :, :, :, :)
+  real(kind=dp), allocatable, public, save     :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
   ! F. Mildner April-2023
-  character(len=80), public, save :: femfile_header
+  character(len=80), public, save              :: femfile_header
+  ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
+  real(kind=dp), dimension(5), public, save            :: fem_energy_info
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -590,7 +592,7 @@ contains
     ! Written by  V Chang                                             Nov 2020
     !=========================================================================
     use od_comms, only: on_root, my_node_id, num_nodes, root_id,&
-         & comms_recv, comms_send, comms_reduce
+         & comms_recv, comms_send, comms_reduce, comms_bcast
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
     use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
@@ -599,11 +601,11 @@ contains
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: gradient_unit, i, ib, jb, is, ik, inodes, ierr, gam_unit = 23, inode = 0, ktmp
+    integer :: fem_unit, i, ib, jb, is, ik, inodes, ierr, gam_unit = 23, inode = 0, ktmp, energy_count
     character(filename_len) :: gradient_filename
     real(kind=dp) :: time0, time1, file_version, tolerance = 0.000001_dp
     real(kind=dp), parameter :: file_ver = 1.0_dp
-    complex(kind=dp),dimension(:,:,:),allocatable :: foptical_mat_temp
+    complex(kind=dp), dimension(:, :, :, :), allocatable :: foptical_mat_temp
     logical :: have_gamma = .False.
 
     ! Check that we haven't already done this.
@@ -612,43 +614,47 @@ contains
 
     time0 = io_time()
     if (on_root) then
-      gradient_unit = io_file_unit()
+      fem_unit = io_file_unit()
       gradient_filename = trim(seedname)//".fem_bin"
       if (iprint > 1) write (stdout, '(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
-      open (unit=gradient_unit, file=gradient_filename, status="old", form='unformatted', err=102)
-      read (gradient_unit) file_version
+      open (unit=fem_unit, file=gradient_filename, status="old", form='unformatted', err=102)
+      read (fem_unit) file_version
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of fem_bin file. Update optados!')
-      read (gradient_unit) femfile_header
+      read (fem_unit) femfile_header
+      do i = 1, 5
+        read (fem_unit) fem_energy_info(i)
+      end do
       if (iprint > 1) write (stdout, '(1x,a)') trim(femfile_header)
     end if
 
+    call comms_bcast(fem_energy_info(1), 5)
+    energy_count = int(fem_energy_info(1))
     ! Figure out how many kpoints should be on each node
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (foptical_mat(1:nbands + 1, 1:nbands + 1, 1:3, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
+    allocate (foptical_mat(1:nbands, 1:3, energy_count, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
     if (on_root) then
       do inodes = 1, num_nodes - 1
         do ik = 1, num_kpoints_on_node(inodes)
           do is = 1, nspins
-            read (gradient_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1) &
-                                   , jb=1, nbands + 1), i=1, 3)
+            read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
           end do
         end do
-        call comms_send(foptical_mat(1, 1, 1, 1, 1), (nbands + 1)*(nbands + 1)*3*nspins*num_kpoints_on_node(inodes), inodes)
+        call comms_send(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
-          read (gradient_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), jb=1, nbands + 1), i=1, 3)
+          read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
         end do
       end do
     end if
 
     if (.not. on_root) then
-      call comms_recv(foptical_mat(1, 1, 1, 1, 1), (nbands + 1)*(nbands + 1)*3*nspins*num_kpoints_on_node(my_node_id), root_id)
+      call comms_send(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(inodes), root_id)
     end if
 
-    if (on_root) close (unit=gradient_unit)
+    if (on_root) close (unit=fem_unit)
     ! Convert all band gradients to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
@@ -656,24 +662,24 @@ contains
       foptical_mat = foptical_mat*bohr2ang*H2eV
     end if
 
-    if (index(devel_flag,'write_gam_fome') .gt. 0) then
+    if (index(devel_flag, 'write_gam_fome') .gt. 0) then
       do ik = 1, num_kpoints_on_node(my_node_id)
-        if (kpoint_r(1,ik) .lt. tolerance .and. kpoint_r(2,ik) .lt. tolerance .and. kpoint_r(3,ik) .lt. tolerance) then
+        if (kpoint_r(1, ik) .lt. tolerance .and. kpoint_r(2, ik) .lt. tolerance .and. kpoint_r(3, ik) .lt. tolerance) then
           inode = my_node_id
           ktmp = ik
           have_gamma = .True.
-          write (stdout,*) 'node',my_node_id,'k#',ktmp
+          write (stdout, *) 'node', my_node_id, 'k#', ktmp
         end if
       end do
-      call comms_reduce(inode, 1,'SUM')
+      call comms_reduce(inode, 1, 'SUM')
       if (have_gamma .and. .not. on_root) then
         ! allocate the tmp array
-        allocate (foptical_mat_temp(1:nbands + 1, 1:3, 1:nspins), stat=ierr)
+        allocate (foptical_mat_temp(1:nbands, 1:3, energy_count, 1:nspins), stat=ierr)
         if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
         ! write to tmp array
-        foptical_mat_temp = foptical_mat(:, nbands + 1,:,ktmp,:)
+        foptical_mat_temp = foptical_mat(:, :, :, ktmp, :)
         ! send the tmp array to root node
-        call comms_send(foptical_mat_temp(1,1,1),(nbands + 1)*3*nspins,root_id)
+        call comms_send(foptical_mat_temp(1, 1, 1, 1), (nbands)*energy_count*3*nspins, root_id)
         ! deallocate the tmp array
         deallocate (foptical_mat_temp, stat=ierr)
         if (ierr /= 0) call io_error('Error: Problem deallocating foptical_mat_temp in elec_read_foptical_mat')
@@ -688,17 +694,17 @@ contains
           do is = 1, nspins
             write (gam_unit, *) 'Spin Channel', is
             write (gam_unit, *) '# bands + free electron band', nbands + 1
-            do ib = 1, nbands + 1
-              write (gam_unit, '(1x, I3, 6(1x,ES24.16E2))') ib, (foptical_mat(ib,nbands + 1, i, ktmp, is),i=1, 3)
+            do ib = 1, nbands
+              write (gam_unit, '(1x, I3, 999(1x,ES24.16E2))') ib, ((foptical_mat(ib, i, jb, ktmp, is), i=1, 3), jb=1, energy_count)
             end do
           end do
           close (unit=gam_unit)
         else
           ! allocate the tmp array
-          allocate (foptical_mat_temp(1:nbands + 1, 1:3, 1:nspins), stat=ierr)
+          allocate (foptical_mat_temp(1:nbands, 1:3, energy_count, 1:nspins), stat=ierr)
           if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
           ! receive the tmp array to root node
-          call comms_recv(foptical_mat_temp(1,1,1),(nbands + 1)*3*nspins,inode)
+          call comms_recv(foptical_mat_temp(1, 1, 1, 1), (nbands)*energy_count*3*nspins, inode)
           ! write out the tmp array
           open (unit=gam_unit, action='write', file=trim(seedname)//'_gamma_fomes.dat')
           write (gam_unit, '(1x,a28)') '############################'
@@ -706,9 +712,9 @@ contains
           write (gam_unit, '(1x,a28)') '############################'
           do is = 1, nspins
             write (gam_unit, *) 'Spin Channel', is
-            write (gam_unit, *) '# bands + free electron band', nbands 
+            write (gam_unit, *) '# bands + free electron band', nbands
             do ib = 1, nbands + 1
-              write (gam_unit, '(1x, I3, 3(1x,ES24.16E2))') ib, (foptical_mat_temp(ib, i, is),i=1, 3)
+              write (gam_unit, '(1x, I3, 999(1x,ES24.16E2))') ib, ((foptical_mat(ib, i, jb, ktmp, is), i=1, 3), jb=1, energy_count)
             end do
           end do
           close (unit=gam_unit)
@@ -1523,7 +1529,7 @@ contains
           do is = 1, pdos_mwab%nspins
             read (pdos_in_unit) dummyi ! this is the spin number
             read (pdos_in_unit) nbands_occ(ik, is)
-            if (full_debug_pdos_weights) write(nbands_occ(ik,is))
+            if (full_debug_pdos_weights) write (nbands_occ(ik, is))
             do ib = 1, nbands_occ(ik, is)
               if (full_debug_pdos_weights) then
                 write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
@@ -1544,7 +1550,7 @@ contains
         do is = 1, pdos_mwab%nspins
           read (pdos_in_unit) dummyi ! this is the spin number
           read (pdos_in_unit) nbands_occ(ik, is)
-          if (full_debug_pdos_weights) write (stdout,*) nbands_occ(ik,is)
+          if (full_debug_pdos_weights) write (stdout, *) nbands_occ(ik, is)
           do ib = 1, nbands_occ(ik, is)
             if (full_debug_pdos_weights) then
               write (stdout, *) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
