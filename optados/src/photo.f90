@@ -65,8 +65,7 @@ module od_photo
   integer :: first_atom_second_l, last_atom_secondlast_l
 
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
-  real(kind=dp), dimension(:), allocatable :: atom_imfp
-  integer :: first_atom_second_l, last_atom_secondlast_l
+  real(kind=dp), dimension(:), allocatable :: box_imfp
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
   real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
@@ -94,7 +93,7 @@ module od_photo
   integer :: max_layer
   real(kind=dp) :: q_weight
 
-  ! Added by Felix Mildner, 12/2022 and laters
+  ! Added by Felix Mildner, 12/2022 and later
 
   integer, allocatable, dimension(:)  :: index_energy
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
@@ -335,7 +334,7 @@ contains
       if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
         atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
     end do
-    
+
     ! DEFINE THE LAYER FOR EACH ATOM
     ! Assume that a new layer starts if the atom type changes or
     ! the atom is more than 0.5 Angstrom lower than the current layer
@@ -2057,13 +2056,12 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    if (.not. allocated(bulk_prob)) then
-      allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
     if (size(photo_imfp_const, 1) .gt. 1) then
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_length)/thickness_atom(max_atoms))
+      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
     elseif (size(photo_imfp_const, 1) .eq. 1) then
-      num_layers = int((photo_imfp_const(1)*photo_bulk_length)/thickness_atom(max_atoms))
+      num_layers = int((photo_imfp_const(1)*photo_bulk_cutoff)/thickness_atom(max_atoms))
     end if
     bulk_prob = 0.0_dp
 
@@ -2084,41 +2082,42 @@ contains
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
       bulk_prob_tmp = 0.0_dp
 
-
-    if (size(photo_imfp_const, 1) .gt. 1) then
-      do i = 1, num_layers
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
-                exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                            cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
-                ! This makes sure, that exp(exponent) does not underflow the dp fp value.
-                ! As exp(-575) is ~1E-250, this should be more than enough precision.
-                if (exponent .gt. -575.0_dp) then
-                  bulk_prob_tmp(n_eigen, N_spin, N, i) = exp(exponent)
+      if (size(photo_imfp_const, 1) .gt. 1) then
+        do i = 1, num_layers
+          do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+                  exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
+                              cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
+                  ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                  ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                  if (exponent .gt. -575.0_dp) then
+                    bulk_prob_tmp(n_eigen, N_spin, N, i) = exp(exponent)
+                  end if
                 end if
-              end if
+              end do
             end do
           end do
         end do
-      end do
+      else
+        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              do i = 1, num_layers
+                bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+              end do
+              bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
+            end do
+          end do
+        end do
+      end if ! If statement
 
       bulk_light_tmp(1) = I_layer(layer(max_atoms), current_photo_energy_index)* &
                           exp(-(absorp_photo(max_atoms, current_photo_energy_index)*thickness_atom(max_atoms)*1E-10))
       do i = 2, num_layers
         bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
                             exp(-(absorp_photo(max_atoms, current_photo_energy_index)*i*thickness_atom(max_atoms)*1E-10))
-      end do
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            do i = 1, num_layers
-              bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
-            end do
-            bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
-          end do
-        end do
       end do
 
       if (iprint .gt. 1 .and. on_root) then
@@ -2127,7 +2126,8 @@ contains
         ! write out num_layers
         write (stdout, '(1x,a1,5x,a18,1x,a1,1x,I5,45x,a1)') '+', 'Number Bulk layers', '=', num_layers, '+'
         ! write out the total volume + volume per layer
-        write (stdout, '(1x,a1,5x,a14,5x,a1,1x,F10.4,40x,a1)') '+', 'Vol. per layer', '=', thickness_atom(max_atoms)*cell_area, '+'
+        write (stdout, '(1x,a1,5x,a14,5x,a1,1x,F10.4,40x,a1)') '+', 'Vol. per layer', '=', &
+          thickness_atom(max_atoms)*cell_area, '+'
         write (stdout, '(1x,a1,5x,a12,7x,a1,1x,F10.4,40x,a1)') '+', 'Total Volume', '=', num_layers* &
           thickness_atom(max_atoms)*cell_area, '+'
         write (stdout, '(1x,a78)') '+---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+'
@@ -2248,9 +2248,9 @@ contains
               write (stdout, '(1x,a1,35x,a6,35x,a1)') '+', '......', '+'
             end if
           end do
-        end if
+        end if ! If statement printing of slab light intensities formatting
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      end if
+      end if ! If statement extra printing of slab data
     end if ! If statement for geometry choice
 
     ! deallocate (atom_imfp, stat=ierr)
@@ -3036,7 +3036,7 @@ contains
     use od_constants, only: dp, hbar, e_mass
     use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat
     use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations,&
-    & real_lattice
+     & real_lattice
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
@@ -3794,7 +3794,7 @@ contains
             read (devel_flag(n_eigen - 2:n_eigen), *) band_num
             write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                  & ')'
+                                                & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N = 1, num_kpoints_on_node(my_node_id)
@@ -3807,7 +3807,7 @@ contains
             write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
             write (matrix_unit, *) '## at a certain k-point, spin, and atom'
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                  & ')'
+                                                & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N = 1, num_kpoints_on_node(my_node_id)
@@ -3820,7 +3820,7 @@ contains
             write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
             write (matrix_unit, *) '## at a certain k-point, spin, and atom'
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                  & ')'
+                                                & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N = 1, num_kpoints_on_node(my_node_id)
@@ -3834,7 +3834,7 @@ contains
           write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
           write (matrix_unit, *) '## at a certain k-point, spin, and atom'
           write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-               & ')'
+                                 & ')'
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
             do N = 1, num_kpoints_on_node(my_node_id)
