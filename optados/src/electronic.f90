@@ -655,6 +655,21 @@ contains
     end if
 
     if (on_root) close (unit=fem_unit)
+
+    ! foptical_mat = foptical_mat + (1.0E-100_dp,1.0E-100_dp)
+
+    do ik = 1, num_kpoints_on_node(my_node_id)
+      do is = 1, nspins
+        do jb = 1, energy_count
+          do i = 1, 3
+            do ib = 1, nbands
+              if (foptical_mat(ib, i, jb, ik, is)%re .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%re = 0.0_dp
+              if (foptical_mat(ib, i, jb, ik, is)%im .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%im = 0.0_dp
+            end do
+          end do
+        end do
+      end do
+    end do
     ! Convert all band gradients to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV

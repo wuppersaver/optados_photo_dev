@@ -2058,8 +2058,10 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    if (.not. allocated(bulk_prob)) then
+      allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    end if
     if (size(photo_imfp_const, 1) .gt. 1) then
       num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
     elseif (size(photo_imfp_const, 1) .eq. 1) then
@@ -3076,6 +3078,8 @@ contains
 
     ! Check the inputs are compatible
     ! Are the jdos_step and energy_step compatible?
+    ! WIP - Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
+    ! reached using the input step
     if (jdos_spacing .lt. energy_step) then
       if (on_root) then
         write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
@@ -3120,7 +3124,7 @@ contains
       call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
     end if
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
-    energy_index = int((temp_photon_energy - energy_min)/energy_step)
+    energy_index = int((temp_photon_energy - energy_min)/energy_step) + 1
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
@@ -3323,12 +3327,12 @@ contains
         do n_eigen = 1, nbands
           argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a an exponent value of ~1E+/-250
+          ! that this corresponds to a an exponent value of ~1E+/-100
           ! and this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible underflow.
-          if (argument .gt. 575.0_dp) then
+          if (argument .gt. 230.0_dp) then
             fermi_dirac(n_eigen, N_spin, N) = 0.0_dp
-          elseif (argument .lt. -575.0_dp) then
+          elseif (argument .lt. -230.0_dp) then
             fermi_dirac(n_eigen, N_spin, N) = 1.0_dp
           else
             fermi_dirac(n_eigen, N_spin, N) = 1.0_dp/(exp(argument) + 1.0_dp)
