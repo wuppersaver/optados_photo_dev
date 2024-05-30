@@ -3075,7 +3075,6 @@ contains
     energy_fermi = fem_energy_info(4)
     energy_workfct = fem_energy_info(5)
     energy_max = energy_min + energy_step*(energy_count - 1)
-
     ! Check the inputs are compatible
     ! Are the jdos_step and energy_step compatible?
     ! WIP - Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
@@ -3123,8 +3122,10 @@ contains
       end if
       call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
     end if
+
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
-    energy_index = int((temp_photon_energy - energy_min)/energy_step) + 1
+    energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
+    if(on_root) write(stdout,*) 'energy_index:', energy_index
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
@@ -3287,13 +3288,6 @@ contains
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     ! real(kind=dp) :: volume_factor, volume_factor_bulk
-
-    ! In the current definition of the one-step OMEs they are V_cell dependent (i.e. vacuum gap dependent). To remedy that, this
-    ! volume prefactor is introduced to normalise it to the material we consider as emitting (i.e. the half slab of material)
-    ! for the bulk we are considering each of the layers as repeating and therefore take the volume of the bulk like layer (or box)
-    ! WIP: should this rather be the atom volume as we are projecting onto the atoms?
-    ! volume_factor = 2*cell_volume/photo_slab_volume
-    ! volume_factor_bulk = cell_volume/volume_atom(max_layer)
 
     qe_factor = 1.0_dp/(cell_area)
     width = (1.0_dp/11604.45_dp)*photo_temperature
