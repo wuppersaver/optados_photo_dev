@@ -636,8 +636,8 @@ contains
     if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
     if (on_root) then
       do inodes = 1, num_nodes - 1
-        do ik = 1, num_kpoints_on_node(inodes)
-          do is = 1, nspins
+        do is = 1, nspins
+          do ik = 1, num_kpoints_on_node(inodes)
             read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
           end do
         end do
@@ -651,25 +651,26 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_send(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(inodes), root_id)
+      call comms_recv(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (unit=fem_unit)
 
     ! foptical_mat = foptical_mat + (1.0E-100_dp,1.0E-100_dp)
 
-    do ik = 1, num_kpoints_on_node(my_node_id)
-      do is = 1, nspins
-        do jb = 1, energy_count
-          do i = 1, 3
-            do ib = 1, nbands
-              if (foptical_mat(ib, i, jb, ik, is)%re .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%re = 0.0_dp
-              if (foptical_mat(ib, i, jb, ik, is)%im .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%im = 0.0_dp
-            end do
-          end do
-        end do
-      end do
-    end do
+    ! do is = 1, nspins
+    !   do ik = 1, num_kpoints_on_node(my_node_id)
+    !     do jb = 1, energy_count
+    !       do i = 1, 3
+    !         do ib = 1, nbands
+    !           if (foptical_mat(ib, i, jb, ik, is)%re .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%re = 0.0_dp
+    !           if (foptical_mat(ib, i, jb, ik, is)%im .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%im = 0.0_dp
+    !         end do
+    !       end do
+    !     end do
+    !   end do
+    ! end do
+    write (stdout,*) sum(foptical_mat)
     ! Convert all band gradients to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
