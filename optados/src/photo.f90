@@ -1183,7 +1183,7 @@ contains
         ! Send matrix element to jDOS routine and get weighted jDOS back
         call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
-        if (on_root) then
+        if (on_root .and. iprint .gt. 2) then
           N_geom = size(matrix_weights, 5)
           write (atom_s, '(I3)') box + 100
           open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
@@ -3165,7 +3165,6 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state
-          ! add the new factor
           factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
             if (num_symm == 0) then
@@ -3273,21 +3272,31 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id, num_nodes
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
-      iprint
+      iprint, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_comms, only: on_root
-    use od_io, only: stdout, io_error, io_file_unit, io_time
+    use od_comms, only: on_root, comms_recv, comms_send
+    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
-    integer :: N, N_spin, n_eigen, atom, ierr, i
+    integer :: N, N_spin, n_eigen, atom, ierr, i, kpt_total, inode, token, qe_unit
 
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
+    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     ! real(kind=dp) :: volume_factor, volume_factor_bulk
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
+
+    if (index(devel_flag,'write_fem_matrix') > 0) then
+      kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
+      call write_distributed_fem_data(kpt_total)
+    end if
 
     qe_factor = 1.0_dp/(cell_area)
     width = (1.0_dp/11604.45_dp)*photo_temperature
@@ -3426,6 +3435,63 @@ contains
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
+    if (index(devel_flag, 'print_kpt_qe_data') > 0) then
+      if (on_root) then
+        qe_unit = io_file_unit()
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+        write (stdout, *) 'opening file'
+        open (unit=qe_unit, action='write', file=filename)
+        write (qe_unit, *) '# The k point dependent QE values'
+        call io_date(cdate, ctime)
+        write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
+      end if
+
+      allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calculate_one_step_model - failed to allocate qe_k_temp on root')
+      token = -1
+
+      ! allocate and sum the 3step qe matrix on non-root
+      if (.not. on_root) then
+        do N = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N) = sum(qe_osm(:, :, N, :))
+        end do
+        ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
+        ! - wait for the token
+        call comms_recv(token, 1, 0)
+        ! - send the respective qe_matrix for that node
+        call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
+        ! - send token back to root node
+        call comms_send(token, 1, 0)
+      end if
+
+      if (on_root) then
+        do inode = 1, num_nodes - 1
+          ! - send to the token to notes in turn
+          ! write(stdout, *) 'sending token to node', inode
+          call comms_send(token, 1, inode)
+          ! write(stdout, *) 'sent token to node and receiving data from', inode
+          ! - receive the qe_matrix from the other notes and write it to the file
+          call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
+          ! write(stdout, *) 'received data from node ', inode, 'writing to file'
+          ! write out the qe_matrix to the file
+          do N = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N)
+          end do
+          ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
+          ! - receive the token from a node
+          call comms_recv(token, 1, inode)
+        end do
+        ! - write root qe_matrix elements
+        do N = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_osm(:, :, N, :))
+        end do
+        close (unit=qe_unit)
+      end if
+      deallocate (qe_k_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate qe_k_temp')
     end if
 
     time1 = io_time()
@@ -3996,7 +4062,7 @@ contains
       write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
       write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms, ')'
+      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms+1, ')'
       allocate (qe_mat_temp(nbands, nspins, num_kpoints_on_node(0)), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate qe_mat_temp on root')
       token = -1
@@ -4081,6 +4147,87 @@ contains
       end if
     end if
   end subroutine write_distributed_qe_data
+
+  subroutine write_distributed_fem_data(kpt_total)
+    !***************************************************************
+    ! This subroutine writes the distributed qe tensor to a single file.
+    ! To save on required memory the output file is accessed by each MPI process in turn
+    ! and writes its values/contents one after the other.
+    ! F. Mildner, June 2023
+
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
+    use od_electronic, only: nspins, nbands
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
+    use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
+    use od_parameters, only: photo_model, devel_flag
+
+    implicit none
+    real(kind=dp), dimension(:, :, :), allocatable :: fem_mat_temp
+    real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    integer, intent(in)                         :: kpt_total
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
+    integer:: N, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+
+    ! On root open file and write header
+
+    if (on_root) then
+      ! Writing header to output file
+      write (char_e, '(F7.3)') temp_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_fem_matrix.dat'
+      matrix_unit = io_file_unit()
+      open (unit=matrix_unit, action='write', file=filename)
+      call io_date(cdate, ctime)
+      write (matrix_unit, *) '## OptaDOS Photoemission: Printing OME Matrix on ', cdate, ' at ', ctime
+      write (matrix_unit, *) '## Seedname: ', trim(seedname)
+      write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
+      write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+      write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
+      write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+      write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+      write (matrix_unit, '(1x,a31,3(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, ')'
+      allocate (fem_mat_temp(nbands, num_kpoints_on_node(0), nspins), stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate fem_mat_temp on root')
+      token = -1
+    end if
+
+    ! On non root nodes
+    if (.not. on_root) then
+      ! - wait for the token
+      call comms_recv(token, 1, 0)
+      ! - send the respective qe_matrix for that specific atom
+      call comms_send(foptical_matrix_weights(1, 1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+      ! - send token back to root node
+      call comms_send(token, 1, 0)
+      ! On root node
+    elseif (on_root) then
+      do inode = 1, num_nodes - 1
+        ! - send to the token to notes in turn
+        call comms_send(token, 1, inode)
+        ! - receive the qe_matrix from the other notes and write it to the file
+        call comms_recv(fem_mat_temp(1, 1, 1), nbands*nspins*num_kpoints_on_node(inode), inode)
+        ! write out the qe_matrix to the file
+        do N_spin = 1, nspins
+          do N = 1, num_kpoints_on_node(inode)
+            write (matrix_unit, '(9999(ES16.8E3))') (fem_mat_temp(n_eigen, N, N_spin), n_eigen=1, nbands)
+          end do
+        end do
+        ! - receive the token from a node
+        call comms_recv(token, 1, inode)
+      end do
+      ! - write root qe_matrix elements
+      do N_spin = 1, nspins
+        do N = 1, num_kpoints_on_node(my_node_id)
+          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N, N_spin, 1), n_eigen=1, nbands)
+        end do
+      end do
+      close (unit=matrix_unit)
+      deallocate (fem_mat_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to deallocate fem_mat_temp')
+    end if
+  end subroutine write_distributed_fem_data
 
   subroutine photo_deallocate
     !***************************************************************
