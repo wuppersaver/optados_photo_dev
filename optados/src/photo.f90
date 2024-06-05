@@ -268,7 +268,7 @@ contains
       end if
 
     end if
-    if (index(photo_model,'ds_like_pe') > 0) call dos_utils_deallocate
+    if (index(photo_model, 'ds_like_pe') > 0) call dos_utils_deallocate
     ! Deallocate the rest that was needed for the photoemission calcs
     call photo_deallocate
 
@@ -2292,7 +2292,7 @@ contains
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands, photo_model, dos_nbins
+      exclude_bands, photo_model, dos_nbins, photo_work_function, jdos_max_energy
     use od_dos_utils, only: doslin, doslin_sub_cell_corners, dos_adaptive, dos_fixed, dos_linear
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -2302,12 +2302,12 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    real(kind=dp),allocatable,dimension(:,:) :: dos_temp
+    real(kind=dp), allocatable, dimension(:, :) :: dos_temp
     real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, qe_unit, token, inode
-    integer :: initial_e_index,index_e_delta, index_e_workfct, max_initial_e_offset
-    real(kind=dp) :: fd_initial, fd_final, e_excess
+    integer :: initial_e_index, index_e_delta, index_e_workfct, max_initial_e_offset, temp_initial, temp_final
+    real(kind=dp) :: fd_initial, fd_final, e_excess, delta_bins
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2361,57 +2361,61 @@ contains
     i = 0
     if (on_root) write (stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
     if (.not. allocated(dos_temp)) then
-      allocate(dos_temp(dos_nbins,nspins),stat=ierr)
+      allocate (dos_temp(dos_nbins, nspins), stat=ierr)
     end if
 
+    delta_bins = E(2) - E(1)
+
     if (allocated(dos_fixed)) then
-      dos_temp(:,:) = dos_fixed(:,:)
+      dos_temp = dos_fixed
+    elseif (allocated(dos_adaptive)) then
+      dos_temp = dos_adaptive
+    elseif (allocated(dos_linear)) then
+      dos_temp = dos_linear
     end if
-    if (allocated(dos_adaptive))  then
-      dos_temp(:,:) = dos_adaptive(:,:)
-    end if
-    if (allocated(dos_linear)) then
-      dos_temp(:,:) = dos_linear(:,:)
-    end if
-    
-    initial_e_index = int((efermi-E(current_photo_energy_index))/delta_bins)! 
-    write (stdout,*) initial_e_index
+
+    initial_e_index = int((efermi - E(current_photo_energy_index))/delta_bins)!
+    write (stdout, *) initial_e_index
     index_e_delta = int(E(current_photo_energy_index)/delta_bins) !
-    write (stdout,*) index_e_delta
+    write (stdout, *) index_e_delta
     index_e_workfct = int(photo_work_function/delta_bins)
-    write (stdout,*) index_e_workfct
-    max_initial_e_offset = dim(E) - index_e_delta - initial_e_index
-    write (stdout,*) max_initial_e_offset
+    write (stdout, *) index_e_workfct
+    max_initial_e_offset = size(E, 1) - index_e_delta - initial_e_index
+    write (stdout, *) max_initial_e_offset
 
     do N_spin = 1, nspins
       do N = 1, max_initial_e_offset
-        argument = (E(initial_e_index+N)-efermi)/(kB*photo_temperature)
+        argument = (E(initial_e_index + N) - efermi)/(kB*photo_temperature)
         if (argument .gt. 575.0_dp) then
           fd_initial = 0.0_dp
         elseif (argument .lt. -575.0_dp) then
           fd_initial = 1.0_dp
         else
           fd_initial = 1.0_dp/(exp(argument) + 1.0_dp)
-        argument = (E(initial_e_index+N+index_e_delta)-efermi)/(kB*photo_temperature)
+        end if
+
+        argument = (E(initial_e_index + N + index_e_delta) - efermi)/(kB*photo_temperature)
+
         if (argument .gt. 575.0_dp) then
           fd_final = 1.0_dp
         elseif (argument .lt. -575.0_dp) then
           fd_final = 0.0_dp
         else
           fd_final = 1.0_dp - 1.0_dp/(exp(argument) + 1.0_dp)
-        temp_initial = initial_e_index+N
-        temp_final = initial_e_index+N+index_e_delta     
+        end if
+        temp_initial = initial_e_index + N
+        temp_final = initial_e_index + N + index_e_delta
         ! Numerator
         !dos_initial*fd_initial*dos_final*fd_final*E_excess**2
-        qe_tsm(1,1,1,1,4) = qe_tsm(1,1,1,1,4) + dos_temp[temp_initial,N_spin]*fd_initial*dos_temp[temp_final,N_spin]&
-        *fd_final*e_excess**2
+        qe_tsm(1, 1, 1, 1, 4) = qe_tsm(1, 1, 1, 1, 4) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
+                                *fd_final*e_excess**2
         ! Denominator
         ! dos_initial*fd_initial*dos_final*fd_final*E_excess
-        qe_tsm(1,1,1,1,5) = qe_tsm(1,1,1,1,5) + dos_temp[temp_initial,N_spin]*fd_initial*dos_temp[temp_final,N_spin]&
-        *fd_final*e_excess
+        qe_tsm(1, 1, 1, 1, 5) = qe_tsm(1, 1, 1, 1, 5) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
+                                *fd_final*e_excess
       end do
     end do
-    
+
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen2 = min_index_unocc(N_spin, N), nbands
@@ -3176,7 +3180,7 @@ contains
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if(on_root) write(stdout,*) 'energy_index:', energy_index
+    if (on_root) write (stdout, *) 'energy_index:', energy_index
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
@@ -3344,7 +3348,7 @@ contains
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
-    if (index(devel_flag,'write_fem_matrix') > 0) then
+    if (index(devel_flag, 'write_fem_matrix') > 0) then
       kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
       call write_distributed_fem_data(kpt_total)
     end if
@@ -4113,7 +4117,7 @@ contains
       write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
       write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms+1, ')'
+     write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms + 1, ')'
       allocate (qe_mat_temp(nbands, nspins, num_kpoints_on_node(0)), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate qe_mat_temp on root')
       token = -1
