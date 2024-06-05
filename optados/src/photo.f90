@@ -144,7 +144,9 @@ contains
 
     if (.not. efermi_set) then
       call dos_utils_set_efermi
-      call dos_utils_deallocate
+      if (.not. index(photo_model, 'ds_like_pe') > 0) then
+        call dos_utils_deallocate
+      end if
     end if
 
     ! Identify layers
@@ -266,6 +268,7 @@ contains
       end if
 
     end if
+    if (index(photo_model,'ds_like_pe') > 0) call dos_utils_deallocate
     ! Deallocate the rest that was needed for the photoemission calcs
     call photo_deallocate
 
@@ -2289,8 +2292,8 @@ contains
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands, photo_model
-    use od_dos_utils, only: doslin, doslin_sub_cell_corners
+      exclude_bands, photo_model, dos_nbins
+    use od_dos_utils, only: doslin, doslin_sub_cell_corners, dos_adaptive, dos_fixed, dos_linear
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
@@ -2299,10 +2302,12 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
+    real(kind=dp),allocatable,dimension(:,:) :: dos_temp
     real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, i, qe_unit, token, inode
-    real(kind=dp) :: sub_cell_area
+    integer :: initial_e_index,index_e_delta, index_e_workfct, max_initial_e_offset
+    real(kind=dp) :: fd_initial, fd_final, e_excess
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2315,7 +2320,7 @@ contains
     time0 = io_time()
 
     if (.not. allocated(qe_tsm)) then
-      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), 3), stat=ierr)
+      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), 5), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_tsm failed')
     end if
     qe_tsm = 0.0_dp
@@ -2355,17 +2360,58 @@ contains
     call setup_energy_scale(E)
     i = 0
     if (on_root) write (stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
-    step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)
-    x(:) = recip_lattice(1:2, 1)*step(1)
-    y(:) = recip_lattice(1:2, 2)*step(2)
-    ! det(M), where the matrix M is the x and y as columns
-    ! sub_cell_area = x(1)*y(2) - y(1)*x(2)
-    ! if (on_root) then
-    !   write (stdout, *) 'step : ', step(:)
-    !   write (stdout, *) 'x :', x(:), ' y :', y(:)
-    !   write (stdout, *) 'sub_cell_area : ', sub_cell_area
-    ! end if
-    ! sub_cell_area = recip_lattice(1,1)*step(1)*recip_lattice(2,2)*step(2) - recip_lattice(1,2)*step(2)*recip_lattice(2,1)*step(1)
+    if (.not. allocated(dos_temp)) then
+      allocate(dos_temp(dos_nbins,nspins),stat=ierr)
+    end if
+
+    if (allocated(dos_fixed)) then
+      dos_temp(:,:) = dos_fixed(:,:)
+    end if
+    if (allocated(dos_adaptive))  then
+      dos_temp(:,:) = dos_adaptive(:,:)
+    end if
+    if (allocated(dos_linear)) then
+      dos_temp(:,:) = dos_linear(:,:)
+    end if
+    
+    initial_e_index = int((efermi-E(current_photo_energy_index))/delta_bins)! 
+    write (stdout,*) initial_e_index
+    index_e_delta = int(E(current_photo_energy_index)/delta_bins) !
+    write (stdout,*) index_e_delta
+    index_e_workfct = int(photo_work_function/delta_bins)
+    write (stdout,*) index_e_workfct
+    max_initial_e_offset = dim(E) - index_e_delta - initial_e_index
+    write (stdout,*) max_initial_e_offset
+
+    do N_spin = 1, nspins
+      do N = 1, max_initial_e_offset
+        argument = (E(initial_e_index+N)-efermi)/(kB*photo_temperature)
+        if (argument .gt. 575.0_dp) then
+          fd_initial = 0.0_dp
+        elseif (argument .lt. -575.0_dp) then
+          fd_initial = 1.0_dp
+        else
+          fd_initial = 1.0_dp/(exp(argument) + 1.0_dp)
+        argument = (E(initial_e_index+N+index_e_delta)-efermi)/(kB*photo_temperature)
+        if (argument .gt. 575.0_dp) then
+          fd_final = 1.0_dp
+        elseif (argument .lt. -575.0_dp) then
+          fd_final = 0.0_dp
+        else
+          fd_final = 1.0_dp - 1.0_dp/(exp(argument) + 1.0_dp)
+        temp_initial = initial_e_index+N
+        temp_final = initial_e_index+N+index_e_delta     
+        ! Numerator
+        !dos_initial*fd_initial*dos_final*fd_final*E_excess**2
+        qe_tsm(1,1,1,1,4) = qe_tsm(1,1,1,1,4) + dos_temp[temp_initial,N_spin]*fd_initial*dos_temp[temp_final,N_spin]&
+        *fd_final*e_excess**2
+        ! Denominator
+        ! dos_initial*fd_initial*dos_final*fd_final*E_excess
+        qe_tsm(1,1,1,1,5) = qe_tsm(1,1,1,1,5) + dos_temp[temp_initial,N_spin]*fd_initial*dos_temp[temp_final,N_spin]&
+        *fd_final*e_excess
+      end do
+    end do
+    
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen2 = min_index_unocc(N_spin, N), nbands
@@ -2384,15 +2430,15 @@ contains
             ! Calculating the QE denominator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd!*sub_cell_area
+                                                      final_fd*initial_fd
             ! Calculating the QE numerator and MTE denominator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 2) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd*excess_energy!*sub_cell_area
+                                                      final_fd*initial_fd*excess_energy
             ! Calculating the MTE numerator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 3) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd*excess_energy**2!*sub_cell_area
+                                                      final_fd*initial_fd*excess_energy**2
             ! if (i .le. 10) then
             !   if (N .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) .gt. 0.0_dp) then
             !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen2, N_spin, N, 1:3)
@@ -2412,6 +2458,11 @@ contains
     if (allocated(fermi_dirac)) then
       deallocate (fermi_dirac, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate fermi_dirac')
+    end if
+
+    if (allocated(dos_temp)) then
+      deallocate (dos_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate dos_temp')
     end if
 
     time1 = io_time()
