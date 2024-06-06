@@ -2294,8 +2294,8 @@ contains
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
       exclude_bands, photo_model, dos_nbins, photo_work_function, jdos_max_energy
-    use od_dos_utils, only: doslin, doslin_sub_cell_corners, dos_adaptive, dos_fixed, dos_linear,&
-    setup_edos_scale => setup_energy_scale, E_dos => E
+    use od_dos_utils, only: doslin, doslin_sub_cell_corners, dos_adaptive, dos_fixed, dos_linear, &
+      setup_edos_scale => setup_energy_scale, E_dos => E
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
@@ -2391,16 +2391,15 @@ contains
     ! write (stdout, *) 'photon delta index', index_e_delta, 'photon delta real', temp_photon_energy/delta_bins
     ! write (stdout, *) 'init index', initial_e_index, 'E', E_dos(initial_e_index) - photo_work_function
     ! write (stdout, *) 'min excess real',  E_dos(initial_e_index) - photo_work_function + temp_photon_energy
-    ! write (stdout, *) 'min excess index - in use', E_dos(initial_e_index + index_e_delta - index_e_workfct + 1) 
+    ! write (stdout, *) 'min excess index - in use', E_dos(initial_e_index + index_e_delta - index_e_workfct + 1)
     ! write (stdout, *) 'workfct index', index_e_workfct, 'workfct real', photo_work_function/delta_bins
     ! write (stdout, *) 'max init e index', max_initial_e_offset
     ! write (stdout, *) 'dos shape', size(dos_temp), 'E shape', size(E_dos)
     ! write (stdout, *) 'dos E', E_dos(initial_e_index-250:initial_e_index)
     do N_spin = 1, nspins
-      do N = 0, 100!max_initial_e_offset
+      do N = 0, max_initial_e_offset
         temp_initial = initial_e_index + N
         temp_final = initial_e_index + N + index_e_delta
-
 
         argument = (E_dos(temp_initial) - efermi)/(kB*photo_temperature)
         if (argument .gt. 575.0_dp) then
@@ -2411,7 +2410,6 @@ contains
           fd_initial = 1.0_dp/(exp(argument) + 1.0_dp)
         end if
 
-
         argument = (E_dos(temp_final) - efermi)/(kB*photo_temperature)
         if (argument .gt. 575.0_dp) then
           fd_final = 0.0_dp
@@ -2420,7 +2418,7 @@ contains
         else
           fd_final = 1.0_dp/(exp(argument) + 1.0_dp)
         end if
-        
+
         e_excess = E_dos(temp_final) - photo_work_function - efermi
 
         ! write (stdout, *) 'index i',temp_initial
@@ -2435,20 +2433,19 @@ contains
         ! write (stdout, *) dos_temp(temp_initial, N_spin),fd_initial,dos_temp(temp_final, N_spin) &
         ! ,(1- fd_final),e_excess
         qe_tsm(1, 1, 1, 1, 4) = qe_tsm(1, 1, 1, 1, 4) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
-                                *(1- fd_final)*e_excess**2
+                                *(1 - fd_final)*e_excess**2
         ! Denominator
         ! dos_initial*fd_initial*dos_final*fd_final*E_excess
         qe_tsm(1, 1, 1, 1, 5) = qe_tsm(1, 1, 1, 1, 5) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
-                                *(1- fd_final)*e_excess
+                                *(1 - fd_final)*e_excess
         ! write (stdout, 125) 'num', qe_tsm(1, 1, 1, 1, 4), 'den', qe_tsm(1, 1, 1, 1, 5), &
-        ! 'mte', 0.5*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5)                        
+        ! 'mte', 0.5*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5)
       end do
 
-125 format(1x,a4,1x,f16.7,1x,a4,1x,f16.7,1x,a4,1x,f16.7)
-      ! do N = max_initial_e_offset - 10, max_initial_e_offset 
+125   format(1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7)
+      ! do N = max_initial_e_offset - 10, max_initial_e_offset
       !   temp_initial = initial_e_index + N
       !   temp_final = initial_e_index + N + index_e_delta
-
 
       !   argument = (E_dos(temp_initial) - efermi)/(kB*photo_temperature)
       !   if (argument .gt. 575.0_dp) then
@@ -2459,7 +2456,6 @@ contains
       !     fd_initial = 1.0_dp/(exp(argument) + 1.0_dp)
       !   end if
 
-
       !   argument = (E_dos(temp_final) - efermi)/(kB*photo_temperature)
       !   if (argument .gt. 575.0_dp) then
       !     fd_final = 0.0_dp
@@ -2468,7 +2464,7 @@ contains
       !   else
       !     fd_final = 1.0_dp/(exp(argument) + 1.0_dp)
       !   end if
-        
+
       !   e_excess = E_dos(temp_final) - photo_work_function
 
       !   write (stdout, *) 'index i',temp_initial
@@ -3815,7 +3811,7 @@ contains
         write (stdout, 227) '| Total Quantum Efficiency (electrons/photon):', total_qe, '   |'
 
         write (stdout, 228) '| Weighted Mean Transverse Energy (eV):', mean_te, '      |'
-        write (stdout, 228) '|               DOS estimated MTE (eV):', 0.5*qe_tsm(1,1,1,1,4)/qe_tsm(1,1,1,1,5), '      |'
+        write (stdout, 228) '|               DOS estimated MTE (eV):', 0.5*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5), '      |'
       else
         do atom = 1, max_atoms
           write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
