@@ -74,6 +74,7 @@ module od_dos_utils
   public :: dos_utils_compute_bandgap
   public :: dos_utils_compute_band_energies
   public :: dos_utils_set_efermi
+  public :: setup_energy_scale
   !-------------------------------------------------------------------------------
 
   !-------------------------------------------------------------------------------
