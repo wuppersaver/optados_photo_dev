@@ -2386,16 +2386,6 @@ contains
     index_e_workfct = nint(photo_work_function/delta_bins)
     max_initial_e_offset = size(E_dos, 1) - index_e_delta - initial_e_index
 
-    ! write (stdout, *) 'Ef', efermi, 'E', temp_photon_energy, 'd_E_bin', delta_bins
-    ! write (stdout, *) 'diff', diff
-    ! write (stdout, *) 'photon delta index', index_e_delta, 'photon delta real', temp_photon_energy/delta_bins
-    ! write (stdout, *) 'init index', initial_e_index, 'E', E_dos(initial_e_index) - photo_work_function
-    ! write (stdout, *) 'min excess real',  E_dos(initial_e_index) - photo_work_function + temp_photon_energy
-    ! write (stdout, *) 'min excess index - in use', E_dos(initial_e_index + index_e_delta - index_e_workfct + 1)
-    ! write (stdout, *) 'workfct index', index_e_workfct, 'workfct real', photo_work_function/delta_bins
-    ! write (stdout, *) 'max init e index', max_initial_e_offset
-    ! write (stdout, *) 'dos shape', size(dos_temp), 'E shape', size(E_dos)
-    ! write (stdout, *) 'dos E', E_dos(initial_e_index-250:initial_e_index)
     do N_spin = 1, nspins
       do N = 0, max_initial_e_offset
         temp_initial = initial_e_index + N
@@ -2420,63 +2410,17 @@ contains
         end if
 
         e_excess = E_dos(temp_final) - photo_work_function - efermi
-
-        ! write (stdout, *) 'index i',temp_initial
-        ! write (stdout, *) 'index f',temp_final
-        ! write (stdout, *) 'fd init',fd_initial
-        ! write (stdout, *) 'fd final',(1-fd_final)
-        ! write (stdout, *) 'E excess',e_excess
-
-        ! write (stdout,*) 'e_exc', e_excess
         ! Numerator
-        ! !dos_initial*fd_initial*dos_final*fd_final*E_excess**2
-        ! write (stdout, *) dos_temp(temp_initial, N_spin),fd_initial,dos_temp(temp_final, N_spin) &
-        ! ,(1- fd_final),e_excess
         qe_tsm(1, 1, 1, 1, 4) = qe_tsm(1, 1, 1, 1, 4) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
                                 *(1 - fd_final)*e_excess**2
         ! Denominator
-        ! dos_initial*fd_initial*dos_final*fd_final*E_excess
         qe_tsm(1, 1, 1, 1, 5) = qe_tsm(1, 1, 1, 1, 5) + dos_temp(temp_initial, N_spin)*fd_initial*dos_temp(temp_final, N_spin) &
                                 *(1 - fd_final)*e_excess
-        ! write (stdout, 125) 'num', qe_tsm(1, 1, 1, 1, 4), 'den', qe_tsm(1, 1, 1, 1, 5), &
-        ! 'mte', 0.5*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5)
       end do
-
-125   format(1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7)
-      ! do N = max_initial_e_offset - 10, max_initial_e_offset
-      !   temp_initial = initial_e_index + N
-      !   temp_final = initial_e_index + N + index_e_delta
-
-      !   argument = (E_dos(temp_initial) - efermi)/(kB*photo_temperature)
-      !   if (argument .gt. 575.0_dp) then
-      !     fd_initial = 0.0_dp
-      !   elseif (argument .lt. -575.0_dp) then
-      !     fd_initial = 1.0_dp
-      !   else
-      !     fd_initial = 1.0_dp/(exp(argument) + 1.0_dp)
-      !   end if
-
-      !   argument = (E_dos(temp_final) - efermi)/(kB*photo_temperature)
-      !   if (argument .gt. 575.0_dp) then
-      !     fd_final = 0.0_dp
-      !   elseif (argument .lt. -575.0_dp) then
-      !     fd_final = 1.0_dp
-      !   else
-      !     fd_final = 1.0_dp/(exp(argument) + 1.0_dp)
-      !   end if
-
-      !   e_excess = E_dos(temp_final) - photo_work_function
-
-      !   write (stdout, *) 'index i',temp_initial
-      !   write (stdout, *) 'index f',temp_final
-      !   write (stdout, *) 'fd init',fd_initial
-      !   write (stdout, *) 'fd final',(1-fd_final)
-      !   write (stdout, *) 'E excess',e_excess
-      ! end do
     end do
-    ! write (stdout, *) 'init', temp_initial, 'final', temp_final
-    ! write (stdout, *) 'num', qe_tsm(1, 1, 1, 1, 4), 'den', qe_tsm(1, 1, 1, 1, 5), &
-    ! 'mte', 0.5*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5)
+    125   format(1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7, 1x, a4, 1x, f16.7)
+
+    ! Calculating the bandwise contribution model
     call setup_energy_scale(E)
     i = 0
     call photo_calculate_delta(delta_temp, .false.)
@@ -2508,12 +2452,6 @@ contains
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 3) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
                                                       final_fd*initial_fd*excess_energy**2
-            ! if (i .le. 10) then
-            !   if (N .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) .gt. 0.0_dp) then
-            !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen2, N_spin, N, 1:3)
-            !     i = i + 1
-            !   end if
-            ! end if
           end do
         end do
       end do
@@ -2561,7 +2499,6 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)
           qe_k_temp(N) = sum(qe_tsm(:, :, :, N, :))
         end do
-        ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
         ! - wait for the token
         call comms_recv(token, 1, 0)
         ! - send the respective qe_matrix for that node
@@ -2573,17 +2510,13 @@ contains
       if (on_root) then
         do inode = 1, num_nodes - 1
           ! - send to the token to notes in turn
-          ! write(stdout, *) 'sending token to node', inode
           call comms_send(token, 1, inode)
-          ! write(stdout, *) 'sent token to node and receiving data from', inode
           ! - receive the qe_matrix from the other notes and write it to the file
           call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
-          ! write(stdout, *) 'received data from node ', inode, 'writing to file'
           ! write out the qe_matrix to the file
           do N = 1, num_kpoints_on_node(inode)
             write (qe_unit, *) qe_k_temp(N)
           end do
-          ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
           ! - receive the token from a node
           call comms_recv(token, 1, inode)
         end do
