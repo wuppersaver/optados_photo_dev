@@ -99,12 +99,13 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
   integer, allocatable, dimension(:, :, :) :: lgcl_box_states
   real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
+  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
+  logical                             :: write_debug = .False. ! hard coded extra printing
 contains
 
   subroutine photo_calculate
@@ -3125,7 +3126,7 @@ contains
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if(on_root) write(stdout,*) 'energy_index:', energy_index
+    if(on_root .and. write_debug) write(stdout,*) 'energy_index:', energy_index
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
@@ -3569,18 +3570,18 @@ contains
       end do
 
       call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
-      if (on_root) write (stdout, *) 'te_tsm per atom : ', (layer_te(atom), atom=1, max_atoms + 1)
+      if (on_root .and. write_debug) write (stdout, *) 'te_tsm per atom : ', (layer_te(atom), atom=1, max_atoms + 1)
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
-      if (on_root) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
+      if (on_root .and. write_debug) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
       total_qe = sum(layer_qe)
 
       mean_te = sum(te_tsm_temp)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
-      if (on_root) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
+      if (on_root .and. write_debug) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
@@ -3588,7 +3589,7 @@ contains
         mean_te = 0.0_dp
       end if
 
-      if (on_root) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
+      if (on_root .and. write_debug) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
 
       deallocate (te_tsm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
