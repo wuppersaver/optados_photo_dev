@@ -1001,12 +1001,11 @@ contains
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
       end if
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
-      if (index(write_photo_output, 'slab') > 0) then
-        write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     Atom Sites                |'
-        write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
-      elseif (index(write_photo_output, 'all') > 0) then
-        write (stdout, '(1x,a78)') '|  Writing Photoemission Matrix Elements     :     All Elements              |'
-        write (stdout, '(1x,a78)') '|          to *SEED*_matrix.dat ---------------------------------------------|'
+      if (index(write_photo_output, 'qe_matrix') > 0) then
+        write (stdout, '(1x,a78)') '|  Writing Quantum Efficiency Matrix   to :     *SEED*_qe_matrix.dat         |'
+      end if
+      if (index(write_photo_output, 'e_bind') > 0) then
+        write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    -lower -          (deg)          :', photo_theta_lower, '|'

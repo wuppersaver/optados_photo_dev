@@ -281,11 +281,7 @@ contains
           intdos_linear = intdos_linear/cell_volume
         end if
         if (calc_weighted_dos) then
-          if (photo) then
-            weighted_dos = weighted_dos
-          else
-            weighted_dos = weighted_dos/cell_volume
-          end if
+          weighted_dos = weighted_dos/cell_volume
         end if
         ! if(quad) then
         !    dos_quad=dos_quad/cell_volume
