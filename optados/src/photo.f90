@@ -22,13 +22,12 @@
 !
 !===============================================================================
 module od_photo
-
+  !! This is the module for calculating the photoemission.
   use od_constants, only: dp
 
   implicit none
   private
   public :: photo_calculate
-  public :: make_pdos_weights_atoms
 
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_boxes
@@ -38,17 +37,15 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
   real(kind=dp), allocatable, public, dimension(:, :, :) :: pdos_weights_k_band
+  real(kind=dp), allocatable, public, save :: E(:)
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
   real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
-  real(kind=dp), allocatable, public, save :: E(:)
   real(kind=dp), allocatable, dimension(:, :) :: reflect_photo
   real(kind=dp), allocatable, dimension(:, :) :: absorp_photo
-
   real(kind=dp), allocatable, dimension(:, :) :: refract
   real(kind=dp), allocatable, dimension(:)  :: reflect
   real(kind=dp), allocatable, dimension(:) :: absorp
-
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
   real(kind=dp), dimension(:), allocatable :: volume_layer
@@ -63,7 +60,6 @@ module od_photo
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
-
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   real(kind=dp), dimension(:), allocatable :: box_imfp
   real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
@@ -92,9 +88,7 @@ module od_photo
   integer :: max_atoms
   integer :: max_layer
   real(kind=dp) :: q_weight
-
   ! Added by Felix Mildner, 12/2022 and later
-
   integer, allocatable, dimension(:)  :: index_energy
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
@@ -105,14 +99,11 @@ module od_photo
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
   logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
-  logical                             :: write_debug = .False. ! hard coded extra printing
+  logical                             :: write_debug = .True. ! hard coded extra printing
 contains
 
   subroutine photo_calculate
-    !
-    !  Program to calculate the photoemission
-    !
-
+    !! Main subroutine calling all the other subroutine steps.
     use od_electronic, only: elec_dealloc_optical, elec_pdos_read, elec_read_optical_mat, &
       efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
@@ -161,7 +152,6 @@ contains
       call make_pdos_weights_atoms
       call elec_dealloc_pdos
 
-      !
       ! if (photo_remove_box_states) then
       !   call identify_box_states
       ! end if
@@ -274,10 +264,13 @@ contains
 
   end subroutine photo_calculate
 
-  !***************************************************************
+
   subroutine analyse_geometry
-    !***************************************************************
-    !This subroutine identifies the layer of each atom
+    !* This subroutine identifies and defines a set of layers
+    ! and finds the layer that each of the atoms belongs to
+    ! or it defines a set of boxes with a height = interlayer distance
+    ! at the middle of the slab. The choice between the two is
+    ! hardcoded in the variable "new_geom_choice" (True -> Boxes)
     use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, num_species, cell_volume, real_lattice
     use od_io, only: stdout, io_error
@@ -628,13 +621,12 @@ contains
     ! and not by band number (e.g. after being processed by bands2orbitals)
     ! Felix Mildner, 28th March 2023
     !===============================================================================
-
     use od_electronic, only: efermi, band_energy, nbands, nspins
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: iprint
     use od_io, only: stdout, io_time, io_error
-
+    implicit none
     integer         :: N, N_spin, n_eigen, ierr
     real(kind=dp)   :: time0, time1
 
@@ -710,7 +702,7 @@ contains
   end subroutine calc_photon_energies
 
   subroutine identify_box_states
-    !=========================================================================
+    !*=========================================================================
     ! Read the .bands file in the kpoint list, kpoint weights and band energies
     ! also obtain, nkpoints, nspins, num_electrons(:),nbands, efermi_castep
     !-------------------------------------------------------------------------
@@ -735,7 +727,6 @@ contains
     use od_io, only: io_file_unit, io_error, filename_len, seedname, stdout
     use od_constants, only: H2eV
     implicit none
-
     real(kind=dp) :: energy_tol, diff, ref_efermi_castep, a, b, tol, min_diff
     integer :: band_unit, ierr, nbands_ref, nkpoints_ref, nspins_ref
     integer :: str_pos, inodes, ik, is, ib, jb, sum_box, min_i, min_j
@@ -883,10 +874,8 @@ contains
     ! check for pdos contributions to catch the surface resonances
   end subroutine identify_box_states
 
-  !***************************************************************
   subroutine make_pdos_weights_atoms
-    !***************************************************************
-    !This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
+    !!This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
     use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
     use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root
@@ -1047,10 +1036,9 @@ contains
     end if
   end subroutine make_pdos_weights_atoms
 
-  !***************************************************************
-  subroutine calc_photo_optics
-    !***************************************************************
 
+  subroutine calc_photo_optics
+    !! This subroutine calculates the projected optical characteristics for each layer. 
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
       epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
     use od_io, only: stdout, io_error, io_time, seedname, io_date
@@ -1063,9 +1051,7 @@ contains
       photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
-
     implicit none
-
     real(kind=dp), allocatable, dimension(:, :, :, :) :: dos_matrix_weights
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
@@ -1173,7 +1159,8 @@ contains
         end do
 
         if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-          write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, '-------------------------------------+'
+            write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, &
+            '-------------------------------------+'
           write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
           write (stdout, 126) shape(projected_matrix_weights)
           write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -1233,7 +1220,8 @@ contains
 
         if (on_root) then
           if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
-            write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, '---------------------------------+'
+              write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, &
+              '---------------------------------+'
             write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
             write (stdout, 125) shape(dos_matrix_weights)
             write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
@@ -1279,8 +1267,8 @@ contains
             if (.not. optics_intraband) then
               write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
             else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom), &
-                                                 i=1, 3)
+                write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), &
+                N2=1, N_geom), i=1, 3)
             end if
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1547,11 +1535,9 @@ contains
 
   end subroutine calc_photo_optics
 
-  !***************************************************************
-  subroutine calc_absorp_layer
-    !***************************************************************
-    ! This subroutine calculates the absorption coefficient
 
+  subroutine calc_absorp_layer
+    !!This subroutine calculates the absorption coefficient for a specific layer
     use od_cell, only: atoms_pos_cart_photo
     use od_jdos_utils, only: jdos_nbins
     use od_parameters, only: devel_flag, iprint
@@ -1633,9 +1619,9 @@ contains
 
   end subroutine calc_absorp_layer
 
-  !***************************************************************
+
   subroutine effect_wf
-    !***************************************************************
+  
     !photo_elec_field given in eV/A
 
     use od_parameters, only: photo_work_function, photo_elec_field
@@ -1656,12 +1642,10 @@ contains
 
   end subroutine effect_wf
 
-  !***************************************************************
-  subroutine calc_field_emission
-    !***************************************************************
-    ! This subroutine calculates the Schottky effect
-    !photo_elec_field given in V/m
 
+  subroutine calc_field_emission
+    !!*This subroutine calculates the Schottky effect
+    ! parameter photo_elec_field given in V/m
     use od_cell, only: num_kpoints_on_node
     use od_parameters, only: photo_work_function, photo_elec_field, photo_temperature
     use od_electronic, only: efermi, band_energy, nbands, nspins
@@ -1754,12 +1738,13 @@ contains
 
   !===============================================================================
   subroutine calc_angle
-    !===============================================================================
+    !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
     ! Theta: angle between the photoemitted electron and the perpendicular
     !        of the surface
     ! Phi: angle between the x and y components parallel to the surface
-    ! Victor Chang, 7th February 2020
+    ! orig. Victor Chang, 7th February 2020
+    ! parts rewritten Felix Mildner, after Mar 2023
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
@@ -1936,11 +1921,9 @@ contains
 
   end subroutine calc_angle
 
-  !***************************************************************
-  subroutine calc_electron_esc
-    !***************************************************************
-    ! This subroutine calculates the electron escape depth
 
+  subroutine calc_electron_esc
+    !! This subroutine calculates the electron escape probability for each of the layers
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp
@@ -2042,11 +2025,9 @@ contains
   end subroutine calc_electron_esc
 
   ! TODO: Create some info on the bulk repeated slab to print to std file (bulk_length, num_layers, emission, intensity etc.)-DONE
-  !***************************************************************
-  subroutine bulk_emission
-    !***************************************************************
-    ! This subroutine calculates the contribution from the approximated bulk material
 
+  subroutine bulk_emission
+    !! This subroutine calculates the contribution from the approximated bulk material
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
@@ -2054,7 +2035,6 @@ contains
     use od_parameters, only: photo_imfp_const, photo_bulk_cutoff, iprint
     use od_io, only: io_error, io_time, stdout
     implicit none
-
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
     real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
     integer :: N, N_spin, n_eigen, i, num_layers, ierr
@@ -2281,12 +2261,11 @@ contains
   end subroutine bulk_emission
 
   subroutine calc_ds_like_model
-    !===============================================================================
+    !*===============================================================================
     ! This subroutine calculates the QE using a simplified model following a Dowell-
     ! Schmerge like Model by Saha et al.
     ! Felix Mildner, May 2024
     !===============================================================================
-
     use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
@@ -2387,15 +2366,15 @@ contains
             ! Calculating the QE denominator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd!*sub_cell_area
+                                                      final_fd*initial_fd
             ! Calculating the QE numerator and MTE denominator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 2) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd*excess_energy!*sub_cell_area
+                                                      final_fd*initial_fd*excess_energy
             ! Calculating the MTE numerator
             qe_tsm(n_eigen, n_eigen2, N_spin, N, 3) = delta_temp(n_eigen, n_eigen2, N_spin, N)* &
                                                       electrons_per_state*kpoint_weight(N)* &
-                                                      final_fd*initial_fd*excess_energy**2!*sub_cell_area
+                                                      final_fd*initial_fd*excess_energy**2
             ! if (i .le. 10) then
             !   if (N .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen2, N_spin, N, 1) .gt. 0.0_dp) then
             !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen2, N_spin, N, 1:3)
@@ -2486,12 +2465,11 @@ contains
   ! TODO: reimplement the choice of bands (n_eigen should be 1: n_eigen_2-1) - Done
   !===============================================================================
   subroutine calc_three_step_model
-    !===============================================================================
-    ! This subroutine calculates the QE using the thre step model.
+    !*===============================================================================
+    ! This subroutine calculates the QE using the three step model.
     ! Victor Chang, 7th February 2020
     ! edited by Felix Mildner, 03/2023
     !===============================================================================
-
     use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
@@ -2670,8 +2648,9 @@ contains
                                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
                 end if
               end if
-              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
-                  qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) .gt. 0.0_dp) then
+              ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
+              !     qe_tsm(n_eigen, n_eigen2, N_spin, N, atom) .gt. 0.0_dp) then
+              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen, n_eigen2, N_spin, N, atom
                 write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N), &
                   band_energy(n_eigen2, N_spin, N), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
@@ -2814,8 +2793,8 @@ contains
 
   !===============================================================================
   subroutine photo_calculate_delta(delta_temp, calculate_bulk)
-    !===============================================================================
-    ! It is required to evaluate the delta funcion.
+    !*===============================================================================
+    ! Wrapper around the delta function subroutine to pass correct arguments
     ! Victor Chang, 7th February 2020
     !===============================================================================
     use od_parameters, only: linear, fixed, adaptive, quad, iprint
@@ -2905,10 +2884,11 @@ contains
   ! TODO: MAKE sure that the bulk contribution can be calculated with a different height - DONE
   !===============================================================================
   subroutine calculate_delta(delta_type, delta_temp, calculate_bulk)
-    !===============================================================================
+    !*===============================================================================
     ! This subroutine evaluates the delta function between the valence band
     ! and the conduction band using the method specified in the input.
-    ! Victor Chang, 7 February 2020
+    ! orig. Victor Chang, 7 February 2020
+    ! edited by Felix Mildner, after March 2022
     !===============================================================================
     use od_comms, only: my_node_id, on_root
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
@@ -3034,12 +3014,12 @@ contains
 
   !===============================================================================
   subroutine make_foptical_weights
-    !===============================================================================
+    !*===============================================================================
     ! This subroutine calculates the optical matrix elements for the one step
     ! photoemission model.
-    ! Victor Chang, 7th February 2020
+    ! orig. Victor Chang, 7th February 2020
+    ! edited by Felix Mildner, after April 2024
     !===============================================================================
-
     use od_constants, only: dp, hbar, e_mass
     use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat, fem_energy_info, efermi
     use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
@@ -3269,7 +3249,8 @@ contains
   subroutine calc_one_step_model
     !===============================================================================
     ! This subroutine calculates the QE using a one step model.
-    ! Victor Chang, 7th February 2020
+    ! orig. Victor Chang, 7th February 2020
+    ! edited by Felix Mildner, after April 2024
     !===============================================================================
 
     use od_cell, only: num_kpoints_on_node, kpoint_weight
@@ -3507,10 +3488,11 @@ contains
 
   !===============================================================================
   subroutine weighted_mean_te
-    !===============================================================================
+    !*===============================================================================
     ! This subroutine calculates the weighted arithmetic mean transverse energy
     ! sum(QE*mte)/(total QE)
-    ! Victor Chang, 7 February 2020
+    ! orig. Victor Chang, 7 February 2020
+    ! edited by Felix Mildner, after June 2023
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
@@ -3520,9 +3502,7 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
     use od_jdos_utils, only: jdos_utils_calculate
-
     implicit none
-
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp), allocatable, dimension(:) :: layer_te
@@ -3661,10 +3641,9 @@ contains
   end subroutine weighted_mean_te
 
   subroutine write_qe_data
-    ! This subroutine writes the calculated Photoemission data to the output file.
-    ! The contents of this routine used to be part of the weighted_mean_te, but were moved
-    ! here to make the subroutine names more representative of their names.
-
+    !* This subroutine writes the calculated Photoemission data to the output file.
+    ! The contents of this routine used to be part of the subroutine weighted_mean_te, but were moved
+    ! here to make the subroutine names more representative of their function.
     use od_cell, only: cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_elec_field, photo_model, devel_flag
@@ -3672,8 +3651,8 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
     use od_jdos_utils, only: jdos_utils_calculate
-
     integer :: atom
+
     if (on_root) then
       write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -3726,9 +3705,9 @@ contains
     ! TODO: Make this work well with parallelisation!!
     ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
     ! matrix? Would it make sense to apply the photo_temperature value in eV?
-    ! This subroutine applies a Gaussian broadenning to the binding energy
-    ! Additionally, it takes the photoemission angles theta and phi as inputs
-    ! Victor Chang, 7 February 2020
+    !* This subroutine applies a Gaussian broadenning to the binding energy
+    ! orig. Victor Chang, 7 February 2020
+    ! edited Felix Mildner, after August 2024
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi
@@ -3844,13 +3823,13 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate binding_temp')
   end subroutine binding_energy_spread
 
-  !***************************************************************
+
   subroutine write_qe_output_files
-    !***************************************************************
-    ! This subroutine writes either the transverse energy or the binding energy
+  
+    !* This subroutine writes either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
-    ! Victor Chang, 7 February 2020
-    ! Felix Mildner, April 2023
+    ! orig. Victor Chang, 7 February 2020
+    ! edited Felix Mildner, after April 2023
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins
@@ -4023,12 +4002,10 @@ contains
   end subroutine write_qe_output_files
 
   subroutine write_distributed_qe_data(kpt_total)
-    !***************************************************************
-    ! This subroutine writes the distributed qe tensor to a single file.
+    !* This subroutine writes the distributed qe tensor to a single file.
     ! To save on required memory the output file is accessed by each MPI process in turn
     ! and writes its values/contents one after the other.
     ! F. Mildner, June 2023
-
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
