@@ -34,7 +34,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_boxes
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: projected_matrix_weights
-  real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: foptical_matrix_weights
+  real(kind=dp), allocatable, public, dimension(:, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
   real(kind=dp), allocatable, public, dimension(:, :, :) :: pdos_weights_k_band
@@ -75,7 +75,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: t_energy
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: qe_osm
+  real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
   real(kind=dp) :: mean_te
   real(kind=dp) :: total_qe
@@ -99,10 +99,13 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
   integer, allocatable, dimension(:, :, :) :: lgcl_box_states
   real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
-
+  ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
+  integer                             :: energy_count
+  real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
+  logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
+  logical                             :: write_debug = .False. ! hard coded extra printing
 contains
 
   subroutine photo_calculate
@@ -1183,7 +1186,7 @@ contains
         ! Send matrix element to jDOS routine and get weighted jDOS back
         call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
-        if (on_root) then
+        if (on_root .and. iprint .gt. 2) then
           N_geom = size(matrix_weights, 5)
           write (atom_s, '(I3)') box + 100
           open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
@@ -2058,8 +2061,10 @@ contains
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
-    if (.not. allocated(bulk_prob)) allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    if (.not. allocated(bulk_prob)) then
+      allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    end if
     if (size(photo_imfp_const, 1) .gt. 1) then
       num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
     elseif (size(photo_imfp_const, 1) .eq. 1) then
@@ -3036,19 +3041,20 @@ contains
     !===============================================================================
 
     use od_constants, only: dp, hbar, e_mass
-    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat
-    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations,&
-     & real_lattice
-    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep
+    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat, fem_energy_info, efermi
+    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep, jdos_spacing,&
+     & photo_work_function
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
+
     implicit none
-    complex(kind=dp), dimension(3) :: g, temp_fome
+
+    complex(kind=dp), dimension(3) :: g
     real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
     real(kind=dp), dimension(2) :: num_occ
-    real(kind=dp) :: q_weight1, q_weight2, factor, kz, z, a, b
-    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, n_eigen2, num_symm, ierr
-    complex(kind=dp) :: new_factor
+    real(kind=dp) :: q_weight1, q_weight2, factor, energy_max, tolerance = 0.0001_dp
+    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr, energy_index
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
       num_symm = 0
@@ -3065,9 +3071,68 @@ contains
       num_occ(1) = num_occ(1)/2.0_dp
     end if
 
+    ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
+    energy_count = int(fem_energy_info(1))
+    energy_min = fem_energy_info(2)
+    energy_step = fem_energy_info(3)
+    energy_fermi = fem_energy_info(4)
+    energy_workfct = fem_energy_info(5)
+    energy_max = energy_min + energy_step*(energy_count - 1)
+    ! Check the inputs are compatible
+    ! Are the jdos_step and energy_step compatible?
+    ! WIP - Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
+    ! reached using the input step
+    if (jdos_spacing .lt. energy_step) then
+      if (on_root) then
+        write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
+        write (stdout, *) 'The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!'
+      end if
+      call io_error('The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!')
+    end if
+    ! If energy_step is lt jdos_spacing - is the mod==0?
+    if (energy_step .lt. jdos_spacing) then
+      ! if (on_root) write(stdout,*) 'mod(jdos_spacing, energy_step)',modulo(jdos_spacing, energy_step)
+      if (abs(modulo(jdos_spacing, energy_step)) .gt. tolerance) then
+        if (on_root) then
+          write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
+          write (stdout, *) 'The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!'
+        end if
+        call io_error('The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!')
+      end if
+    end if
+    ! Is the current photon_energy within the bounds of the energy_min and energy_max values?
+    if (temp_photon_energy .gt. energy_max .or. temp_photon_energy .lt. energy_min) then
+      if (on_root) then
+        write (stdout, *) 'current E_photon = ', temp_photon_energy, 'energy bounds for 1step OMEs:' &
+          , energy_min, '->', energy_max
+        write (stdout, *) 'The current photon energy is out of the min->max range of the 1step OMEs!'
+      end if
+      call io_error('The current photon energy is out of the min->max range of the 1step OMEs!')
+    end if
+    ! Is the fermi_energy within error?
+    if (abs(energy_fermi - efermi) .gt. tolerance) then
+      if (on_root) then
+        write (stdout, *) 'optados E_fermi:', efermi, '1step OME E_fermi:', energy_fermi
+        write (stdout, *) 'The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!'
+      end if
+      call io_error('The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
+    end if
+    ! Is the energy_workfct within error?
+    if (abs(energy_workfct - photo_work_function) .gt. tolerance) then
+      if (on_root) then
+        write (stdout, *) 'optados workfct:', photo_work_function, '1step OME workfct:', energy_workfct
+        write (stdout, *) 'The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!'
+      end if
+      call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
+    end if
+
+    ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
+    energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
+    if(on_root .and. write_debug) write(stdout,*) 'energy_index:', energy_index
+
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
-      allocate (foptical_matrix_weights(nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
+      allocate (foptical_matrix_weights(nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
     end if
     foptical_matrix_weights = 0.0_dp
@@ -3099,32 +3164,20 @@ contains
 
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
-    z = real_lattice(3, 3)
 
     do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
-        do n_eigen = 1, nbands                                ! Loop over state 1
-          if (E_kinetic(n_eigen, N, N_spin) .gt. 0.0_dp) then
-            kz = sqrt((2*e_mass/hbar)*E_kinetic(n_eigen, N, N_spin))
-          else
-            kz = 1.0_dp
-          end if
-          a = sin(kz*z)/kz
-          b = (cos(kz*z) - 1)/kz
-          ! new_factor = (a,b)
-          new_factor = 1.0_dp
-          temp_fome(:) = foptical_mat(n_eigen, nbands + 1, :, N, N_spin)*new_factor
-          ! add the new factor
+        do n_eigen = 1, nbands                                ! Loop over state
           factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir1(1)*temp_fome(1)) + &
-                       (qdir1(2)*temp_fome(2)) + &
-                       (qdir1(3)*temp_fome(3)))/q_weight1)
-              g(2) = (((qdir2(1)*temp_fome(1)) + &
-                       (qdir2(2)*temp_fome(2)) + &
-                       (qdir2(3)*temp_fome(3)))/q_weight2)
-              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
+              g(1) = (((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
+                       (qdir1(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
+                       (qdir1(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight1)
+              g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
+                       (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
+                       (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight2)
+              foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
                 0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
@@ -3136,11 +3189,11 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*temp_fome(1)) + &
-                           (qdir(2)*temp_fome(2)) + &
-                           (qdir(3)*temp_fome(3)))/q_weight1)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight1)
+                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                   g(1) = 0.0_dp
                   ! Calculating foptical_matrix_weights contribution for qdir2
@@ -3150,11 +3203,11 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*temp_fome(1)) + &
-                           (qdir(2)*temp_fome(2)) + &
-                           (qdir(3)*temp_fome(3)))/q_weight2)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight2)
+                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                 end do
               end do
@@ -3164,7 +3217,7 @@ contains
               g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
                        (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
                        (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
+              foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
             else !begin polar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
@@ -3176,11 +3229,11 @@ contains
                     end do
                   end do
                   g(1) = 0.0_dp
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
-                  foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, nbands + 1, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight)
+                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
                     (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
                 end do
               end do
@@ -3203,8 +3256,7 @@ contains
       do N2 = 1, N_geom
         do N_spin = 1, nspins
           do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') ((foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, N2), &
-                                                n_eigen2=1, nbands + 1), n_eigen=1, nbands + 1)
+            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N, N_spin, N2), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -3220,32 +3272,36 @@ contains
     ! Victor Chang, 7th February 2020
     !===============================================================================
 
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_volume
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id, num_nodes
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
-      iprint
+      iprint, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_comms, only: on_root
-    use od_io, only: stdout, io_error, io_file_unit, io_time
+    use od_comms, only: on_root, comms_recv, comms_send
+    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
-    integer :: N, N_spin, n_eigen, n_eigen2, atom, ierr, i
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, fermi_dirac, qe_factor, argument, time0, time1
-    real(kind=dp) :: volume_factor, volume_factor_bulk
+    integer :: N, N_spin, n_eigen, atom, ierr, i, kpt_total, inode, token, qe_unit
 
-    ! In the current definition of the one-step OMEs they are V_cell dependent (i.e. vacuum gap dependent). To remedy that, this
-    ! volume prefactor is introduced to normalise it to the material we consider as emitting (i.e. the half slab of material)
-    ! for the bulk we are considering each of the layers as repeating and therefore take the volume of the bulk like layer (or box)
-    ! WIP: should this rather be the atom volume as we are projecting onto the atoms?
-    volume_factor = 2*cell_volume/photo_slab_volume
-    volume_factor_bulk = cell_volume/volume_layer(max_layer)
+    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1
+    real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
+    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
+    ! real(kind=dp) :: volume_factor, volume_factor_bulk
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
+
+    if (index(devel_flag,'write_fem_matrix') > 0) then
+      kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
+      call write_distributed_fem_data(kpt_total)
+    end if
 
     qe_factor = 1.0_dp/(cell_area)
-
     width = (1.0_dp/11604.45_dp)*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
 
@@ -3257,14 +3313,39 @@ contains
     if (.not. allocated(field_emission)) then
       allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of field_emission failed')
-      field_emission = 0.0_dp
     end if
+    field_emission = 0.0_dp
+
+    if (.not. allocated(fermi_dirac)) then
+      allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+    end if
+    fermi_dirac = 0.0_dp
 
     if (.not. allocated(qe_osm)) then
       allocate (qe_osm(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of qe_osm failed')
     end if
     qe_osm = 0.0_dp
+
+    do N = 1, num_kpoints_on_node(my_node_id)
+      do N_spin = 1, nspins
+        do n_eigen = 1, nbands
+          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
+          ! This is a bit of an arbitrary condition, but it turns out
+          ! that this corresponds to a an exponent value of ~1E+/-100
+          ! and this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible underflow.
+          if (argument .gt. 230.0_dp) then
+            fermi_dirac(n_eigen, N_spin, N) = 0.0_dp
+          elseif (argument .lt. -230.0_dp) then
+            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp
+          else
+            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp/(exp(argument) + 1.0_dp)
+          end if
+        end do
+      end do
+    end do
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
@@ -3280,19 +3361,6 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
-            ! This is a bit of an arbitrary condition, but it turns out
-            ! that this corresponds to a exponential value of ~1E+/-250
-            ! and this cutoff condition saves us from running into arithmetic
-            ! issues when computing fermi_dirac due to possible underflow.
-            if (argument .gt. 555.0_dp) then
-              fermi_dirac = 0.0_dp
-              exit
-            elseif (argument .lt. -575.0_dp) then
-              fermi_dirac = 1.0_dp
-            else
-              fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
-            end if
             if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
               transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
                                       width, (evacuum_eff - efermi))/norm_vac
@@ -3305,44 +3373,30 @@ contains
             else
               vac_g = 1.0_dp
             end if
-            n_eigen2 = nbands + 1
-            qe_osm(n_eigen, N_spin, N, atom) = volume_factor*qe_factor* &
-                                               (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                (electron_esc(n_eigen, N_spin, N, atom))* &
-                                                electrons_per_state*kpoint_weight(N)* &
-                                                (I_layer(layer(atom), current_photo_energy_index))* &
-                                                transverse_g*vac_g*fermi_dirac* &
-                                                (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                 pdos_weights_k_band(n_eigen, N_spin, N)))* &
+            qe_osm(n_eigen, N_spin, N, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N, N_spin, 1)* &
+                                                          (electron_esc(n_eigen, N_spin, N, atom))* &
+                                                          electrons_per_state*kpoint_weight(N)* &
+                                                          (I_layer(layer(atom), current_photo_energy_index))* &
+                                                          transverse_g*vac_g*fermi_dirac(n_eigen, N_spin, N)* &
+                                                          (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
+                                                           pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
             if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
               write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
-                foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                foptical_matrix_weights(n_eigen, N, N_spin, 1), &
                 electron_esc(n_eigen, N_spin, N, atom), kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), &
-                transverse_g, vac_g, fermi_dirac, pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
+                transverse_g, vac_g, fermi_dirac(n_eigen, N_spin, N), pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
                 pdos_weights_k_band(n_eigen, N_spin, N)
             end if
           end do
         end do
       end do
     end do
+    atom = max_atoms + 1
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
-          ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a exponential value of ~1E+/-250
-          ! and this cutoff condition saves us from running into arithmetic
-          ! issues when computing fermi_dirac due to possible underflow.
-          if (argument .gt. 555.0_dp) then
-            fermi_dirac = 0.0_dp
-            exit
-          elseif (argument .lt. -575.0_dp) then
-            fermi_dirac = 1.0_dp
-          else
-            fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
-          end if
           if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
             transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
                                     width, (evacuum_eff - efermi))/norm_vac
@@ -3355,15 +3409,13 @@ contains
           else
             vac_g = 1.0_dp
           end if
-          n_eigen2 = nbands + 1
-          qe_osm(n_eigen, N_spin, N, max_atoms + 1) = volume_factor_bulk*qe_factor* &
-                                                      (foptical_matrix_weights(n_eigen, n_eigen2, N, N_spin, 1)* &
-                                                       bulk_prob(n_eigen, N_spin, N)* &
-                                                       electrons_per_state*kpoint_weight(N)* &
-                                                       transverse_g*vac_g*fermi_dirac* &
-                                                       (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-                                                        pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
-                                                      (1.0_dp + field_emission(n_eigen, N_spin, N))
+          qe_osm(n_eigen, N_spin, N, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N, N_spin, 1)* &
+                                                        bulk_prob(n_eigen, N_spin, N)* &
+                                                        electrons_per_state*kpoint_weight(N)* &
+                                                        transverse_g*vac_g*fermi_dirac(n_eigen, N_spin, N)* &
+                                                        (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
+                                                         pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
+                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
         end do
       end do
     end do
@@ -3386,6 +3438,63 @@ contains
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+    end if
+
+    if (index(devel_flag, 'print_kpt_qe_data') > 0) then
+      if (on_root) then
+        qe_unit = io_file_unit()
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+        write (stdout, *) 'opening file'
+        open (unit=qe_unit, action='write', file=filename)
+        write (qe_unit, *) '# The k point dependent QE values'
+        call io_date(cdate, ctime)
+        write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
+      end if
+
+      allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calculate_one_step_model - failed to allocate qe_k_temp on root')
+      token = -1
+
+      ! allocate and sum the 3step qe matrix on non-root
+      if (.not. on_root) then
+        do N = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N) = sum(qe_osm(:, :, N, :))
+        end do
+        ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
+        ! - wait for the token
+        call comms_recv(token, 1, 0)
+        ! - send the respective qe_matrix for that node
+        call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
+        ! - send token back to root node
+        call comms_send(token, 1, 0)
+      end if
+
+      if (on_root) then
+        do inode = 1, num_nodes - 1
+          ! - send to the token to notes in turn
+          ! write(stdout, *) 'sending token to node', inode
+          call comms_send(token, 1, inode)
+          ! write(stdout, *) 'sent token to node and receiving data from', inode
+          ! - receive the qe_matrix from the other notes and write it to the file
+          call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
+          ! write(stdout, *) 'received data from node ', inode, 'writing to file'
+          ! write out the qe_matrix to the file
+          do N = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N)
+          end do
+          ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
+          ! - receive the token from a node
+          call comms_recv(token, 1, inode)
+        end do
+        ! - write root qe_matrix elements
+        do N = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_osm(:, :, N, :))
+        end do
+        close (unit=qe_unit)
+      end if
+      deallocate (qe_k_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate qe_k_temp')
     end if
 
     time1 = io_time()
@@ -3463,18 +3572,18 @@ contains
       end do
 
       call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
-      if (on_root) write (stdout, *) 'te_tsm per atom : ', (layer_te(atom), atom=1, max_atoms + 1)
+      if (on_root .and. write_debug) write (stdout, *) 'te_tsm per atom : ', (layer_te(atom), atom=1, max_atoms + 1)
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
-      if (on_root) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
+      if (on_root .and. write_debug) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
       total_qe = sum(layer_qe)
 
       mean_te = sum(te_tsm_temp)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
-      if (on_root) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
+      if (on_root .and. write_debug) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
@@ -3482,7 +3591,7 @@ contains
         mean_te = 0.0_dp
       end if
 
-      if (on_root) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
+      if (on_root .and. write_debug) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
 
       deallocate (te_tsm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
@@ -3956,7 +4065,7 @@ contains
       write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
       write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms, ')'
+      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms+1, ')'
       allocate (qe_mat_temp(nbands, nspins, num_kpoints_on_node(0)), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate qe_mat_temp on root')
       token = -1
@@ -4041,6 +4150,87 @@ contains
       end if
     end if
   end subroutine write_distributed_qe_data
+
+  subroutine write_distributed_fem_data(kpt_total)
+    !***************************************************************
+    ! This subroutine writes the distributed qe tensor to a single file.
+    ! To save on required memory the output file is accessed by each MPI process in turn
+    ! and writes its values/contents one after the other.
+    ! F. Mildner, June 2023
+
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
+    use od_electronic, only: nspins, nbands
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
+    use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
+    use od_parameters, only: photo_model, devel_flag
+
+    implicit none
+    real(kind=dp), dimension(:, :, :), allocatable :: fem_mat_temp
+    real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    integer, intent(in)                         :: kpt_total
+    character(len=99)                           :: filename
+    character(len=10)                           :: char_e
+    character(len=9)                            :: ctime             ! Temp. time string
+    character(len=11)                           :: cdate             ! Temp. date string
+    integer:: N, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+
+    ! On root open file and write header
+
+    if (on_root) then
+      ! Writing header to output file
+      write (char_e, '(F7.3)') temp_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_fem_matrix.dat'
+      matrix_unit = io_file_unit()
+      open (unit=matrix_unit, action='write', file=filename)
+      call io_date(cdate, ctime)
+      write (matrix_unit, *) '## OptaDOS Photoemission: Printing OME Matrix on ', cdate, ' at ', ctime
+      write (matrix_unit, *) '## Seedname: ', trim(seedname)
+      write (matrix_unit, *) '## Photoemission Model: ', trim(photo_model)
+      write (matrix_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
+      write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
+      write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
+      write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+      write (matrix_unit, '(1x,a31,3(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, kpt_total, nspins, ')'
+      allocate (fem_mat_temp(nbands, num_kpoints_on_node(0), nspins), stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate fem_mat_temp on root')
+      token = -1
+    end if
+
+    ! On non root nodes
+    if (.not. on_root) then
+      ! - wait for the token
+      call comms_recv(token, 1, 0)
+      ! - send the respective qe_matrix for that specific atom
+      call comms_send(foptical_matrix_weights(1, 1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+      ! - send token back to root node
+      call comms_send(token, 1, 0)
+      ! On root node
+    elseif (on_root) then
+      do inode = 1, num_nodes - 1
+        ! - send to the token to notes in turn
+        call comms_send(token, 1, inode)
+        ! - receive the qe_matrix from the other notes and write it to the file
+        call comms_recv(fem_mat_temp(1, 1, 1), nbands*nspins*num_kpoints_on_node(inode), inode)
+        ! write out the qe_matrix to the file
+        do N_spin = 1, nspins
+          do N = 1, num_kpoints_on_node(inode)
+            write (matrix_unit, '(9999(ES16.8E3))') (fem_mat_temp(n_eigen, N, N_spin), n_eigen=1, nbands)
+          end do
+        end do
+        ! - receive the token from a node
+        call comms_recv(token, 1, inode)
+      end do
+      ! - write root qe_matrix elements
+      do N_spin = 1, nspins
+        do N = 1, num_kpoints_on_node(my_node_id)
+          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N, N_spin, 1), n_eigen=1, nbands)
+        end do
+      end do
+      close (unit=matrix_unit)
+      deallocate (fem_mat_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to deallocate fem_mat_temp')
+    end if
+  end subroutine write_distributed_fem_data
 
   subroutine photo_deallocate
     !***************************************************************
