@@ -358,6 +358,13 @@ contains
     indices_top_bottom = 1
     do atom = 1, num_atoms
       diff_temp = atoms_pos_cart_photo(3, atom_order(atom)) - slab_middle_ref
+      ! write(*,*) 'diff_temp(',atom,')',diff_temp
+      if (abs(diff_temp) .lt. 0.1) then 
+        indices_top_bottom(1) = atom_order(atom)
+        indices_top_bottom(2) = atom_order(atom+1)
+        slab_middle_ref = atoms_pos_cart_photo(3, atom_order(atom)) - 1
+        exit
+      end if
       if (diff_temp .gt. 0.0_dp) then
         if (diff_temp .lt. diff_top) then
           indices_top_bottom(1) = atom_order(atom)
@@ -373,6 +380,7 @@ contains
     end do
     ! find potential atoms in the vicinity of the top and bottom atom within 0.5 A
     ! and determing the mean z-coordinate of them (to get mean z-coord of a layer of atoms)
+    ! write (*,*) 'indices_top_bottom',indices_top_bottom
     do i = 1, 2
       counter = 0
       diff_top = atoms_pos_cart_photo(3, indices_top_bottom(i)) + 0.5
@@ -386,18 +394,15 @@ contains
       end do
       mean_heights(i) = mean_heights(i)/counter
     end do
+    ! write(*,*) 'mean_heights', mean_heights
     ! determine the box height + box_volume + new slab middle reference
     box_height = mean_heights(1) - mean_heights(2)
+    ! write(*,*) 'box_height', box_height
     slab_middle_ref = sum(mean_heights)/2
-    if (indices_top_bottom(1) .eq. indices_top_bottom(2)) box_height = photo_slab_max - photo_slab_min
-    do atom = 1, num_atoms
-      if (slab_middle_ref - atoms_pos_cart_photo(3, atom_order(atom)) .lt. 0.01_dp) then
-        slab_middle_ref = slab_middle_ref - box_height/2
-      end if
-    end do
-
+    ! write(*,*) 'slab_middle_ref', slab_middle_ref
+    ! write(*,*) 'delta slab_mid and middle layer', abs(slab_middle_ref -  atoms_pos_cart_photo(3, atom_order(3)))
     box_volume = box_height*cell_area
-    
+    ! write(*,*) 'box_volume', box_volume
     ! determine the number of boxes we need until we have reached the top of the slab
     num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height)
     if (num_boxes .eq. 0) num_boxes = 1
@@ -412,6 +417,7 @@ contains
     do i = 1, num_boxes
       boxes_top_z_coord(i) = slab_middle_ref + (num_boxes + 1 - i)*box_height
     end do
+    ! write (*,*) 'boxes_top_z_coords', boxes_top_z_coord
     ! put each of the atoms into a box
     do i = 1, num_boxes
       counter = 0
