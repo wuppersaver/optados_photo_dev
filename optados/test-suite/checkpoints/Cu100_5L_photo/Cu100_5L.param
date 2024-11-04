@@ -1,0 +1,25 @@
+TASK: Spectral
+CUT_OFF_ENERGY: 354 eV
+
+OPT_STRATEGY: Speed
+XC_FUNCTIONAL: PBE
+SPIN_POLARIZED: FALSE
+PERC_EXTRA_BANDS: 25
+ELEC_ENERGY_TOL: 1e-08 eV
+MAX_SCF_CYCLES: 1000
+SMEARING_WIDTH: 300.0 K
+
+SPECTRAL_TASK: All
+MIXING_SCHEME: Pulay
+
+WRITE_FORMATTED_POTENTIAL: TRUE
+WRITE_FORMATTED_DENSITY: TRUE
+PDOS_CALCULATE_WEIGHTS: TRUE
+
+IPRINT : 1
+REUSE
+
+%BLOCK devel_code
+spectral: calc_dome :endspectral
+fem_spec: energy_min: 5.9 energy_max: 6 energy_step: 0.01 energy_fermi: -0.9875 energy_workfct: 4.20491 new_approach :endfem_spec
+%ENDBLOCK devel_code

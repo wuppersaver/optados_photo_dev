@@ -1,0 +1,168 @@
+ OptaDOS: Execution started on  3 Nov 2024 at 18:53:15 
+          Parallelised over    1 thread(s)
+
+ +===========================================================================+
+ |                                                                           |
+ |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
+ |               O   O  P   P   T   A  A  D  D  O   O  S                     |
+ |               O   O  PPPP    T   AAAA  D  D  O   O   SS                   |
+ |               O   O  P       T   A  A  D  D  O   O     S                  |
+ |                OOO   P       T   A  A  DDD    OOO   SSS                   |
+ |                                                                           |
+ +---------------------------------------------------------------------------+
+ |                                                                           |
+ |                 Welcome to OptaDOS version  1.3                           | 
+ |                                                                           |
+ |         Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard              |
+ |                       and Jonathan R. Yates                               |
+ |                                                                           |
+ |                       Copyright (c) 2010-2022                             |
+ |                                                                           |
+ |  Please cite:                                                             |
+ |  Andrew J. Morris, Rebecca Nicholls, Chris J. Pickard and Jonathan Yates  |
+ |              Comp. Phys. Comm. 185, 5, 1477 (2014)                        |
+ |                                                                           |
+ |  Additionally when using the linear broadening:                           |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 59, 7, 4685 (1999)             |
+ | C.J. Pickard and M.C. Payne, Phys. Rev. B, 62, 7, 4383 (2000)             |
+ |                                                                           |
+ |  Additionally when using the adaptive broadening:                         |
+ | J.Yates, X.Wang, D.Vanderbilt and I.Souza, Phys. Rev. B, 75, 195121 (2007)|
+ |                                                                           |
+ |      in all your publications arising from your use of OptaDOS            |
+ |                                                                           |
+ +===========================================================================+
+
+ +------------------------------ JOB CONTROL ---------------------------------+
+ |  Output Density of States                  :  False                        |
+ |  Output Partial Density of States          :  False                        |
+ |  Output Projected Bandstructure            :  False                        |
+ |  Output Joint Density of States            :  False                        |
+ |  Output Optical Response                   :  False                        |
+ |  Output Core-level Spectra                 :  False                        |
+ |  Photoemission Calculation                 :  True                         |
+ |  iprint level                              :    1                          |
+ |  Use CASTEP < 6.0 file format              :  False                        |
+ +-------------------------------- UNITS -------------------------------------+
+ |  Length Unit                               :   Ang                         |
+ +-------------------------- SPECTRAL PARAMETERS -----------------------------+
+ |  Adaptive Width Smearing                   :  True                         |
+ |  Adaptive Smearing ratio                   :    0.40000                    |
+ |  Finite Bin Correction                     :  True                         |
+ |  Shift energy scale so fermi_energy=0      :  False                        |
+ |  Fermi energy                              :   -0.98750                    |
+ |  Compute the band energy                   :  True                         |
+ |  Compute the band gap                      :  True                         |
+ |  JDOS bin spacing                          :  0.0100   eV                  |
+ |  JDOS max energy bin                       : -1.0000   eV                  |
+ +-------------------------------- OPTICS ------------------------------------+
+ |  Geometry for Optics Calculation           :  Unpolarised                  |
+ |  Direction of q-vector (un-normalised)     :     1.00    1.00    0.00      |
+ |  Include Intraband Contribution            :  False                        |
+ |  Include Loss Function Broadening          :  False                        |
+ +----------------------- PHOTOEMISSION PARAMETERS ---------------------------+
+ |  Photoemission Model                       :     3-Step Model              |
+ |  Photoemission Final State                 :     Bloch State               |
+ |  Photon Energy              (eV)           :     6.0000                    |
+ |  Work Function              (eV)           :     4.2050                    |
+ |  Slab Max Z-Coord.          (Ang)          :    18.2820                    |
+ |  Slab Min Z-Coord.          (Ang)          :     7.5590                    |
+ |  IMFP Constant              (Ang)          :    19.0000                    |
+ |  Approx. Bulk P_escape Cutoff              :     0.4540E-04                |
+ |  Electric Field Strength    (V/Ang)        :     0.0000                    |
+ |  Smearing Temperature       (K)            :   300.00                      |
+ |  Transverse Momentum Scheme                :     crystal                   |
+ |  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|
+ |  Theta    -lower -          (deg)          :     0.00                      |
+ |  Theta    -upper -          (deg)          :    90.00                      |
+ |  Phi      -lower -          (deg)          :     0.00                      |
+ |  Phi      -upper -          (deg)          :    90.00                      |
+ +----------------------------------------------------------------------------+
+  
+  
+ +----------------------------------------------------------------------------+
+ |             Species                  Sites                  Total Atoms    |
+ +----------------------------------------------------------------------------+
+ |                Cu                   1 to   5                   5           |
+ +----------------------------------------------------------------------------+
+  
+                              Lattice Vectors (Ang)
+                    a_1     2.519427   0.000000   0.000000
+                    a_2     0.000000   2.519427   0.000000
+                    a_3     0.000000   0.000000  23.907520
+
+                        Reciprocal-Space Vectors (Ang^-1)
+                    b_1     2.493895   0.000000   0.000000
+                    b_2     0.000000   2.493895   0.000000
+                    b_3     0.000000   0.000000   0.262812
+
+                   Unit Cell Volume:     151.75328  (Ang^3)
+
+
+ +----------------------- Electronic Data ------------------------------------+
+ |  Number of Bands                           :            65                 |
+ |  Grid size                                 :        9 x  9 x  1            |
+ |  Number of K-points                        :             4                 |
+ |  Spin-Polarised Calculation                :           False               |
+ |  Number of electrons                       :            55.00              |
+ +----------------------------------------------------------------------------+
+ +============================================================================+
+ +                             Photoemission Calculation                      +
+ +============================================================================+
+ |                                                                            |
+ +--------------------------- Setting Fermi Energy  --------------------------+
+ |                     Fermi energy from user :  -0.9875 eV              <- EfU
+ +----------------------------------------------------------------------------+
+
+ +------------------------------- Atomic Order  ------------------------------+
+ | Atom |  Atom Order  |   Box     |         Atom Z-Coordinate (Ang)          |
+ |  Cu          1             1                    16.4075200                 |
+ |  Cu          2             2                    14.6260160                 |
+ |  Cu          3             3                    12.8445120                 |
+ +----------------------------------------------------------------------------+
+ |  Max number of atoms:           3    Total number of boxes:            3   |
+ +------------------------------- Atomic Order  ------------------------------+
+ | Atom |  Atom Order  |   Layer   |         Atom Z-Coordinate (Ang)          |
+ |  Cu          1             1                    16.4075200                 |
+ |  Cu          2             2                    14.6260160                 |
+ |  Cu          3             3                    12.8445120                 |
+ |  Cu          4             4                    11.0630080                 |
+ |  Cu          5             5                     9.2815040                 |
+ +----------------------------------------------------------------------------+
+ |  Max number of atoms:           3    Max  number of layers:            3   |
+ +----------------------------------------------------------------------------+
+ +--------------------- Geometric Analysis of Structure ----------------------+
+ | Atom | Atom Order | Layer | Layer Thickness | used vdW-rad  | calc. volume |
+ |  Cu        1          1       0.257367E+001        2.3800       16.3364    |
+ |  Cu        2          2       0.178150E+001        2.3800       11.3081    |
+ |  Cu        3          3       0.178150E+001        2.3800       11.3081    |
+ +----------------------------------------------------------------------------+
+ +------------ Using atom_volume =     11.30811859   ------------------------+
+ +------------ Using atom_volume =     11.30811859   ------------------------+
+ +------------ Using atom_volume =     11.30811859   ------------------------+
+ te_tsm per atom :    8.2020653819581433E-005   2.6930209583395779E-005   2.1474570786144635E-005   6.8741605439314943E-004
+ layer_qe :    1.7754619022661056E-004   5.5754600034312156E-005   4.0068364079422856E-005   7.9056134699040023E-004
+ mean_te before divison of QE_tot :    8.1784148858227124E-004
+ mean_te after divison of QE_tot :   0.76869822564474777     
+ +------------------------------ Photoemission -------------------------------+
+ +----------------------------------------------------------------------------+
+ | Work Function              4.2050 eV         Photon Energy     6.0000 eV   |
+ | Effective Work Function    4.2050 eV         Electric Field    0.0000 V/A  |
+ | Final State : Bloch State                                                  |
+ +----------------------------------------------------------------------------+
+ | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
+ |  Cu          1            1                 0.1775461902266106E-003        |
+ |  Cu          2            2                 0.5575460003431216E-004        |
+ |  Cu          3            3                 0.4006836407942286E-004        |
+ | Bulk                                        0.7905613469904002E-003        |
+ | Total Quantum Efficiency (electrons/photon):  0.1063930501330746E-002      |
+ | Weighted Mean Transverse Energy (eV):         0.7686982256447478E+000      |
+ +----------------------------------------------------------------------------+
+ | End of Photoemission Calculation                                           |
+ |                                                                            |
+ + Time to calculate Photoemission                                0.976 (sec) +
+ +============================================================================+
+  
+  
+
+ OptaDOS: Execution complete on  3 Nov 2024 at 18:53:16 

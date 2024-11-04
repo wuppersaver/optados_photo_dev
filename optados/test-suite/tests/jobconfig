@@ -369,38 +369,38 @@ output = Si2_out.ome_fmt
 [testopt_photo_general]
 program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0
-inputs_args = ('C2.odi','')
-output = C2.odo
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
 
 # This tests if leaving out the photon energy fails the run
 [testopt_photo_finput1]
 program = OPTADOS_PHOTO_OPTERR_FAIL
 max_nprocs = 0
-inputs_args = ('C2.odi','')
-output = C2.opt_err
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.opt_err
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_sweep]
 program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0
-inputs_args = ('C2.odi','')
-output = C2.odo
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_mpi]
 program = OPTADOS_MPI_PHOTO_ODO_OK
 min_nprocs = 2
 nprocs = 2
-inputs_args = ('C2.odi','')
-output = C2.odo
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L.odo
 
 # This tests the performance of the photon sweep vs singular photoemission runs.
 [testopt_photo_mpi_qemat]
 program = OPTADOS_MPI_PHOTO_QEMAT_OK
 min_nprocs = 2
 nprocs = 2
-inputs_args = ('C2.odi','')
-output = C2_1step_5.000_qe_matrix.dat
+inputs_args = ('Cu100_5L.odi','')
+output = Cu100_5L_1step_6.000_qe_matrix.dat
 
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
@@ -409,5 +409,5 @@ output = C2_1step_5.000_qe_matrix.dat
 optados_only = testopt_*
 od2od_only = testod2od_*
 photoemission_only = testopt_photo_*
-all = optados_only od2od_only photoemission_only
+all = optados_only od2od_only
 default =  all
