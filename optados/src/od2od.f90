@@ -5,7 +5,7 @@ module od_conv
   use od_constants, only: dp
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
-       & elnesfile_header, elec_read_foptical_mat, femfile_header
+       & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -267,33 +267,35 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string, string2
-    integer :: ik, is, ib, i, jb, fem_unit = 6
+    integer :: ik, is, ib, i, jb, energy_count, ierr, fem_unit = 6
 
     write (stdout, *) " Read a formatted .fem file. "
 
-    if (.not. allocated(foptical_mat)) then
-      write (stdout, *) " Allocating foptical_mat."
-      allocate (foptical_mat(nbands + 1, nbands + 1, 3, nkpoints, nspins))
-    end if
-
     open (unit=fem_unit, form='formatted', recl=1073741824, file=trim(seedname)//".fem_fmt")
-
-    ! Total number of elements of ome
-    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
-    ! write(stdout,*) string
-
-    ! write(string,'(a)') trim(format_precision)
-
     read (fem_unit, '('//trim(format_precision)//')') file_version
 
-    read (fem_unit, '(a80)') omefile_header
+    read (fem_unit, '(a80)') femfile_header
+    do i = 1, 5
+      read (fem_unit, '('//trim(format_precision)//')') fem_energy_info(i)
+    end do
 
+    energy_count = int(fem_energy_info(1))
+    write (stdout,*) fem_energy_info
+    if (.not. allocated(foptical_mat)) then
+      write (stdout, *) " Allocating foptical_mat."
+      allocate (foptical_mat(nbands, 3, energy_count, nkpoints, nspins), stat=ierr)
+    end if
+    ! Total number of elements of ome
+    write(stdout,*) 'nbands', nbands, 'energy_count', energy_count
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
+    write(stdout,*) string
+
+    ! write(string,'(a)') trim(format_precision)
     ! write(0,*) nkpoints, nspins, nbands
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
-             &jb=1, nbands + 1), i=1, 3)
+        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
       end do
     end do
 
@@ -318,27 +320,32 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, fem_unit = 6
-
+    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
+    
     write (stdout, *) " Write a formatted .fem file. "
 
     foptical_mat = foptical_mat/(bohr2ang*H2eV)
+    write(stdout, *) fem_energy_info
+    energy_count = int(fem_energy_info(1))
 
     open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') 3*(nbands + 1)*(nbands + 1), trim(format_precision)
-    !   write(stdout,*) string
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
+    ! write(stdout, *) string
 
     write (stdout, '(a80)') femfile_header
     write (stdout, '(a80)') adjustl(femfile_header)
 
     write (fem_unit, '('//trim(format_precision)//')') file_version
     write (fem_unit, '(a80)') adjustl(femfile_header)
+    do i = 1, 5
+      write (fem_unit, '('//format_precision//')') fem_energy_info(i)
+    end do
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
-             &jb=1, nbands + 1), i=1, 3)
+        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), &
+        jb=1, energy_count)
       end do
     end do
 
@@ -370,11 +377,12 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, fem_unit = 6
+    integer :: ik, is, ib, i, jb,energy_count, fem_unit = 6
 
     write (stdout, *) " Write a binary fem file."
 
     foptical_mat = foptical_mat/(bohr2ang*H2eV)
+    energy_count = int(fem_energy_info(1))
 
     open (unit=fem_unit, form='unformatted', file=trim(outseedname)//".fem_bin")
 
@@ -382,12 +390,14 @@ contains
     write (fem_unit) file_version
     write (stdout, *) "-> Femfile_header ", trim(femfile_header)
     write (fem_unit) adjustl(femfile_header)
+    do i = 1, 5
+      write (fem_unit) fem_energy_info(i)
+    end do
 
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands + 1), &
-             &jb=1, nbands + 1), i=1, 3)
+        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands),i=1, 3), jb=1, energy_count)
       end do
     end do
 
