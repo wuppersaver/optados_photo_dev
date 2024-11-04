@@ -974,19 +974,19 @@ contains
       write (epsilon_unit, *) '#'
       if (.not. optics_intraband) then
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, 1), ',', epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
         end do
       else
         write (epsilon_unit, *) ''
         write (epsilon_unit, *) ''
         do N = 1, jdos_nbins
-          write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, 1), ',', epsilon(N, 2, 1, 1)
+          write (epsilon_unit, *) E(N), epsilon(N, 1, 1, 1), epsilon(N, 2, 1, 1)
         end do
         do N2 = 2, 3
           write (epsilon_unit, *) ''
           write (epsilon_unit, *) ''
           do N = 2, jdos_nbins
-            write (epsilon_unit, *) E(N), ',', epsilon(N, 1, 1, N2), ',', epsilon(N, 2, 1, N2)/(E(N)*e_charge)
+            write (epsilon_unit, *) E(N), epsilon(N, 1, 1, N2), epsilon(N, 2, 1, N2)/(E(N)*e_charge)
           end do
         end do
       end if
@@ -1302,7 +1302,7 @@ contains
     end if
     write (refract_unit, *) '#'
     do N = 1, jdos_nbins
-      write (refract_unit, *) E(N), ',', refract(N, 1), ',', refract(N, 2)
+      write (refract_unit, *) E(N), refract(N, 1), refract(N, 2)
     end do
 
     ! Close output file
@@ -1385,7 +1385,7 @@ contains
     end if
     write (absorp_unit, *) '#'
     do N = 1, jdos_nbins
-      write (absorp_unit, *) E(N), ',', absorp(N)
+      write (absorp_unit, *) E(N), absorp(N)
     end do
 
     ! Close output file
@@ -1469,7 +1469,7 @@ contains
     end if
     write (reflect_unit, *) '#'
     do N = 1, jdos_nbins
-      write (reflect_unit, *) E(N), ',', reflect(N)
+      write (reflect_unit, *) E(N), reflect(N)
     end do
 
     ! Close output file
