@@ -4145,7 +4145,7 @@ contains
 
   subroutine write_distributed_fem_data(kpt_total)
     !***************************************************************
-    ! This subroutine writes the distributed qe tensor to a single file.
+    ! This subroutine writes the distributed free electron matrix element tensor to a single file.
     ! To save on required memory the output file is accessed by each MPI process in turn
     ! and writes its values/contents one after the other.
     ! F. Mildner, June 2023
