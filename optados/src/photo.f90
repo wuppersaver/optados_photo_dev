@@ -209,7 +209,7 @@ contains
         ! Only call the binding energy gaussian broadening and file printing if necessary
         if (.not. index(write_photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(write_photo_output, 'e_bind') > 0) call binding_energy_spread
+          if (index(write_photo_output, 'e_bind') > 0) call binding_energy_broadening
           !Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
           call write_qe_output_files
         end if
@@ -251,7 +251,7 @@ contains
       ! Only call the binding energy gaussian broadening and file printing if necessary
       if (.not. index(write_photo_output, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        if (index(write_photo_output, 'e_bind') > 0) call binding_energy_spread
+        if (index(write_photo_output, 'e_bind') > 0) call binding_energy_broadening
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
@@ -3520,7 +3520,7 @@ contains
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
-    real(kind=dp), allocatable, dimension(:) :: layer_te
+    real(kind=dp), allocatable, dimension(:) :: layer_e_transverse
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
     integer :: N, N_spin, n_eigen, atom, ierr
 
@@ -3536,11 +3536,11 @@ contains
     end if
     layer_qe = 0.0_dp
 
-    if (.not. allocated(layer_te)) then
-      allocate (layer_te(max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_te failed')
+    if (.not. allocated(layer_e_transverse)) then
+      allocate (layer_e_transverse(max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_e_transverse failed')
     end if
-    layer_te = 0.0_dp
+    layer_e_transverse = 0.0_dp
 
     if (index(photo_model, '3step') > 0) then
       allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
@@ -3556,29 +3556,33 @@ contains
               !do n_eigen2 = min_index_unocc(N_spin, N), nbands
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
               te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N, N_spin) &
-                                                      *sum(qe_tsm(n_eigen, min_index_unocc(N_spin, N):nbands, N_spin, N, atom))
+                                                      *sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
               !end do
             end do
           end do
         end do
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
-        layer_te(atom) = sum(te_tsm_temp(:, :, :, atom))
+        layer_e_transverse(atom) = sum(te_tsm_temp(:, :, :, atom))
       end do
 
-      call comms_reduce(layer_te(1), max_atoms + 1, 'SUM')
-      if (on_root .and. write_debug) write (stdout, *) 'te_tsm per atom : ', (layer_te(atom), atom=1, max_atoms + 1)
+      call comms_reduce(layer_e_transverse(1), max_atoms + 1, 'SUM')
+      ! if (on_root) write (stdout, *) 'te_tsm per atom : ', (layer_e_transverse(atom), atom=1, max_atoms + 1)
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
-      if (on_root .and. write_debug) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
-      total_qe = sum(layer_qe)
+      ! if (on_root) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
+      total_qe = sum(layer_qe(1:(max_atoms + 1)))
+      call comms_bcast(total_qe, 1)
 
-      mean_te = sum(te_tsm_temp)
+      write (stdout,*) my_node_id, 'total_qe', total_qe
+
+
+      mean_te = sum(te_tsm_temp(:, :, :, :))
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
-      if (on_root .and. write_debug) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
+      ! if (on_root) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
         mean_te = mean_te/total_qe
@@ -3586,13 +3590,13 @@ contains
         mean_te = 0.0_dp
       end if
 
-      if (on_root .and. write_debug) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
+      ! if (on_root) write (stdout, *) 'mean_te after divison of QE_tot : ', mean_te
 
       deallocate (te_tsm_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
 
-      deallocate (layer_te, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_te')
+      deallocate (layer_e_transverse, stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_e_transverse')
 
     elseif (index(photo_model, '1step') > 0) then
 
@@ -3726,8 +3730,8 @@ contains
 
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_lower, photo_theta_upper, &
-    & photo_phi_lower, photo_phi_upper
+    use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
+    & photo_phi_min, photo_phi_max
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit
@@ -3774,10 +3778,10 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
-                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
-                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
-                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
+              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_max) then
                   qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
                   do e_scale = 1, max_energy
                     weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
@@ -3806,10 +3810,10 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_lower .and. &
-                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_upper) then
-                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_lower .and. &
-                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_upper) then
+              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_max) then
                   ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
                   do e_scale = 1, max_energy
                     weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &

@@ -127,10 +127,11 @@ module od_parameters
   integer, public, save           :: photo_max_layer
   !logical,           public, save :: angle_resolution
   !character(len=20), public, save :: resolution_type
-  real(kind=dp), public, save :: photo_phi_lower
-  real(kind=dp), public, save :: photo_phi_upper
-  real(kind=dp), public, save :: photo_theta_lower
-  real(kind=dp), public, save :: photo_theta_upper
+  real(kind=dp), public, save :: photo_phi_min
+  real(kind=dp), public, save :: photo_phi_max
+  real(kind=dp), public, save :: photo_theta_min
+  real(kind=dp), public, save :: photo_theta_max
+  real(kind=dp), public, save :: photo_bindenergy_broadening
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_photon_sweep
   real(kind=dp), public, save :: photo_photon_min
@@ -472,14 +473,16 @@ contains
     if (photo .and. .not. found) &
       call io_error('Error: please set workfunction for photoemission calculation')
 
-    photo_theta_lower = 0.0_dp
-    call param_get_keyword('photo_theta_lower', found, r_value=photo_theta_lower)
-    photo_theta_upper = 90.0_dp
-    call param_get_keyword('photo_theta_upper', found, r_value=photo_theta_upper)
-    photo_phi_lower = 0.0_dp
-    call param_get_keyword('photo_phi_lower', found, r_value=photo_phi_lower)
-    photo_phi_upper = 90.0_dp
-    call param_get_keyword('photo_phi_upper', found, r_value=photo_phi_upper)
+    photo_theta_min = 0.0_dp
+    call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
+    photo_theta_max = 90.0_dp
+    call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
+    photo_phi_min = 0.0_dp
+    call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
+    photo_phi_max = 90.0_dp
+    call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
+    photo_bindenergy_broadening = linear_smearing
+    call param_get_keyword('photo_bindenergy_broadening',found, r_value=photo_bindenergy_broadening)
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = 2.0_dp
@@ -1008,10 +1011,11 @@ contains
         write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    -lower -          (deg)          :', photo_theta_lower, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    -upper -          (deg)          :', photo_theta_upper, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -lower -          (deg)          :', photo_phi_lower, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      -upper -          (deg)          :', photo_phi_upper, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
+      write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  BindingEnergy Broad. Width (eV)           :', photo_bindenergy_broadening, '|'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
@@ -1768,10 +1772,10 @@ contains
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(write_photo_output, len(write_photo_output))
-    call comms_bcast(photo_theta_lower, 1)
-    call comms_bcast(photo_theta_upper, 1)
-    call comms_bcast(photo_phi_lower, 1)
-    call comms_bcast(photo_phi_upper, 1)
+    call comms_bcast(photo_theta_min, 1)
+    call comms_bcast(photo_theta_max, 1)
+    call comms_bcast(photo_phi_min, 1)
+    call comms_bcast(photo_phi_max, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
