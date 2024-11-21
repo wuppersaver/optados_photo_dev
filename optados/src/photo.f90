@@ -3574,14 +3574,10 @@ contains
       ! Calculate the total QE
       ! if (on_root) write (stdout, *) 'layer_qe : ', layer_qe(1:max_atoms + 1)
       total_qe = sum(layer_qe(1:(max_atoms + 1)))
-      call comms_bcast(total_qe, 1)
-
-      write (stdout,*) my_node_id, 'total_qe', total_qe
-
-
       mean_te = sum(te_tsm_temp(:, :, :, :))
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
+      call comms_bcast(total_qe, 1)
       ! if (on_root) write (stdout, *) 'mean_te before divison of QE_tot : ', mean_te
 
       if (total_qe .gt. 0.0_dp) then
@@ -3720,7 +3716,7 @@ contains
 229 format(1x, a39, 7x, E25.16E3, a7)
   end subroutine write_qe_data
 
-  subroutine binding_energy_spread
+  subroutine binding_energy_broadening
     ! TODO: Make this work well with parallelisation!!
     ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
     ! matrix? Would it make sense to apply the photo_temperature value in eV?
@@ -3747,15 +3743,15 @@ contains
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
     allocate (t_energy(max_energy), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of t_energy failed')
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of t_energy failed')
     t_energy = 0.0_dp
 
     allocate (weighted_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of weighted_temp failed')
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp failed')
     weighted_temp = 0.0_dp
 
     allocate (binding_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_spread - allocation of binding_temp failed')
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of binding_temp failed')
     binding_temp = 0.0_dp
 
     do e_scale = 1, max_energy
@@ -3794,17 +3790,6 @@ contains
         end do
       end do
 
-      total_weighted = sum(weighted_temp(1:max_energy, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
-      call comms_reduce(total_weighted, 1, "SUM")
-      if (total_weighted .gt. 0.0_dp) then
-        qe_norm = total_qe/total_weighted
-      else
-        qe_norm = 1.0_dp
-      end if
-      call comms_bcast(qe_norm, 1)
-      ! Why do we need to normalise this array?
-      weighted_temp = weighted_temp*qe_norm
-
     elseif (index(photo_model, '1step') > 0) then
       do atom = 1, max_atoms + 1
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -3825,22 +3810,21 @@ contains
           end do
         end do
       end do
-
-      total_weighted = sum(weighted_temp(1:max_energy, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), 1:max_atoms + 1))
-      call comms_reduce(total_weighted, 1, "SUM")
-      if (total_weighted .gt. 0.0_dp) then
-        qe_norm = total_qe/total_weighted
-      else
-        qe_norm = 1.0_dp
-      end if
-      call comms_bcast(qe_norm, 1)
-      ! Why do we need to normalise this array?
-      weighted_temp = weighted_temp*qe_norm
     end if
 
+    total_weighted = sum(weighted_temp(:, :, :, :, :))
+    call comms_reduce(total_weighted, 1, "SUM")
+    if (total_weighted .gt. 0.0_dp) then
+      qe_norm = total_qe/total_weighted
+    else
+      qe_norm = 1.0_dp
+    end if
+    call comms_bcast(qe_norm, 1)
+    weighted_temp = weighted_temp*qe_norm
+
     deallocate (binding_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_spread - failed to deallocate binding_temp')
-  end subroutine binding_energy_spread
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
+  end subroutine binding_energy_broadening
 
 
   subroutine write_qe_output_files
