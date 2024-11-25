@@ -251,7 +251,9 @@ contains
       ! Only call the binding energy gaussian broadening and file printing if necessary
       if (.not. index(write_photo_output, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        if (index(write_photo_output, 'e_bind') > 0) call binding_energy_broadening
+        if (index(write_photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then 
+          call binding_energy_broadening
+        end if
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
@@ -3656,9 +3658,11 @@ contains
   end subroutine weighted_mean_te
 
   subroutine write_qe_data
-    !* This subroutine writes the calculated Photoemission data to the output file.
+    !*===============================================================================
+    ! This subroutine writes the calculated Photoemission data to the output file.
     ! The contents of this routine used to be part of the subroutine weighted_mean_te, but were moved
     ! here to make the subroutine names more representative of their function.
+    !===============================================================================
     use od_cell, only: cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_elec_field, photo_model, devel_flag
@@ -3942,7 +3946,7 @@ contains
       end if
     end if
 
-    if (index(write_photo_output, 'e_bind') > 0) then
+    if (index(write_photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then
 
       allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -3959,7 +3963,7 @@ contains
         call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
       end if
 
-      if (on_root) then
+      if (on_root .and. sum(qe_atom) .gt. 0.0_dp) then
         binding_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
