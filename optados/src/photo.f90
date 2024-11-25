@@ -3717,13 +3717,14 @@ contains
   end subroutine write_qe_data
 
   subroutine binding_energy_broadening
+    !===============================================================================
     ! TODO: Make this work well with parallelisation!!
     ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
     ! matrix? Would it make sense to apply the photo_temperature value in eV?
-    !* This subroutine applies a Gaussian broadenning to the binding energy
+    !* This subroutine applies a Gaussian broadening to the binding energy
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
-
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
@@ -3828,12 +3829,12 @@ contains
 
 
   subroutine write_qe_output_files
-  
-    !* This subroutine writes either the transverse energy or the binding energy
+    !*===============================================================================
+    ! This subroutine writes either the transverse energy or the binding energy
     ! after the Gaussian broadening has been applied.
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after April 2023
-
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
