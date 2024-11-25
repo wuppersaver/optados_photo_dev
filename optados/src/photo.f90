@@ -70,7 +70,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :) :: bulk_prob
   real(kind=dp), allocatable, dimension(:) :: t_energy
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
-  integer :: max_energy
+  integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
   real(kind=dp) :: mean_te
@@ -209,8 +209,10 @@ contains
         ! Only call the binding energy gaussian broadening and file printing if necessary
         if (.not. index(write_photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(write_photo_output, 'e_bind') > 0) call binding_energy_broadening
-          !Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
+          if (index(write_photo_output, 'e_bind') > 0) then 
+            call binding_energy_broadening
+          end if
+          ! Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
           call write_qe_output_files
         end if
         time_b = io_time()
@@ -3747,6 +3749,8 @@ contains
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
+    if (max_energy .lt. 0) return
+
     allocate (t_energy(max_energy), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of t_energy failed')
     t_energy = 0.0_dp
@@ -3946,7 +3950,7 @@ contains
       end if
     end if
 
-    if (index(write_photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then
+    if (index(write_photo_output, 'e_bind') > 0 .and. max_energy .gt. 0) then
 
       allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
@@ -3963,7 +3967,7 @@ contains
         call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
       end if
 
-      if (on_root .and. sum(qe_atom) .gt. 0.0_dp) then
+      if (on_root) then
         binding_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
