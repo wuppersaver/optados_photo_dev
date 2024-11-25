@@ -3843,7 +3843,7 @@ contains
     use od_electronic, only: nbands, nspins
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_output, photo_model, iprint, devel_flag
+    use od_parameters, only: write_photo_output, photo_model, photo_work_function, iprint, devel_flag
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N, N_spin, n_eigen, kpt_total, band_num
@@ -3970,12 +3970,14 @@ contains
                    '_binding_energy.dat'
         open (unit=binding_unit, action='write', file=filename)
         call io_date(cdate, ctime)
-        write (binding_unit, *) '## OptaDOS Photoemission: Printing Binding Energy Spread on ', cdate, ' at ', ctime
-        write (binding_unit, *) '## Seedname: ', trim(seedname)
-        write (binding_unit, *) '## Photoemission Model: ', trim(photo_model)
-        write (binding_unit, *) '## Photon Energy: ', trim(adjustl(char_e))
-        write (binding_unit, *) '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE | Contributions from: &
-        & atom1 | atom2 | ... | bulk | '
+        write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
+        & cdate, ' at ', ctime
+        write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(seedname)
+        write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
+        write (binding_unit, '(1x,a18,f7.3)') '## Photon Energy: ', temp_photon_energy
+        write (binding_unit, '(1x,a29,f9.5)') '## Fermi Energy Ekin offset: ', (temp_photon_energy - photo_work_function)
+        write (binding_unit, '(1x,a70,a51)') '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE ',&
+        &'| Contributions from: atom1 | atom2 | ... | bulk | '
 
         do e_scale = 1, max_energy
           write (binding_unit, '(1x,ES13.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))') t_energy(e_scale), &
