@@ -3727,7 +3727,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
-    & photo_phi_min, photo_phi_max
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit
@@ -3763,7 +3763,7 @@ contains
         do n_eigen = 1, nbands
           do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N) = &
-              gaussian((efermi - band_energy(n_eigen, N_spin, N)), fixed_smearing, t_energy(e_scale))
+              gaussian((efermi - band_energy(n_eigen, N_spin, N)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
         end do
       end do
