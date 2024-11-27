@@ -3445,7 +3445,7 @@ contains
         qe_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
-        write (stdout, *) 'opening file'
+        ! write (stdout, *) 'opening file'
         open (unit=qe_unit, action='write', file=filename)
         write (qe_unit, *) '# The k point dependent QE values'
         call io_date(cdate, ctime)
@@ -3724,9 +3724,6 @@ contains
 
   subroutine binding_energy_broadening
     !===============================================================================
-    ! TODO: Make this work well with parallelisation!!
-    ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
-    ! matrix? Would it make sense to apply the photo_temperature value in eV?
     !* This subroutine applies a Gaussian broadening to the binding energy
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
@@ -3848,7 +3845,7 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
 
     bin_width = 0.001
-    plot_extra = 0.5
+    plot_extra = 1
     ! step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
     ! do i = 1, 2
     !     sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
@@ -3860,7 +3857,7 @@ contains
     ! set to 5 standard deviations (width) of a gaussian function
     k_offset = 30*(int(k_broadening/bin_width)+1)
     e_offset = 20*(int(photo_bindenergy_broadening/bin_width)+1)
-    write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
+    ! write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
     ! get the maximum k
     call cell_calc_kpoint_r_cart
     max_k = 0.0_dp
@@ -3871,7 +3868,7 @@ contains
     call comms_reduce(max_k, 1, "MAX")
     call comms_bcast(max_k, 1)
     bin_k = int(max_k/bin_width) + 1
-    write (stdout,*) 'max_k',max_k, 'bin_k', bin_k
+    ! write (stdout,*) 'max_k',max_k, 'bin_k', bin_k
     if (.not. allocated(E_kin)) then
       allocate(E_kin(nbands,nspins,num_kpoints_on_node(my_node_id)),stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of E_kin failed')
@@ -3880,17 +3877,16 @@ contains
     ! E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
     E_kin = E_kinetic
     ! E_kin = efermi - band_energy
-    ! calculating lower bound of energy range
-    write (stdout,*) 'min E_kinetic', minval(E_kin)
     ! calculating upper bound of energy range with some extra for plotting
     max_e = temp_photon_energy - work_function_eff + plot_extra
+    ! calculating lower bound of energy range
     ! Restrict lower E_kinetic bound to either -0.25 eV or minimal E_kinetic
     ! This makes sure the program does not print huge matrices at higher photon energies
     min_e = max(minval(E_kin),-0.25_dp)
     call comms_reduce(min_e, 1, 'MIN')
     call comms_bcast(min_e, 1)
     bin_e = int((max_e - min_e) / bin_width) + 1
-    write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
+    ! write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
     if (bin_e .lt. 0 .or. bin_k .lt. 0) then
       write (stdout,*) 'maximum energy below 0, no Ekin matrix printed'  
       return
@@ -3928,7 +3924,7 @@ contains
               ! for min_bin_k to max_bin_k
               do k_idx = max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
                 ! gauss(width_e,ekinetic,)*gauss(width_k,k)
-                gauss_e = gaussian(E_kin(n_eigen,N_spin,N) - min_e, photo_bindenergy_broadening*0.1, &
+                gauss_e = gaussian(E_kin(n_eigen,N_spin,N), photo_bindenergy_broadening*0.1, &
                 & min_e + (e_idx - 1)*bin_width)
                 gauss_k = gaussian(temp_k, k_broadening, (k_idx - 1)*bin_width)
                 ! if (gauss_e .gt. 0.0_dp .and. gauss_k .gt. 0.0_dp) then 

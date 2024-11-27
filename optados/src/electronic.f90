@@ -670,7 +670,7 @@ contains
     !     end do
     !   end do
     ! end do
-    write (stdout,*) sum(foptical_mat)
+    ! write (stdout,*) sum(foptical_mat)
     ! Convert all band gradients to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
