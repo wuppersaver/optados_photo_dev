@@ -3891,7 +3891,10 @@ contains
     call comms_bcast(min_e, 1)
     bin_e = int((max_e - min_e) / bin_width) + 1
     write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
-    if (bin_e .lt. 0 .or. bin_k .lt. 0) return
+    if (bin_e .lt. 0 .or. bin_k .lt. 0) then
+      write (stdout,*) 'maximum energy below 0, no Ekin matrix printed'  
+      return
+    end if
     ! set up the matrix of energy vs transverse k
     if (.not. allocated(ekin_k_matrix)) then
       allocate(ekin_k_matrix(bin_k,bin_e),stat=ierr)
@@ -3925,7 +3928,7 @@ contains
               ! for min_bin_k to max_bin_k
               do k_idx = max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
                 ! gauss(width_e,ekinetic,)*gauss(width_k,k)
-                gauss_e = gaussian(E_kin(n_eigen,N_spin,N), photo_bindenergy_broadening*0.1, &
+                gauss_e = gaussian(E_kin(n_eigen,N_spin,N) - min_e, photo_bindenergy_broadening*0.1, &
                 & min_e + (e_idx - 1)*bin_width)
                 gauss_k = gaussian(temp_k, k_broadening, (k_idx - 1)*bin_width)
                 ! if (gauss_e .gt. 0.0_dp .and. gauss_k .gt. 0.0_dp) then 
