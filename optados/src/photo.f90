@@ -1786,33 +1786,33 @@ contains
     time0 = io_time()
 
     if (.not. allocated(E_transverse)) then
-      allocate (E_transverse(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      allocate (E_transverse(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_transverse failed')
     end if
     E_transverse = 0.0_dp
 
     if (.not. allocated(theta_arpes)) then
-      allocate (theta_arpes(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      allocate (theta_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes failed')
     end if
     theta_arpes = 0.0_dp
 
     if (.not. allocated(phi_arpes)) then
-      allocate (phi_arpes(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      allocate (phi_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_arpes failed')
     end if
     phi_arpes = 0.0_dp
     if (.not. allocated(E_kinetic)) then
-      allocate (E_kinetic(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+      allocate (E_kinetic(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_kinetic failed')
     end if
     E_kinetic = 0.0_dp
 
-    allocate (E_x(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    allocate (E_x(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_x failed')
     E_x = 0.0_dp
 
-    allocate (E_y(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    allocate (E_y(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_y failed')
     E_y = 0.0_dp
 
@@ -1840,26 +1840,26 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           if (index(photo_momentum, 'kp') > 0) then
-            E_x(n_eigen, N, N_spin) = abs &
+            E_x(n_eigen, N_spin, N) = abs &
                                       (0.5_dp*(1/(band_curvature(n_eigen, 1, 1, N, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
                                        (band_gradient(n_eigen, 1, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N, N_spin) = abs &
+            E_y(n_eigen, N_spin, N) = abs &
                                       (0.5_dp*(1/(band_curvature(n_eigen, 2, 2, N, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
                                        (band_gradient(n_eigen, 2, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
           end if
           if (index(photo_momentum, 'crystal') > 0) then
-            E_x(n_eigen, N, N_spin) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N)*1E+10)**2))*j_to_ev
-            E_y(n_eigen, N, N_spin) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N)*1E+10)**2))*j_to_ev
+            E_x(n_eigen, N_spin, N) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N)*1E+10)**2))*j_to_ev
+            E_y(n_eigen, N_spin, N) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N)*1E+10)**2))*j_to_ev
           end if
           if (index(photo_momentum, 'operator') > 0) then
-            E_x(n_eigen, N, N_spin) = abs &
+            E_x(n_eigen, N_spin, N) = abs &
                                       (0.5_dp*e_mass* &
                                        (band_gradient(n_eigen, 1, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N, N_spin) = abs &
+            E_y(n_eigen, N_spin, N) = abs &
                                       (0.5_dp*e_mass* &
                                        (band_gradient(n_eigen, 2, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
           end if
-          E_transverse(n_eigen, N, N_spin) = E_x(n_eigen, N, N_spin) + E_y(n_eigen, N, N_spin)
+          E_transverse(n_eigen, N_spin, N) = E_x(n_eigen, N_spin, N) + E_y(n_eigen, N_spin, N)
         end do
       end do
     end do
@@ -1867,12 +1867,12 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((abs(E_x(n_eigen, N, N_spin)) .lt. tol) .and. (abs(E_y(n_eigen, N, N_spin)) .lt. tol)) then
-            phi_arpes(n_eigen, N, N_spin) = 0.0_dp
-          elseif ((abs(E_y(n_eigen, N, N_spin)) .lt. tol)) then
-            phi_arpes(n_eigen, N, N_spin) = 90.0_dp
+          if ((abs(E_x(n_eigen, N_spin, N)) .lt. tol) .and. (abs(E_y(n_eigen, N_spin, N)) .lt. tol)) then
+            phi_arpes(n_eigen, N_spin, N) = 0.0_dp
+          elseif ((abs(E_y(n_eigen, N_spin, N)) .lt. tol)) then
+            phi_arpes(n_eigen, N_spin, N) = 90.0_dp
           else
-            phi_arpes(n_eigen, N, N_spin) = atan(E_x(n_eigen, N, N_spin)/E_y(n_eigen, N, N_spin))*rad_to_deg
+            phi_arpes(n_eigen, N_spin, N) = atan(E_x(n_eigen, N_spin, N)/E_y(n_eigen, N_spin, N))*rad_to_deg
           end if
         end do
       end do
@@ -1882,19 +1882,19 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
 
-          E_kinetic(n_eigen, N, N_spin) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
+          E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
 
           !! The total kinetic enery E_kinetic_total is composed of E|| and E_transvers, therefore the angle argument always
           !! has to be < 1, because theta = acos(E||/E_kinetic_total). The previous formula was: (E_kinetic(n_eigen, N, N_spin) -
-          !! E_transverse(n_eigen, N, N_spin))/E_kinetic(n_eigen, N, N_spin) If the total kinetic energy is negative and
+          !! E_transverse(n_eigen, N_spin, N))/E_kinetic(n_eigen, N, N_spin) If the total kinetic energy is negative and
           !! E_transverse is positive, this causes the acos to be undefined, as the previous formula did not include the abs
           !!statements. Also the total kinetic energy has to be > 0 to have a physical emission
-          if (E_kinetic(n_eigen, N, N_spin) .gt. 0.0_dp .and. E_kinetic(n_eigen, N, N_spin) .gt. &
-              E_transverse(n_eigen, N, N_spin)) then
-            theta_arpes(n_eigen, N, N_spin) = (acos((E_kinetic(n_eigen, N, N_spin) - E_transverse(n_eigen, N, N_spin))/ &
-                                                    abs(E_kinetic(n_eigen, N, N_spin))))*rad_to_deg
+          if (E_kinetic(n_eigen, N_spin, N) .gt. 0.0_dp .and. E_kinetic(n_eigen, N_spin, N) .gt. &
+              E_transverse(n_eigen, N_spin, N)) then
+            theta_arpes(n_eigen, N_spin, N) = (acos((E_kinetic(n_eigen, N_spin, N) - E_transverse(n_eigen, N_spin, N))/ &
+                                                    abs(E_kinetic(n_eigen, N_spin, N))))*rad_to_deg
           else
-            theta_arpes(n_eigen, N, N_spin) = acos(0.0_dp)
+            theta_arpes(n_eigen, N_spin, N) = acos(0.0_dp)
           end if
         end do
       end do
@@ -1904,7 +1904,7 @@ contains
       write (stdout, '(1x,a78)') '+------------------------ Printing Transverse Energy ------------------------+'
       write (stdout, '(3(1x,I4))') shape(E_transverse)
       write (stdout, '(3(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins
-      write (stdout, '(9999(es15.8))') (((E_transverse(n_eigen, N, N_spin), N_spin=1, nspins), N=1, &
+      write (stdout, '(9999(es15.8))') (((E_transverse(n_eigen, N_spin, N), N_spin=1, nspins), N=1, &
                                          num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
@@ -2010,9 +2010,9 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           do atom = 1, max_atoms
-            if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+            if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-                          cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(atom)
+                          cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(atom)
               if (exponent .gt. -575.0_dp) then
                 electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
               else
@@ -2093,9 +2093,9 @@ contains
           do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
             do N_spin = 1, nspins                    ! Loop over spins
               do n_eigen = 1, nbands
-                if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+                if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
                   exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                              cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
+                              cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(max_atoms)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-575) is ~1E-250, this should be more than enough precision.
                   if (exponent .gt. -575.0_dp) then
@@ -2185,9 +2185,9 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad) .gt. 0.0_dp) then
+              if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
                 exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                            cos(theta_arpes(n_eigen, N, N_spin)*deg_to_rad))/atom_imfp(max_atoms)
+                            cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(max_atoms)
                 ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                 ! As exp(-575) is ~1E-250, this should be more than enough precision.
                 if (exponent .gt. -575.0_dp) then
@@ -2615,8 +2615,8 @@ contains
             do n_eigen = 1, n_eigen2 - 1
               initial_fd = fermi_dirac(n_eigen, N_spin, N)
 
-              if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
-                transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
+              if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
+                transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
                                         width, (evacuum_eff - efermi))/norm_vac
               else
                 transverse_g = 1.0_dp
@@ -2691,8 +2691,8 @@ contains
           final_fd = 1 - fermi_dirac(n_eigen2, N_spin, N)
           do n_eigen = 1, n_eigen2 - 1
             initial_fd = fermi_dirac(n_eigen, N_spin, N)
-            if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
-              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
+            if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
+              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
                                       width, (evacuum_eff - efermi))/norm_vac
             else
               transverse_g = 1.0_dp
@@ -3361,8 +3361,8 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
-              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
+            if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
+              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
                                       width, (evacuum_eff - efermi))/norm_vac
             else
               transverse_g = 1.0_dp
@@ -3397,8 +3397,8 @@ contains
     do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((temp_photon_energy - E_transverse(n_eigen, N, N_spin)) .le. (evacuum_eff - efermi)) then
-            transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N, N_spin)), &
+          if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
+            transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
                                     width, (evacuum_eff - efermi))/norm_vac
           else
             transverse_g = 1.0_dp
@@ -3559,7 +3559,7 @@ contains
             do n_eigen = 1, min_index_unocc(N_spin, N) - 1
               !do n_eigen2 = min_index_unocc(N_spin, N), nbands
               ! if (band_energy(n_eigen2, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-              te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N, N_spin) &
+              te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N_spin, N) &
                                                       *sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
               !end do
             end do
@@ -3609,7 +3609,7 @@ contains
             do n_eigen = 1, nbands
               !if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
               te_osm_temp(n_eigen, N_spin, N, atom) = &
-                E_transverse(n_eigen, N, N_spin)*qe_osm(n_eigen, N_spin, N, atom)
+                E_transverse(n_eigen, N_spin, N)*qe_osm(n_eigen, N_spin, N, atom)
             end do
           end do
         end do
@@ -3783,10 +3783,10 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_max) then
+              if (theta_arpes(n_eigen, N_spin, N) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N_spin, N) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N_spin, N) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N_spin, N) .le. photo_phi_max) then
                   qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
                   do e_scale = 1, max_energy
                     weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
@@ -3804,10 +3804,10 @@ contains
         do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N, N_spin) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N, N_spin) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N, N_spin) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N, N_spin) .le. photo_phi_max) then
+              if (theta_arpes(n_eigen, N_spin, N) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N_spin, N) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N_spin, N) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N_spin, N) .le. photo_phi_max) then
                   ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
                   do e_scale = 1, max_energy
                     weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
