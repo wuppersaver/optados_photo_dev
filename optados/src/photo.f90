@@ -3859,7 +3859,7 @@ contains
     ! calculate the number of bins to go left and right
     ! set to 5 standard deviations (width) of a gaussian function
     k_offset = 30*(int(k_broadening/bin_width)+1)
-    e_offset = 10*(int(photo_bindenergy_broadening/bin_width)+1)
+    e_offset = 20*(int(photo_bindenergy_broadening/bin_width)+1)
     write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
     ! get the maximum k
     call cell_calc_kpoint_r_cart
@@ -3917,7 +3917,7 @@ contains
             ! write (*,*) '-2', int ((E_kin(n_eigen,N_spin,N) - min_e - 2) / bin_width) + 1
 
             center_bin_e = int ((E_kin(n_eigen,N_spin,N) - min_e) / bin_width) + 1
-            ! if ((center_bin_e - 2*e_offset) .gt. bin_e) cycle bands 
+            if ((center_bin_e - 2*e_offset) .gt. bin_e) cycle bands 
             ! write (*,*) 'center_bin_e', center_bin_e
             ! for min_bin_e to max_bin_e
             ! write (stdout,*) 'e_kin',E_kin(n_eigen,N,N_spin)
