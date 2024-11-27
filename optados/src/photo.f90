@@ -3728,7 +3728,7 @@ contains
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, recip_lattice, kpoint_grid_dim
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening
@@ -3746,7 +3746,7 @@ contains
 
     real(kind=dp) :: qe_norm, total_weighted
     integer :: i,e_idx, k_idx, N, N_spin, n_eigen, atom, e_scale, ierr
-    real(kind=dp) :: bin_width, k_broadening, max_k, temp_k, max_e, min_e, gauss_k, gauss_e, plot_extra
+    real(kind=dp) :: bin_width, k_broadening, max_k, temp_k, max_e, min_e, gauss_k, gauss_e, plot_upper_extra, plot_lower_extra
     integer :: e_offset, k_offset, bin_k, bin_e, center_bin_k, center_bin_e, matrix_unit
     real(kind=dp) :: sub_cell_length(1:3), step(1:2)
     character(len=99)                           :: filename
@@ -3845,19 +3845,23 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
 
     bin_width = 0.001
-    plot_extra = 1
-    ! step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
-    ! do i = 1, 2
-    !     sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
-    ! end do
-    ! k_broadening = sum(sub_cell_length(:2))/2.0_dp
-    k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
+    plot_upper_extra = 1
+    plot_lower_extra = 0.25
+    step(:) = 1.0_dp / real(kpoint_grid_dim(1:2), dp) / 2.0_dp
+    do i = 1, 2
+        sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
+    end do
+    ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
+    ! the FWHM = the step distance between the kpoints
+    k_broadening = sqrt(sub_cell_length(1)**2+sub_cell_length(2)**2)/(4.70964009_dp)
+    ! write (stdout,*) 'k_broadening',k_broadening
+    ! k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
 
     ! calculate the number of bins to go left and right
     ! set to 5 standard deviations (width) of a gaussian function
-    k_offset = 30*(int(k_broadening/bin_width)+1)
-    e_offset = 20*(int(photo_bindenergy_broadening/bin_width)+1)
-    ! write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
+    k_offset = 10*(int(k_broadening/bin_width)+1)
+    e_offset = 10*(int(photo_bindenergy_broadening/bin_width)+1)
+    write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
     ! get the maximum k
     call cell_calc_kpoint_r_cart
     max_k = 0.0_dp
@@ -3878,11 +3882,11 @@ contains
     E_kin = E_kinetic
     ! E_kin = efermi - band_energy
     ! calculating upper bound of energy range with some extra for plotting
-    max_e = temp_photon_energy - work_function_eff + plot_extra
+    max_e = temp_photon_energy - work_function_eff + plot_upper_extra
     ! calculating lower bound of energy range
     ! Restrict lower E_kinetic bound to either -0.25 eV or minimal E_kinetic
     ! This makes sure the program does not print huge matrices at higher photon energies
-    min_e = max(minval(E_kin),-0.25_dp)
+    min_e = max(minval(E_kin)-plot_lower_extra,-1*plot_lower_extra)
     call comms_reduce(min_e, 1, 'MIN')
     call comms_bcast(min_e, 1)
     bin_e = int((max_e - min_e) / bin_width) + 1
