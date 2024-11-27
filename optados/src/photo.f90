@@ -3883,14 +3883,14 @@ contains
     ! calculating lower bound of energy range
     write (stdout,*) 'min E_kinetic', minval(E_kin)
     ! calculating upper bound of energy range with some extra for plotting
-    max_e = temp_photon_energy - evacuum_eff + plot_extra
-    ! Restrict lower E_kinetic bound to either -0.5 eV (plot_extra) or the minimal E_kinetic
+    max_e = temp_photon_energy - work_function_eff + plot_extra
+    ! Restrict lower E_kinetic bound to either -0.25 eV or minimal E_kinetic
     ! This makes sure the program does not print huge matrices at higher photon energies
     min_e = max(minval(E_kin),-0.25_dp)
     call comms_reduce(min_e, 1, 'MIN')
     call comms_bcast(min_e, 1)
     bin_e = int((max_e - min_e) / bin_width) + 1
-    ! write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
+    write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
     if (bin_e .lt. 0 .or. bin_k .lt. 0) return
     ! set up the matrix of energy vs transverse k
     if (.not. allocated(ekin_k_matrix)) then
@@ -3974,6 +3974,8 @@ contains
 
       close (unit=matrix_unit)
     end if
+    ! Safety comms sync
+    call comms_bcast(qe_norm, 1)
     
   end subroutine binding_energy_broadening
 
