@@ -3972,7 +3972,7 @@ contains
       write (matrix_unit, '(a30,2(1x,I10),a2)') '## Matrix Shape: (', bin_e, bin_k, ' )'
 
       do e_idx = 1, bin_e
-        write (matrix_unit, '(1x,ES13.6E2,1x,9999(1x,ES25.12E3))') (ekin_k_matrix(k_idx,e_idx),k_idx = 1, bin_k)
+        write (matrix_unit, '(1x,9999(1x,ES25.12E3))') (ekin_k_matrix(k_idx,e_idx),k_idx = 1, bin_k)
       end do
 
       close (unit=matrix_unit)
@@ -4110,9 +4110,7 @@ contains
         end do
       end do
 
-      if (num_nodes .gt. 1) then
-        call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
-      end if
+      call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), 'SUM')
 
       if (on_root) then
         binding_unit = io_file_unit()

@@ -1783,6 +1783,7 @@ contains
     call comms_bcast(photo_theta_max, 1)
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
+    call comms_bcast(photo_bindenergy_broadening, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
