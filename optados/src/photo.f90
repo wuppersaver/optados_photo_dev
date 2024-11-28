@@ -282,7 +282,7 @@ contains
     use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const, photo_slab_max, &
       photo_slab_min, iprint
     implicit none
-    integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
+    integer :: atom_1, atom_2, i, atom_index, swap_temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
     real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, devel_volume
     real(kind=dp)                            :: diff_temp, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
@@ -321,9 +321,9 @@ contains
         end if
 
         if (atom_index /= atom_1) then
-          temp = atom_order(atom_1)
+          swap_temp = atom_order(atom_1)
           atom_order(atom_1) = atom_order(atom_index)
-          atom_order(atom_index) = temp
+          atom_order(atom_index) = swap_temp
         end if
       end do
     end do
@@ -690,7 +690,7 @@ contains
     use od_parameters, only: photo_photon_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy
     use od_io, only: io_error
     implicit none
-    real(kind=dp)        ::   num_energies, temp
+    real(kind=dp)        ::   num_energies, swap_temp
     integer              ::   ierr, i
 
     if (photo_photon_sweep) then
@@ -706,9 +706,9 @@ contains
       allocate (index_energy(number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
       do i = 1, number_energies
-        temp = (i - 1)*jdos_spacing + photo_photon_min
+        swap_temp = (i - 1)*jdos_spacing + photo_photon_min
         ! Account for E = 0.0
-        index_energy(i) = int(temp/jdos_spacing) + 1
+        index_energy(i) = int(swap_temp/jdos_spacing) + 1
       end do
     else
       number_energies = 1
@@ -1076,7 +1076,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
     integer :: N, N2, N_spin, n_eigen, n_eigen2, atom, ierr, energy, box, initial
     integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
-    real(kind=dp)    :: num_energies, temp, time0, time1
+    real(kind=dp)    :: num_energies, swap_temp, time0, time1
     logical, dimension(3) :: gam
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
@@ -3728,10 +3728,11 @@ contains
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, recip_lattice, kpoint_grid_dim
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, recip_lattice, kpoint_grid_dim,&
+    kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, write_photo_output
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, seedname, io_date, io_time
@@ -3740,6 +3741,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp), allocatable, dimension(:,:) :: ekin_k_matrix
+    real(kind=dp), allocatable, dimension(:,:) :: kxky_matrix
     real(kind=dp), allocatable, dimension(:,:,:) :: E_kin
     ! real(kind=dp), allocatable, dimension(:, :, :, :) :: qe_temp
     real(kind=dp) :: qe_temp 
@@ -3749,6 +3751,9 @@ contains
     real(kind=dp) :: bin_width, k_broadening, max_k, temp_k, max_e, min_e, gauss_k, gauss_e, plot_upper_extra, plot_lower_extra
     integer :: e_offset, k_offset, bin_k, bin_e, center_bin_k, center_bin_e, matrix_unit
     real(kind=dp) :: sub_cell_length(1:3), step(1:2)
+    integer :: max_x, max_y, x_idx, y_idx, x_center, y_center, kx_offset, ky_offset, total_ks, j
+    real(kind=dp) :: gauss_x, gauss_y, kx_broadening, ky_broadening, current_kx, current_ky, swap_temp, ref_level
+    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
@@ -3844,142 +3849,255 @@ contains
     deallocate (binding_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
 
-    bin_width = 0.001
-    plot_upper_extra = 1
-    plot_lower_extra = 0.25
-    step(:) = 1.0_dp / real(kpoint_grid_dim(1:2), dp) / 2.0_dp
-    do i = 1, 2
-        sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
-    end do
-    ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
-    ! the FWHM = the step distance between the kpoints
-    k_broadening = sqrt(sub_cell_length(1)**2+sub_cell_length(2)**2)/(4.70964009_dp)
-    ! write (stdout,*) 'k_broadening',k_broadening
-    ! k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
+    if (index(write_photo_output, 'ekin_k_mat') > 0) then
+      bin_width = 0.001
+      plot_upper_extra = 1
+      plot_lower_extra = 0.25
+      step(:) = 1.0_dp / real(kpoint_grid_dim(1:2), dp) / 2.0_dp
+      do i = 1, 2
+          sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
+      end do
+      ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
+      ! the FWHM = the step distance between the kpoints
+      k_broadening = sqrt(sub_cell_length(1)**2+sub_cell_length(2)**2)/(4.70964009_dp)
+      ! write (stdout,*) 'k_broadening',k_broadening
+      ! k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
 
-    ! calculate the number of bins to go left and right
-    ! set to 5 standard deviations (width) of a gaussian function
-    k_offset = 10*(int(k_broadening/bin_width)+1)
-    e_offset = 10*(int(photo_bindenergy_broadening/bin_width)+1)
-    write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
-    ! get the maximum k
-    call cell_calc_kpoint_r_cart
-    max_k = 0.0_dp
-    do N = 1, num_kpoints_on_node(my_node_id)
-      temp_k = sqrt(kpoint_r_cart(1,N)**2 + kpoint_r_cart(2,N)**2)
-      max_k = max(max_k, temp_k)
-    end do
-    call comms_reduce(max_k, 1, "MAX")
-    call comms_bcast(max_k, 1)
-    bin_k = int(max_k/bin_width) + 1
-    ! write (stdout,*) 'max_k',max_k, 'bin_k', bin_k
-    if (.not. allocated(E_kin)) then
-      allocate(E_kin(nbands,nspins,num_kpoints_on_node(my_node_id)),stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of E_kin failed')
-    end if
-    ! Calculate the 'true' kinetic energy at analyser without the transverse Energy
-    ! E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
-    E_kin = E_kinetic
-    ! E_kin = efermi - band_energy
-    ! calculating upper bound of energy range with some extra for plotting
-    max_e = temp_photon_energy - work_function_eff + plot_upper_extra
-    ! calculating lower bound of energy range
-    ! Restrict lower E_kinetic bound to either -0.25 eV or minimal E_kinetic
-    ! This makes sure the program does not print huge matrices at higher photon energies
-    min_e = max(minval(E_kin)-plot_lower_extra,-1*plot_lower_extra)
-    call comms_reduce(min_e, 1, 'MIN')
-    call comms_bcast(min_e, 1)
-    bin_e = int((max_e - min_e) / bin_width) + 1
-    ! write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
-    if (bin_e .lt. 0 .or. bin_k .lt. 0) then
-      write (stdout,*) 'maximum energy below 0, no Ekin matrix printed'  
-      return
-    end if
-    ! set up the matrix of energy vs transverse k
-    if (.not. allocated(ekin_k_matrix)) then
-      allocate(ekin_k_matrix(bin_k,bin_e),stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of ekin_k_matrix failed')
-    end if
-    ekin_k_matrix = 0.0_dp
-
-    ! for all the bands, spins, kpts, atoms
-    do atom = 1, max_atoms + 1
-      kpoints : do N = 1, num_kpoints_on_node(my_node_id)
-        ! if (kpoint_r_cart(1,N) .ne. kpoint_r_cart(2,N)) cycle kpoints
+      ! calculate the number of bins to go left and right
+      ! set to 5 standard deviations (width) of a gaussian function
+      k_offset = 10*(int(k_broadening/bin_width)+1)
+      e_offset = 10*(int(photo_bindenergy_broadening/bin_width)+1)
+      write (stdout,*) 'k_broadening',k_broadening, 'k_offset',k_offset, 'e_offset',e_offset  
+      ! get the maximum k
+      call cell_calc_kpoint_r_cart
+      max_k = 0.0_dp
+      do N = 1, num_kpoints_on_node(my_node_id)
         temp_k = sqrt(kpoint_r_cart(1,N)**2 + kpoint_r_cart(2,N)**2)
-        ! calculate the bin position in k and e
-        center_bin_k = int(temp_k/bin_width)+1
-        do N_spin = 1, nspins
-          bands : do n_eigen = 1, nbands
-            ! calculate the bin position in k and e
-            ! write (*,*) '+2', int ((E_kin(n_eigen,N_spin,N) - min_e + 2) / bin_width) + 1
-            ! write (*,*) '0', int ((E_kin(n_eigen,N_spin,N) - min_e) / bin_width) + 1
-            ! write (*,*) '-2', int ((E_kin(n_eigen,N_spin,N) - min_e - 2) / bin_width) + 1
+        max_k = max(max_k, temp_k)
+      end do
+      call comms_reduce(max_k, 1, "MAX")
+      call comms_bcast(max_k, 1)
+      bin_k = int(max_k/bin_width) + 1
+      ! write (stdout,*) 'max_k',max_k, 'bin_k', bin_k
+      if (.not. allocated(E_kin)) then
+        allocate(E_kin(nbands,nspins,num_kpoints_on_node(my_node_id)),stat=ierr)
+        if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of E_kin failed')
+      end if
+      ! Calculate the 'true' kinetic energy at analyser without the transverse Energy
+      ! E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
+      E_kin = E_kinetic
+      ! E_kin = efermi - band_energy
+      ! calculating upper bound of energy range with some extra for plotting
+      max_e = temp_photon_energy - work_function_eff + plot_upper_extra
+      ! calculating lower bound of energy range
+      ! Restrict lower E_kinetic bound to either -0.25 eV or minimal E_kinetic
+      ! This makes sure the program does not print huge matrices at higher photon energies
+      min_e = max(minval(E_kin)-plot_lower_extra,-1*plot_lower_extra)
+      call comms_reduce(min_e, 1, 'MIN')
+      call comms_bcast(min_e, 1)
+      bin_e = int((max_e - min_e) / bin_width) + 1
+      ! write (stdout,*) 'max_e',max_e, 'min_e', min_e, 'bin_e', bin_e
+      if (bin_e .lt. 0 .or. bin_k .lt. 0) then
+        write (stdout,*) 'maximum energy below 0, no Ekin matrix printed'  
+        return
+      end if
+      ! set up the matrix of energy vs transverse k
+      if (.not. allocated(ekin_k_matrix)) then
+        allocate(ekin_k_matrix(bin_k,bin_e),stat=ierr)
+        if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of ekin_k_matrix failed')
+      end if
+      ekin_k_matrix = 0.0_dp
 
-            center_bin_e = int ((E_kin(n_eigen,N_spin,N) - min_e) / bin_width) + 1
-            if ((center_bin_e - 2*e_offset) .gt. bin_e) cycle bands 
-            ! write (*,*) 'center_bin_e', center_bin_e
-            ! for min_bin_e to max_bin_e
-            ! write (stdout,*) 'e_kin',E_kin(n_eigen,N,N_spin)
-            ! write (stdout,*) 'e_lims', max(center_bin_e-e_offset,1), min(center_bin_e+e_offset,bin_e)
-            ! write (stdout,*) 'k', kpoint_r_cart(1:3,N),'temp_k', temp_k
-            ! write (stdout,*) 'k_lims', max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
-            do e_idx = max(center_bin_e-e_offset,1), min(center_bin_e+e_offset,bin_e)
-              ! for min_bin_k to max_bin_k
-              do k_idx = max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
-                ! gauss(width_e,ekinetic,)*gauss(width_k,k)
-                gauss_e = gaussian(E_kin(n_eigen,N_spin,N), photo_bindenergy_broadening*0.1, &
+      ! for all the bands, spins, kpts, atoms
+      do atom = 1, max_atoms + 1
+        kpoints : do N = 1, num_kpoints_on_node(my_node_id)
+          ! if (kpoint_r_cart(1,N) .ne. kpoint_r_cart(2,N)) cycle kpoints
+          temp_k = sqrt(kpoint_r_cart(1,N)**2 + kpoint_r_cart(2,N)**2)
+          ! calculate the bin position in k and e
+          center_bin_k = int(temp_k/bin_width)+1
+          do N_spin = 1, nspins
+            bands : do n_eigen = 1, nbands
+              ! calculate the bin position in k and e
+              ! write (*,*) '+2', int ((E_kin(n_eigen,N_spin,N) - min_e + 2) / bin_width) + 1
+              ! write (*,*) '0', int ((E_kin(n_eigen,N_spin,N) - min_e) / bin_width) + 1
+              ! write (*,*) '-2', int ((E_kin(n_eigen,N_spin,N) - min_e - 2) / bin_width) + 1
+
+              center_bin_e = int ((E_kin(n_eigen,N_spin,N) - min_e) / bin_width) + 1
+              if ((center_bin_e - 2*e_offset) .gt. bin_e) cycle bands 
+              ! write (*,*) 'center_bin_e', center_bin_e
+              ! for min_bin_e to max_bin_e
+              ! write (stdout,*) 'e_kin',E_kin(n_eigen,N,N_spin)
+              ! write (stdout,*) 'e_lims', max(center_bin_e-e_offset,1), min(center_bin_e+e_offset,bin_e)
+              ! write (stdout,*) 'k', kpoint_r_cart(1:3,N),'temp_k', temp_k
+              ! write (stdout,*) 'k_lims', max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
+              do e_idx = max(center_bin_e-e_offset,1), min(center_bin_e+e_offset,bin_e)
+                ! for min_bin_k to max_bin_k
+                gauss_e = gaussian(E_kin(n_eigen,N_spin,N), photo_bindenergy_broadening, &
                 & min_e + (e_idx - 1)*bin_width)
-                gauss_k = gaussian(temp_k, k_broadening, (k_idx - 1)*bin_width)
-                ! if (gauss_e .gt. 0.0_dp .and. gauss_k .gt. 0.0_dp) then 
-                !   write (stdout,*) 'K', temp_k, k_broadening, (k_idx - 1)*bin_width
-                !   write (stdout,*) 'E', E_kin(n_eigen, N, N_spin), photo_bindenergy_broadening, min_e + (e_idx - 1)*bin_width
-                ! end if
-                ekin_k_matrix(k_idx, e_idx) = ekin_k_matrix(k_idx, e_idx) + gauss_e*gauss_k*qe_osm(n_eigen, N_spin, N, atom)
-                ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
+                do k_idx = max(center_bin_k-k_offset,1), min(center_bin_k+k_offset,bin_k)
+                  ! gauss(width_e,ekinetic,)*gauss(width_k,k)
+                  gauss_k = gaussian(temp_k, k_broadening, (k_idx - 1)*bin_width)
+                  ! if (gauss_e .gt. 0.0_dp .and. gauss_k .gt. 0.0_dp) then 
+                  !   write (stdout,*) 'K', temp_k, k_broadening, (k_idx - 1)*bin_width
+                  !   write (stdout,*) 'E', E_kin(n_eigen, N, N_spin), photo_bindenergy_broadening, min_e + (e_idx - 1)*bin_width
+                  ! end if
+                  ekin_k_matrix(k_idx, e_idx) = ekin_k_matrix(k_idx, e_idx) + gauss_e*gauss_k*qe_osm(n_eigen, N_spin, N, atom)
+                  ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
+                end do
               end do
-            end do
-          end do bands
-        end do 
-      end do kpoints
-    end do
-
-    call comms_reduce(ekin_k_matrix(1,1), bin_e*bin_k, 'SUM')
-    total_weighted = sum(ekin_k_matrix(:, :))
-    if (total_weighted .gt. 0.0_dp) then
-      qe_norm = total_qe/total_weighted
-    else
-      qe_norm = 1.0_dp
-    end if
-    call comms_bcast(qe_norm, 1)
-    ekin_k_matrix = ekin_k_matrix*qe_norm
-
-    if (on_root) then
-      matrix_unit = io_file_unit()
-      write (char_e, '(F7.3)') temp_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-                 '_Ekin_k_matrix.dat'
-      open (unit=matrix_unit, action='write', file=filename)
-      call io_date(cdate, ctime)
-      write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
-      & cdate, ' at ', ctime
-      write (matrix_unit, '(a13,a80)') '## Seedname: ', adjustl(trim(seedname))
-      write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', adjustl(trim(photo_model))
-      write (matrix_unit, '(a18,f7.3)') '## Photon Energy: ', temp_photon_energy
-      write (matrix_unit, '(a29,f9.5)') '## Fermi Energy Ekin offset: ', max_e !(temp_photon_energy - photo_work_function + 2)
-      write (matrix_unit, '(a27,f9.5)') '## Max k_transverse value: ', max_k
-      write (matrix_unit, '(a14,f9.5)') '## Bin width: ', bin_width
-      write (matrix_unit, '(a30,2(1x,I10),a2)') '## Matrix Shape: (', bin_e, bin_k, ' )'
-
-      do e_idx = 1, bin_e
-        write (matrix_unit, '(1x,9999(1x,ES25.12E3))') (ekin_k_matrix(k_idx,e_idx),k_idx = 1, bin_k)
+            end do bands
+          end do 
+        end do kpoints
       end do
 
-      close (unit=matrix_unit)
+      call comms_reduce(ekin_k_matrix(1,1), bin_e*bin_k, 'SUM')
+      total_weighted = sum(ekin_k_matrix(:, :))
+      if (total_weighted .gt. 0.0_dp) then
+        qe_norm = total_qe/total_weighted
+      else
+        qe_norm = 1.0_dp
+      end if
+      call comms_bcast(qe_norm, 1)
+      ekin_k_matrix = ekin_k_matrix*qe_norm
+
+      if (on_root) then
+        matrix_unit = io_file_unit()
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
+                  '_Ekin_k_matrix.dat'
+        open (unit=matrix_unit, action='write', file=filename)
+        call io_date(cdate, ctime)
+        write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
+        & cdate, ' at ', ctime
+        write (matrix_unit, '(a13,a80)') '## Seedname: ', adjustl(trim(seedname))
+        write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', adjustl(trim(photo_model))
+        write (matrix_unit, '(a18,f7.3)') '## Photon Energy: ', temp_photon_energy
+        write (matrix_unit, '(a29,f9.5)') '## Fermi Energy Ekin offset: ', max_e !(temp_photon_energy - photo_work_function + 2)
+        write (matrix_unit, '(a27,f9.5)') '## Max k_transverse value: ', max_k
+        write (matrix_unit, '(a14,f9.5)') '## Bin width: ', bin_width
+        write (matrix_unit, '(a30,2(1x,I10),a2)') '## Matrix Shape: (', bin_e, bin_k, ' )'
+
+        do e_idx = 1, bin_e
+          write (matrix_unit, '(1x,9999(1x,ES25.12E3))') (ekin_k_matrix(k_idx,e_idx),k_idx = 1, bin_k)
+        end do
+
+        close (unit=matrix_unit)
+      end if
+      ! Safety comms sync
+      call comms_bcast(qe_norm, 1)
     end if
-    ! Safety comms sync
-    call comms_bcast(qe_norm, 1)
-    
+
+    if (index(write_photo_output, 'efermi_mat') > 0) then
+      ! get kinetic energy at efermi for reference
+      max_e = temp_photon_energy - work_function_eff
+      bin_width = 0.001
+      total_ks = kpoint_grid_dim(1)* kpoint_grid_dim(2)
+      ref_level = temp_photon_energy - work_function_eff
+      step(:) = 1.0_dp / real(kpoint_grid_dim(1:2), dp) / 2.0_dp
+      do i = 1, 2
+          sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
+      end do
+      write (stdout,*) 'sub_cell_length', sub_cell_length
+      ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
+      ! the FWHM = the step distance between the kpoints
+      kx_broadening = sub_cell_length(1)/(4.70964009_dp)
+      ky_broadening = sub_cell_length(2)/(4.70964009_dp)
+      write (stdout,*) 'kx_broadening',kx_broadening,'ky_broadening',ky_broadening
+      ! k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
+
+      ! calculate the number of bins to go left and right
+      ! set to 5 standard deviations (width) of a gaussian function
+      kx_offset = 20*(int(kx_broadening/bin_width)+1)
+      ky_offset = 20*(int(ky_broadening/bin_width)+1)
+      write (stdout,*) 'kx_offset',kx_offset,'ky_offset',ky_offset
+      ! calculate the borders of the first BZ
+      ! write (stdout, *) recip_lattice
+      max_x = int(sqrt(recip_lattice(1,1)**2+recip_lattice(2,1)**2)/bin_width) + 1
+      max_y = int(sqrt(recip_lattice(1,2)**2+recip_lattice(2,2)**2)/bin_width) + 1 
+      write (stdout,*) 'max_x',max_x, 'max_y', max_y
+      ! set up the kx x ky matrix
+      allocate(kxky_matrix(max_x,max_y), stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of kxky_matrix failed')
+      kxky_matrix = 0.0_dp
+
+      call cell_calc_kpoint_r_cart
+      do N = 1, num_kpoints_on_node(my_node_id)
+        current_kx = kpoint_r_cart(1,N)
+        current_ky = kpoint_r_cart(2,N)
+        do i = 1, 4
+          ! Rotation around 90deg -> rot matrix -> new_x = -y, new_y = x
+          swap_temp = current_kx
+          current_kx = -1*current_ky
+          current_ky = swap_temp
+          ! write (stdout,*) my_node_id ,'current_kx',current_kx, 'current_ky',current_ky
+          ! write (stdout,*) my_node_id, 'x_center', x_center, 'y_center',y_center
+          ! write (stdout,*) my_node_id, 'x range', max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
+          ! write (stdout,*) my_node_id, 'y range', max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
+          do j = 1, 2
+            current_kx = (-1**j)*current_kx
+            x_center = int(current_kx/bin_width) + 1 + int(max_x/2) + 1
+            y_center = int(current_ky/bin_width) + 1 + int(max_y/2) + 1
+            do N_spin = 1, nspins
+              kxkybands : do n_eigen = 1, nbands
+                temp_ekin_upper = E_kinetic(n_eigen,N_spin,N) - 8*photo_bindenergy_broadening
+                temp_ekin_lower = E_kinetic(n_eigen,N_spin,N) + 8*photo_bindenergy_broadening
+                if (temp_ekin_upper .gt. ref_level .or. temp_ekin_lower .lt. ref_level) cycle kxkybands
+                gauss_e = gaussian(E_kinetic(n_eigen,N_spin,N), photo_bindenergy_broadening, ref_level)
+                do y_idx = max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
+                  ! for min_bin_k to max_bin_k
+                  gauss_y = gaussian(current_ky, ky_broadening, (y_idx - int(max_y/2) + 1)*bin_width)
+                  do  x_idx = max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
+                    ! gauss(width_e,ekinetic,)*gauss(width_k,k)
+                    gauss_x = gaussian(current_kx, kx_broadening, (x_idx - int(max_x/2) + 1)*bin_width)
+                    kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*1/total_ks*kpoint_weight(N)*gauss_e&
+                    &*sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))
+                    ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
+                  end do
+                end do
+              end do kxkybands
+            end do
+          end do
+        end do
+      end do
+      call comms_reduce(kxky_matrix(1,1), max_x*max_y, 'SUM')
+      total_weighted = sum(kxky_matrix(:,:))
+      if (total_weighted .gt. 0.0_dp) then
+        qe_norm = total_qe/total_weighted
+      else
+        qe_norm = 1.0_dp
+      end if
+      call comms_bcast(qe_norm, 1)
+      kxky_matrix = kxky_matrix*qe_norm
+
+      if (on_root) then
+        matrix_unit = io_file_unit()
+        write (char_e, '(F7.3)') temp_photon_energy
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
+                  '_EFermi_kxky_matrix.dat'
+        open (unit=matrix_unit, action='write', file=filename)
+        call io_date(cdate, ctime)
+        write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
+        & cdate, ' at ', ctime
+        write (matrix_unit, '(a13,a80)') '## Seedname: ', adjustl(trim(seedname))
+        write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', adjustl(trim(photo_model))
+        write (matrix_unit, '(a18,f7.3)') '## Photon Energy: ', temp_photon_energy
+        write (matrix_unit, '(a29,f9.5)') '## Fermi Energy Ekin offset: ', max_e !(temp_photon_energy - photo_work_function + 2)
+        ! write (matrix_unit, '(a27,f9.5)') '## Max k_transverse value: ', max_k
+        write (matrix_unit, '(a14,f9.5)') '## Bin width: ', bin_width
+        ! write (matrix_unit, '(a30,2(1x,I10),a2)') '## Matrix Shape: (', bin_e, bin_k, ' )'
+
+        do y_idx = 1, max_y
+          write (matrix_unit, '(1x,9999(1x,ES25.12E3))') (kxky_matrix(x_idx,y_idx),x_idx = 1, max_x)
+        end do
+
+        close (unit=matrix_unit)
+      end if
+
+
+      deallocate(kxky_matrix, stat=ierr)
+      if (ierr /= 0) call io_error('Error: binding_energy_broadening - deallocation of kxky_matrix failed')
+    end if
+
   end subroutine binding_energy_broadening
 
 
