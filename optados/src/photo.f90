@@ -3753,7 +3753,8 @@ contains
     real(kind=dp) :: sub_cell_length(1:3), step(1:2)
     integer :: max_x, max_y, x_idx, y_idx, x_center, y_center, kx_offset, ky_offset, total_ks, j
     real(kind=dp) :: gauss_x, gauss_y, kx_broadening, ky_broadening, current_kx, current_ky, swap_temp, ref_level
-    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower
+    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower, prefactor
+    real(kind=dp), allocatable, dimension(:) :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
@@ -3997,24 +3998,24 @@ contains
       do i = 1, 2
           sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
-      write (stdout,*) 'sub_cell_length', sub_cell_length
+      ! write (stdout,*) 'sub_cell_length', sub_cell_length
       ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
-      ! the FWHM = the step distance between the kpoints
+      ! the FWHM = 1/2 the step distance between the kpoints
       kx_broadening = sub_cell_length(1)/(4.70964009_dp)
       ky_broadening = sub_cell_length(2)/(4.70964009_dp)
-      write (stdout,*) 'kx_broadening',kx_broadening,'ky_broadening',ky_broadening
+      ! write (stdout,*) 'kx_broadening',kx_broadening,'ky_broadening',ky_broadening
       ! k_broadening =  sqrt((2*e_mass*(photo_bindenergy_broadening*0.01_dp*ev_to_j))/(hbar*hbar))*1E-10
 
       ! calculate the number of bins to go left and right
       ! set to 5 standard deviations (width) of a gaussian function
       kx_offset = 20*(int(kx_broadening/bin_width)+1)
       ky_offset = 20*(int(ky_broadening/bin_width)+1)
-      write (stdout,*) 'kx_offset',kx_offset,'ky_offset',ky_offset
+      ! write (stdout,*) 'kx_offset',kx_offset,'ky_offset',ky_offset
       ! calculate the borders of the first BZ
       ! write (stdout, *) recip_lattice
       max_x = int(sqrt(recip_lattice(1,1)**2+recip_lattice(2,1)**2)/bin_width) + 1
       max_y = int(sqrt(recip_lattice(1,2)**2+recip_lattice(2,2)**2)/bin_width) + 1 
-      write (stdout,*) 'max_x',max_x, 'max_y', max_y
+      ! write (stdout,*) 'max_x',max_x, 'max_y', max_y
       ! set up the kx x ky matrix
       allocate(kxky_matrix(max_x,max_y), stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of kxky_matrix failed')
@@ -4024,6 +4025,8 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)
         current_kx = kpoint_r_cart(1,N)
         current_ky = kpoint_r_cart(2,N)
+        prefactor = kpoint_weight(N)/(1.0_dp/total_ks)/8.0_dp
+        ! prefactor = total_ks*kpoint_weight(N)
         do i = 1, 4
           ! Rotation around 90deg -> rot matrix -> new_x = -y, new_y = x
           swap_temp = current_kx
@@ -4035,8 +4038,14 @@ contains
           ! write (stdout,*) my_node_id, 'y range', max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
           do j = 1, 2
             current_kx = (-1**j)*current_kx
-            x_center = int(current_kx/bin_width) + 1 + int(max_x/2) + 1
-            y_center = int(current_ky/bin_width) + 1 + int(max_y/2) + 1
+            ! current_ky = (-1**j)*current_ky
+            x_center = idnint(current_kx/bin_width) + idnint(max_x/2.0_dp)
+            y_center = idnint(current_ky/bin_width) + idnint(max_y/2.0_dp)
+            ! kpt_total(N) = kpt_total(N) + 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp
+            write (*,*) current_kx, current_ky, prefactor
+            ! write (stdout,*) x_center, y_center
+            ! write (stdout, *)'total_ks',total_ks, kpoint_weight(N)
+            ! write (stdout,*) 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp!,   real(1.0_dp/total_ks,dp)/(kpoint_weight(N))
             do N_spin = 1, nspins
               kxkybands : do n_eigen = 1, nbands
                 temp_ekin_upper = E_kinetic(n_eigen,N_spin,N) - 8*photo_bindenergy_broadening
@@ -4046,11 +4055,11 @@ contains
                 do y_idx = max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
                   ! for min_bin_k to max_bin_k
                   gauss_y = gaussian(current_ky, ky_broadening, (y_idx - int(max_y/2) + 1)*bin_width)
-                  do  x_idx = max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
+                  do x_idx = max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
                     ! gauss(width_e,ekinetic,)*gauss(width_k,k)
                     gauss_x = gaussian(current_kx, kx_broadening, (x_idx - int(max_x/2) + 1)*bin_width)
-                    kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*1/total_ks*kpoint_weight(N)*gauss_e&
-                    &*sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))
+                    kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*gauss_e*&
+                    &sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))*prefactor
                     ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
                   end do
                 end do
@@ -4068,6 +4077,9 @@ contains
       end if
       call comms_bcast(qe_norm, 1)
       kxky_matrix = kxky_matrix*qe_norm
+      ! write (stdout,*) my_node_id,'kpt_wght ', kpoint_weight
+      ! write (stdout,*) my_node_id,'kpt_total', kpt_total
+      ! write (stdout,*) my_node_id,'kpts', kpoint_r_cart
 
       if (on_root) then
         matrix_unit = io_file_unit()
