@@ -209,9 +209,7 @@ contains
         ! Only call the binding energy gaussian broadening and file printing if necessary
         if (.not. index(write_photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(write_photo_output, 'e_bind') > 0) then 
-            call binding_energy_broadening
-          end if
+          call binding_energy_broadening
           ! Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
           call write_qe_output_files
         end if
@@ -253,9 +251,7 @@ contains
       ! Only call the binding energy gaussian broadening and file printing if necessary
       if (.not. index(write_photo_output, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        if (index(write_photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then 
-          call binding_energy_broadening
-        end if
+        call binding_energy_broadening
         !Write either a binding energy output with after Gaussian broadening
         call write_qe_output_files
       end if
@@ -3732,7 +3728,7 @@ contains
     kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, write_photo_output
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, write_photo_output, photo_const_e_map_binding_e
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, seedname, io_date, io_time
@@ -3988,12 +3984,12 @@ contains
       call comms_bcast(qe_norm, 1)
     end if
 
-    if (index(write_photo_output, 'efermi_mat') > 0) then
+    if (index(write_photo_output, 'const_energy_map') > 0) then
       ! get kinetic energy at efermi for reference
       max_e = temp_photon_energy - work_function_eff
       bin_width = 0.001
       total_ks = kpoint_grid_dim(1)* kpoint_grid_dim(2)
-      ref_level = temp_photon_energy - work_function_eff
+      ref_level = temp_photon_energy - work_function_eff - photo_const_e_map_binding_e
       step(:) = 1.0_dp / real(kpoint_grid_dim(1:2), dp) / 2.0_dp
       do i = 1, 2
           sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
@@ -4085,7 +4081,7 @@ contains
         matrix_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-                  '_EFermi_kxky_matrix.dat'
+                  '_const_energy_map.dat'
         open (unit=matrix_unit, action='write', file=filename)
         call io_date(cdate, ctime)
         write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
@@ -4093,10 +4089,8 @@ contains
         write (matrix_unit, '(a13,a80)') '## Seedname: ', adjustl(trim(seedname))
         write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', adjustl(trim(photo_model))
         write (matrix_unit, '(a18,f7.3)') '## Photon Energy: ', temp_photon_energy
-        write (matrix_unit, '(a29,f9.5)') '## Fermi Energy Ekin offset: ', max_e !(temp_photon_energy - photo_work_function + 2)
-        ! write (matrix_unit, '(a27,f9.5)') '## Max k_transverse value: ', max_k
+        write (matrix_unit, '(a29,f9.5)') '## Binding Energy of Map (E-E_F): ', ref_level
         write (matrix_unit, '(a14,f9.5)') '## Bin width: ', bin_width
-        ! write (matrix_unit, '(a30,2(1x,I10),a2)') '## Matrix Shape: (', bin_e, bin_k, ' )'
 
         do y_idx = 1, max_y
           write (matrix_unit, '(1x,9999(1x,ES25.12E3))') (kxky_matrix(x_idx,y_idx),x_idx = 1, max_x)

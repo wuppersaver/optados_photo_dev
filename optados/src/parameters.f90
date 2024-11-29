@@ -132,6 +132,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_min
   real(kind=dp), public, save :: photo_theta_max
   real(kind=dp), public, save :: photo_bindenergy_broadening
+  real(kind=dp), public, save :: photo_const_e_map_binding_e
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_photon_sweep
   real(kind=dp), public, save :: photo_photon_min
@@ -226,7 +227,7 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
-        elseif (index(task_string(loop), 'photon_sweep') > 0) then
+        elseif (index(task_string(loop), 'photo_energy_sweep') > 0) then
           photo = .true.; photo_photon_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
@@ -456,10 +457,10 @@ contains
 
     write_photo_output = 'off'
     call param_get_keyword('write_photo_output', found, c_value=write_photo_output)
-    if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
-      & index(write_photo_output, 'off') == 0) then
-      call io_error('Error: value of write_photo_output output not recognised in param_read')
-    end if
+    ! if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
+    !   & index(write_photo_output, 'off') == 0) then
+    !   call io_error('Error: value of write_photo_output output not recognised in param_read')
+    ! end if
 
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
@@ -482,7 +483,9 @@ contains
     photo_phi_max = 90.0_dp
     call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
     photo_bindenergy_broadening = linear_smearing
-    call param_get_keyword('photo_bindenergy_broadening',found, r_value=photo_bindenergy_broadening)
+    call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
+    photo_const_e_map_binding_e = 0.0_dp
+    call param_get_keyword('photo_const_e_map_binding_e', found, r_value=photo_const_e_map_binding_e)
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = 2.0_dp
@@ -1784,6 +1787,7 @@ contains
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)
+    call comms_bcast(photo_const_e_map_binding_e, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
