@@ -1021,11 +1021,12 @@ contains
         write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
-      write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  BindingEnergy Broad. Width (eV)           :', photo_bindenergy_broadening, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -                (deg)     :', photo_theta_min, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -                (deg)     :', photo_theta_max, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -                (deg)     :', photo_phi_min, '|'
+      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -                (deg)     :', photo_phi_max, '|'
+      write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  BindingEnergy Broad. Width      (eV)      :', photo_bindenergy_broadening, '|'
+      write (stdout, '(1x,a46,1x,1f8.3,22x,a1)') '|  Binding Energy for const. E Map (eV)      :', photo_const_e_map_binding_e, '|'
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
