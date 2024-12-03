@@ -3753,6 +3753,7 @@ contains
     real(kind=dp), allocatable, dimension(:) :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
+    character(len=10)                           :: char_ref
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
@@ -4080,8 +4081,9 @@ contains
       if (on_root) then
         matrix_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-                  '_const_energy_map.dat'
+        write (char_ref, '(F7.2)') ref_level
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_photon_'//trim(adjustl(char_ref))//&
+        '_const_energy_map.dat'
         open (unit=matrix_unit, action='write', file=filename)
         call io_date(cdate, ctime)
         write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
