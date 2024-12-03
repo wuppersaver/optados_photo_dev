@@ -4081,9 +4081,9 @@ contains
       if (on_root) then
         matrix_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
-        write (char_ref, '(F7.2)') ref_level
+        write (char_ref, '(F7.2)') photo_const_e_map_binding_e
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_photon_'//trim(adjustl(char_ref))//&
-        '_const_energy_map.dat'
+        &'_map.dat'
         open (unit=matrix_unit, action='write', file=filename)
         call io_date(cdate, ctime)
         write (matrix_unit, '(a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
@@ -4091,7 +4091,8 @@ contains
         write (matrix_unit, '(a13,a80)') '## Seedname: ', adjustl(trim(seedname))
         write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', adjustl(trim(photo_model))
         write (matrix_unit, '(a18,f7.3)') '## Photon Energy: ', temp_photon_energy
-        write (matrix_unit, '(a29,f9.5)') '## Binding Energy of Map (E-E_F): ', ref_level
+        write (matrix_unit, '(a29,f9.5)') '## Kinetic Energy of Map [eV]: ', ref_level
+        write (matrix_unit, '(a29,f9.5)') '## Binding Energy of Map (E-E_F): ', photo_const_e_map_binding_e
         write (matrix_unit, '(a14,f9.5)') '## Bin width: ', bin_width
 
         do y_idx = 1, max_y
