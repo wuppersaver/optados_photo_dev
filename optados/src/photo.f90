@@ -3749,7 +3749,7 @@ contains
     real(kind=dp) :: sub_cell_length(1:3), step(1:2)
     integer :: max_x, max_y, x_idx, y_idx, x_center, y_center, kx_offset, ky_offset, total_ks, j
     real(kind=dp) :: gauss_x, gauss_y, kx_broadening, ky_broadening, current_kx, current_ky, swap_temp, ref_level
-    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower, prefactor
+    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower, prefactor, qe_contrib
     real(kind=dp), allocatable, dimension(:) :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
@@ -4039,15 +4039,23 @@ contains
             x_center = idnint(current_kx/bin_width) + idnint(max_x/2.0_dp)
             y_center = idnint(current_ky/bin_width) + idnint(max_y/2.0_dp)
             ! kpt_total(N) = kpt_total(N) + 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp
-            write (*,*) current_kx, current_ky, prefactor
+            ! write (*,*) current_kx, current_ky, prefactor
             ! write (stdout,*) x_center, y_center
             ! write (stdout, *)'total_ks',total_ks, kpoint_weight(N)
             ! write (stdout,*) 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp!,   real(1.0_dp/total_ks,dp)/(kpoint_weight(N))
             do N_spin = 1, nspins
               kxkybands : do n_eigen = 1, nbands
+                
                 temp_ekin_upper = E_kinetic(n_eigen,N_spin,N) - 8*photo_bindenergy_broadening
                 temp_ekin_lower = E_kinetic(n_eigen,N_spin,N) + 8*photo_bindenergy_broadening
                 if (temp_ekin_upper .gt. ref_level .or. temp_ekin_lower .lt. ref_level) cycle kxkybands
+                
+                if (index(photo_model,'3step') > 0) then
+                  qe_contrib = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, 1:max_atoms+1))
+                elseif (index(photo_model,'1step') > 0) then
+                  qe_contrib = sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))
+                end if              
+                
                 gauss_e = gaussian(E_kinetic(n_eigen,N_spin,N), photo_bindenergy_broadening, ref_level)
                 do y_idx = max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
                   ! for min_bin_k to max_bin_k
@@ -4056,7 +4064,7 @@ contains
                     ! gauss(width_e,ekinetic,)*gauss(width_k,k)
                     gauss_x = gaussian(current_kx, kx_broadening, (x_idx - int(max_x/2) + 1)*bin_width)
                     kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*gauss_e*&
-                    &sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))*prefactor
+                    &qe_contrib*prefactor
                     ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
                   end do
                 end do
