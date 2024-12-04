@@ -3727,7 +3727,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, recip_lattice, kpoint_grid_dim,&
     kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
+    use od_parameters, only: photo_work_function, devel_flag, photo_model, photo_theta_min, photo_theta_max, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, write_photo_output, photo_const_e_map_binding_e
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -4026,15 +4026,19 @@ contains
         ! prefactor = total_ks*kpoint_weight(N)
         do i = 1, 4
           ! Rotation around 90deg -> rot matrix -> new_x = -y, new_y = x
-          swap_temp = current_kx
-          current_kx = -1*current_ky
-          current_ky = swap_temp
+          if (index(devel_flag,'no_symmetry') == 0) then
+            swap_temp = current_kx
+            current_kx = -1*current_ky
+            current_ky = swap_temp
+          end if
           ! write (stdout,*) my_node_id ,'current_kx',current_kx, 'current_ky',current_ky
           ! write (stdout,*) my_node_id, 'x_center', x_center, 'y_center',y_center
           ! write (stdout,*) my_node_id, 'x range', max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
           ! write (stdout,*) my_node_id, 'y range', max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
           do j = 1, 2
-            current_kx = (-1**j)*current_kx
+            if (index(devel_flag,'no_symmetry') == 0) then
+              current_kx = (-1**j)*current_kx
+            end if
             ! current_ky = (-1**j)*current_ky
             x_center = idnint(current_kx/bin_width) + idnint(max_x/2.0_dp)
             y_center = idnint(current_ky/bin_width) + idnint(max_y/2.0_dp)
