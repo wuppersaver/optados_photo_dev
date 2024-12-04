@@ -4022,7 +4022,11 @@ contains
       do N = 1, num_kpoints_on_node(my_node_id)
         current_kx = kpoint_r_cart(1,N)
         current_ky = kpoint_r_cart(2,N)
-        prefactor = kpoint_weight(N)/(1.0_dp/total_ks)/8.0_dp
+        if (index(devel_flag,'no_symmetry') == 0) then
+          prefactor = kpoint_weight(N)/(1.0_dp/total_ks)/8.0_dp
+        else
+          prefactor = 1.0_dp/8.0_dp
+        end if
         ! prefactor = total_ks*kpoint_weight(N)
         do i = 1, 4
           ! Rotation around 90deg -> rot matrix -> new_x = -y, new_y = x
