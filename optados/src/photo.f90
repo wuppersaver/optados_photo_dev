@@ -3725,14 +3725,14 @@ contains
     ! edited Felix Mildner, after August 2024
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, recip_lattice, kpoint_grid_dim,&
-    kpoint_weight
+    kpoint_weight, real_lattice, crystal_symmetry_operations, num_crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_work_function, devel_flag, photo_model, photo_theta_min, photo_theta_max, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, write_photo_output, photo_const_e_map_binding_e
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, seedname, io_date, io_time
-    use od_constants, only: e_mass, hbar, j_to_ev, ev_to_j
+    use od_constants, only: e_mass, hbar, j_to_ev, ev_to_j, twopi, rad_to_deg
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
@@ -3747,16 +3747,20 @@ contains
     real(kind=dp) :: bin_width, k_broadening, max_k, temp_k, max_e, min_e, gauss_k, gauss_e, plot_upper_extra, plot_lower_extra
     integer :: e_offset, k_offset, bin_k, bin_e, center_bin_k, center_bin_e, matrix_unit
     real(kind=dp) :: sub_cell_length(1:3), step(1:2)
-    integer :: max_x, max_y, x_idx, y_idx, x_center, y_center, kx_offset, ky_offset, total_ks, j
-    real(kind=dp) :: gauss_x, gauss_y, kx_broadening, ky_broadening, current_kx, current_ky, swap_temp, ref_level
-    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower, prefactor, qe_contrib
+    integer :: max_x, max_y, x_idx, y_idx, x_center, y_center, kx_offset, ky_offset, total_ks, j, cn, nsymm_op
+    real(kind=dp) :: gauss_x, gauss_y, kx_broadening, ky_broadening, current_ky, swap_x, swap_y, ref_level
+    real(kind=dp) :: detinv
+    real(kind=dp) :: temp_ekin_upper, temp_ekin_lower, prefactor, qe_contrib, xdoty, xylength
     real(kind=dp), allocatable, dimension(:) :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=10)                           :: char_ref
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-
+    real(kind=dp), dimension(2,2) :: lat_r, lat_g_t, s_inv, s_mat, temp_mat
+    real(kind=dp), dimension(3,3) :: g_t 
+    real(kind=dp), dimension(2) :: current_k
+ 
 
 
 
@@ -3995,6 +3999,10 @@ contains
       do i = 1, 2
           sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      xdoty =  real_lattice(1,1)*real_lattice(1,2) + real_lattice(2,1)*real_lattice(2,2)
+      xylength = sqrt(real_lattice(1,1)**2+real_lattice(2,1)**2)*sqrt(real_lattice(1,2)**2+real_lattice(2,2)**2)
+      cn = nint(twopi/acos(xdoty/xylength))
+      write (stdout, *) 'cn', cn, 'angle', acos(xdoty/xylength)*rad_to_deg
       ! write (stdout,*) 'sub_cell_length', sub_cell_length
       ! diagonal distance between MP points in reciprocal space divided by 2*2*sqrt(2*ln(2)) so that
       ! the FWHM = 1/2 the step distance between the kpoints
@@ -4018,66 +4026,78 @@ contains
       if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of kxky_matrix failed')
       kxky_matrix = 0.0_dp
 
+      ! *** CASTEP Symmetries:  Apply symmetry to k-point (real)*(symm)*(recip)*(kpoint)
+      ! *** temp_mat=matmul(matmul(real_lattice,temp_sym),transpose(recip_lattice))/two_pi
+      ! *** Apply symmetry to k-point (real)*(symm)*(recip)*(kpoint)
+      ! *** Symmetry rotations should always be integral in fractional co-ordinates.
+      ! *** temp_mat=real(nint(temp_mat),dp)
+      ! *** Sk = matmul(temp_mat,k)
+      ! OTPADOS PHOTO - inverse formula = lat_r*s_inv*lat_g_t/TWOPI*ksymmetrised 1
+      ! get lat_r 2x2
+      lat_r = real_lattice(1:2,1:2);
+      ! make lat_g_t as the 2x2 subset of the transposed lat_g
+      g_t = transpose(recip_lattice)
+      lat_g_t = g_t(1:2,1:2)
+
       call cell_calc_kpoint_r_cart
-      do N = 1, num_kpoints_on_node(my_node_id)
-        current_kx = kpoint_r_cart(1,N)
-        current_ky = kpoint_r_cart(2,N)
-        if (index(devel_flag,'no_symmetry') == 0) then
-          prefactor = kpoint_weight(N)/(1.0_dp/total_ks)/8.0_dp
-        else
-          prefactor = 1.0_dp/8.0_dp
-        end if
-        ! prefactor = total_ks*kpoint_weight(N)
-        do i = 1, 4
-          ! Rotation around 90deg -> rot matrix -> new_x = -y, new_y = x
+      do nsymm_op = 1, num_crystal_symmetry_operations
+        ! make s_inv 2x2 as the inverse of the symmetry operation with A^-1 formula
+        s_mat = crystal_symmetry_operations(1:2,1:2,nsymm_op)
+        detinv = 1/(s_mat(1,1)*s_mat(2,2) - s_mat(1,2)*s_mat(2,1))
+        ! Calculate the inverse of the matrix
+        s_inv(1,1) = +detinv * s_mat(2,2)
+        s_inv(2,1) = -detinv * s_mat(2,1)
+        s_inv(1,2) = -detinv * s_mat(1,2)
+        s_inv(2,2) = +detinv * s_mat(1,1)
+
+        ! inverse formula = lat_r*s_inv*lat_g_t/TWOPI*ksymmetrised 
+        temp_mat=matmul(matmul(lat_r,s_inv),lat_g_t)/twopi
+        ! write (*,*) temp_mat
+        ! temp_mat=real(nint(temp_mat),dp)
+        ! write (*,*) temp_mat
+
+        do N = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag,'no_symmetry') == 0) then
-            swap_temp = current_kx
-            current_kx = -1*current_ky
-            current_ky = swap_temp
+            write (stdout,*) "symmetrising"
+            current_k = matmul(temp_mat,kpoint_r_cart(1:2,N))
+            prefactor = kpoint_weight(N)/(1.0_dp/total_ks)/num_crystal_symmetry_operations
+          else
+            write (stdout,*) "not symmetrising"
+            current_k = kpoint_r_cart(1:2,N)
+            prefactor = 1.0_dp/num_crystal_symmetry_operations
           end if
-          ! write (stdout,*) my_node_id ,'current_kx',current_kx, 'current_ky',current_ky
-          ! write (stdout,*) my_node_id, 'x_center', x_center, 'y_center',y_center
-          ! write (stdout,*) my_node_id, 'x range', max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
-          ! write (stdout,*) my_node_id, 'y range', max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
-          do j = 1, 2
-            if (index(devel_flag,'no_symmetry') == 0) then
-              current_kx = (-1**j)*current_kx
-            end if
-            ! current_ky = (-1**j)*current_ky
-            x_center = idnint(current_kx/bin_width) + idnint(max_x/2.0_dp)
-            y_center = idnint(current_ky/bin_width) + idnint(max_y/2.0_dp)
-            ! kpt_total(N) = kpt_total(N) + 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp
-            ! write (*,*) current_kx, current_ky, prefactor
-            ! write (stdout,*) x_center, y_center
-            ! write (stdout, *)'total_ks',total_ks, kpoint_weight(N)
-            ! write (stdout,*) 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp!,   real(1.0_dp/total_ks,dp)/(kpoint_weight(N))
-            do N_spin = 1, nspins
-              kxkybands : do n_eigen = 1, nbands
-                
-                temp_ekin_upper = E_kinetic(n_eigen,N_spin,N) - 8*photo_bindenergy_broadening
-                temp_ekin_lower = E_kinetic(n_eigen,N_spin,N) + 8*photo_bindenergy_broadening
-                if (temp_ekin_upper .gt. ref_level .or. temp_ekin_lower .lt. ref_level) cycle kxkybands
-                
-                if (index(photo_model,'3step') > 0) then
-                  qe_contrib = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, 1:max_atoms+1))
-                elseif (index(photo_model,'1step') > 0) then
-                  qe_contrib = sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))
-                end if              
-                
-                gauss_e = gaussian(E_kinetic(n_eigen,N_spin,N), photo_bindenergy_broadening, ref_level)
-                do y_idx = max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
-                  ! for min_bin_k to max_bin_k
-                  gauss_y = gaussian(current_ky, ky_broadening, (y_idx - int(max_y/2) + 1)*bin_width)
-                  do x_idx = max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
-                    ! gauss(width_e,ekinetic,)*gauss(width_k,k)
-                    gauss_x = gaussian(current_kx, kx_broadening, (x_idx - int(max_x/2) + 1)*bin_width)
-                    kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*gauss_e*&
-                    &qe_contrib*prefactor
-                    ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
-                  end do
+          x_center = nint(current_k(1)/bin_width) + nint(max_x/2.0_dp)
+          y_center = nint(current_k(2)/bin_width) + nint(max_y/2.0_dp)
+          ! kpt_total(N) = kpt_total(N) + 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp
+          write (*,*) current_k(1), current_k(2), prefactor
+          ! write (stdout,*) x_center, y_center
+          ! write (stdout, *)'total_ks',total_ks, kpoint_weight(N)
+          ! write (stdout,*) 1.0_dp/total_ks/kpoint_weight(N)/8.0_dp!,   real(1.0_dp/total_ks,dp)/(kpoint_weight(N))
+          do N_spin = 1, nspins
+            kxkybands : do n_eigen = 1, nbands
+              
+              temp_ekin_upper = E_kinetic(n_eigen,N_spin,N) - 8*photo_bindenergy_broadening
+              temp_ekin_lower = E_kinetic(n_eigen,N_spin,N) + 8*photo_bindenergy_broadening
+              if (temp_ekin_upper .gt. ref_level .or. temp_ekin_lower .lt. ref_level) cycle kxkybands
+              
+              if (index(photo_model,'3step') > 0) then
+                qe_contrib = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, 1:max_atoms+1))
+              elseif (index(photo_model,'1step') > 0) then
+                qe_contrib = sum(qe_osm(n_eigen, N_spin, N, 1:max_atoms+1))
+              end if              
+              
+              gauss_e = gaussian(E_kinetic(n_eigen,N_spin,N), photo_bindenergy_broadening, ref_level)
+              do y_idx = max(y_center-ky_offset,1), min(y_center+ky_offset,max_y)
+                ! for min_bin_k to max_bin_k
+                gauss_y = gaussian(current_k(2), ky_broadening, (y_idx - int(max_y/2) + 1)*bin_width)
+                do x_idx = max(x_center-kx_offset,1), min(x_center+kx_offset,max_x)
+                  ! gauss(width_e,ekinetic,)*gauss(width_k,k)
+                  gauss_x = gaussian(current_k(1), kx_broadening, (x_idx - int(max_x/2) + 1)*bin_width)
+                  kxky_matrix(x_idx, y_idx) = kxky_matrix(x_idx, y_idx) + gauss_x*gauss_y*gauss_e*prefactor!*qe_contrib
+                  ! if (ekin_k_matrix(k_idx,e_idx) .gt. 0.0_dp) write (stdout,*) e_idx, k_idx ,ekin_k_matrix(k_idx, e_idx)
                 end do
-              end do kxkybands
-            end do
+              end do
+            end do kxkybands
           end do
         end do
       end do
@@ -4089,7 +4109,7 @@ contains
         qe_norm = 1.0_dp
       end if
       call comms_bcast(qe_norm, 1)
-      kxky_matrix = kxky_matrix*qe_norm
+      ! kxky_matrix = kxky_matrix*qe_norm
       ! write (stdout,*) my_node_id,'kpt_wght ', kpoint_weight
       ! write (stdout,*) my_node_id,'kpt_total', kpt_total
       ! write (stdout,*) my_node_id,'kpts', kpoint_r_cart

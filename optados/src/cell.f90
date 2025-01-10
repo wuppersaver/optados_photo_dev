@@ -412,7 +412,7 @@ contains
   subroutine cell_read_cell
     !=========================================================================!
     use od_constants, only: bohr2ang
-    use od_io, only: io_file_unit, io_error, seedname, maxlen
+    use od_io, only: io_file_unit, io_error, seedname, maxlen, stdout
     use od_algorithms, only: utility_cart_to_frac, utility_frac_to_cart, utility_lowercase
 
     implicit none
@@ -701,7 +701,13 @@ contains
     else
       call io_error('Error: Cannot find %block '//trim(keyword)//' in '//trim(seedname)//'-out.cell')
     end if
-
+    ! do loop = 1, num_crystal_symmetry_operations
+    !   write(stdout, *)
+    !   do loop2 = 1, 3
+    !     write (stdout,*) crystal_symmetry_operations(1:3,loop2,loop)
+    !   end do
+    !   write (stdout,*) crystal_symmetry_disps(1:3,loop)
+    ! end do
     return
 
 240 call io_error('Error: Problem reading block keyword '//trim(keyword))
