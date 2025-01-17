@@ -1884,18 +1884,12 @@ contains
 
           E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
 
-          !! The total kinetic enery E_kinetic_total is composed of E|| and E_transvers, therefore the angle argument always
-          !! has to be < 1, because theta = acos(E||/E_kinetic_total). The previous formula was: (E_kinetic(n_eigen, N, N_spin) -
-          !! E_transverse(n_eigen, N_spin, N))/E_kinetic(n_eigen, N, N_spin) If the total kinetic energy is negative and
-          !! E_transverse is positive, this causes the acos to be undefined, as the previous formula did not include the abs
-          !!statements. Also the total kinetic energy has to be > 0 to have a physical emission
-          if (E_kinetic(n_eigen, N_spin, N) .gt. 0.0_dp .and. E_kinetic(n_eigen, N_spin, N) .gt. &
-              E_transverse(n_eigen, N_spin, N)) then
-            theta_arpes(n_eigen, N_spin, N) = (acos((E_kinetic(n_eigen, N_spin, N) - E_transverse(n_eigen, N_spin, N))/ &
-                                                    abs(E_kinetic(n_eigen, N_spin, N))))*rad_to_deg
-          else
-            theta_arpes(n_eigen, N_spin, N) = acos(0.0_dp)
-          end if
+          ! E_kinetic is the final kinetic energy of the electron after emissions
+          ! if the E_kin is less than 0, there is no emission and the theta angle stays < 0 deg
+          if (E_kinetic(n_eigen, N_spin, N) .lt. tol) cycle
+          
+          theta_arpes(n_eigen, N_spin, N) = (acos((E_kinetic(n_eigen, N_spin, N) - E_transverse(n_eigen, N_spin, N))/ &
+                                                    E_kinetic(n_eigen, N_spin, N)))*rad_to_deg
         end do
       end do
     end do
