@@ -95,6 +95,9 @@ module od_photo
   integer, allocatable, dimension(:, :):: min_index_unocc
   integer, allocatable, dimension(:, :, :) :: lgcl_box_states
   real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
+  ! The Free Electron Matrix (FEM) elements are calculated for a specific E_fermi offset, workfct and photon
+  ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters 
+  ! used for the OptaDOS run.
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
@@ -180,7 +183,8 @@ contains
           ' eV ---------------+'
         current_photo_energy_index = i
         current_energy_index = index_energy(i)
-        !Calculate the photoemission angles theta/phi and transverse energy
+        ! Calculate the photoemission angles theta/phi and transverse energy
+        ! We will not need that when calculating the simplified model
         if (.not. index(photo_model, 'ds_like_pe') > 0) then
           call calc_angle
 
@@ -224,7 +228,8 @@ contains
       temp_photon_energy = photo_photon_energy
       current_photo_energy_index = 1
       current_energy_index = index_energy(1)
-      !Calculate the photoemission angles theta/phi and transverse energy
+      ! Calculate the photoemission angles theta/phi and transverse energy
+      ! We will not need that when calculating the simplified model
       if (.not. index(photo_model, 'ds_like_pe') > 0) then
         call calc_angle
 
@@ -2295,7 +2300,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: x(1:2), y(1:2), step(1:3)
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
+    real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
     integer :: N, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, i, qe_unit, token, inode
     real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
