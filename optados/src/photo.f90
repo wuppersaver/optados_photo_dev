@@ -102,7 +102,8 @@ module od_photo
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
   logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
-  logical                             :: write_debug = .True. ! hard coded extra printing
+  ! Allowing debug output makes the calculation a lot slower since a very hot if statement is not optimised out druing compilation.
+  logical                             :: allow_debug_output = .True. ! hard coded extra printing
 contains
 
   subroutine photo_calculate
@@ -1182,7 +1183,7 @@ contains
             end do                                    ! Loop over kpoints
           end do
 
-          if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+          if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
             write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, &
             '-------------------------------------+'
             write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
@@ -1243,7 +1244,7 @@ contains
           end if
 
           if (on_root) then
-            if (index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
+            if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
               write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, &
               '---------------------------------+'
               write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
@@ -1284,7 +1285,7 @@ contains
               reflect_photo(box, energy) = reflect(index_energy(energy))
             end do
 
-            if (index(devel_flag, 'print_qe_constituents') > 0) then
+            if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0) then
               write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
               write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
               write (stdout, 125) shape(epsilon)
@@ -1304,7 +1305,7 @@ contains
               write (stdout, '(99(E17.8E3))') (reflect_photo(atom, energy), energy=1, number_energies)
               write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
             end if
-            if (iprint .gt. 2) then
+            if (allow_debug_output .and. iprint .gt. 2) then
               write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption - box --------------------+'
               write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
               write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -2536,7 +2537,7 @@ contains
     end if
     fermi_dirac = 0.0_dp
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
       write (stdout, '(5(1x,I4))') shape(matrix_weights)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -2557,7 +2558,7 @@ contains
       write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+---------------------- Printing Delta Function Values ----------------------+'
       write (stdout, '(5(1x,I4))') shape(delta_temp)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins
@@ -2570,7 +2571,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (allow_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
       write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', &
@@ -2630,7 +2631,7 @@ contains
 
               !! this could be checked if it has an impact on the final value
               ! if (band_energy(n_eigen_final, N_spin, N) .lt. efermi) cycle
-              if (index(devel_flag, 'reduced_pe') > 0) then
+              if (allow_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
                 if (index(devel_flag, 'projected_pe') > 0) then
                   qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) = matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)*&
                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
@@ -2668,15 +2669,7 @@ contains
                 end if
               end if
               ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
-              !     qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) .gt. 0.0_dp) then
-              if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-                write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N, atom
-                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom), &
-                  band_energy(n_eigen_init, N_spin, N), &
-                  band_energy(n_eigen_final, N_spin, N), matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1), &
-                  delta_temp(n_eigen_init, n_eigen_final, N_spin, N), electron_esc(n_eigen_init, N_spin, N, atom), &
-                  kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, initial_fd, final_fd, &
-                  pdos_weights_atoms(n_eigen_init, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N)
+              if (allow_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               end if
             end do
           end do
@@ -2733,7 +2726,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate fermi_dirac')
     end if
 
-    if ((index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root)) then
+    if (allow_debug_output .and. index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
       write (stdout, '(5(1x,I4))') shape(qe_tsm)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
@@ -2754,7 +2747,7 @@ contains
       write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
 
-    if (index(devel_flag, 'print_kpt_qe_data') > 0) then
+    if (allow_debug_output .and. index(devel_flag, 'print_kpt_qe_data') > 0) then
       if (on_root) then
         qe_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
@@ -3129,7 +3122,7 @@ contains
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if(on_root .and. write_debug) write(stdout,*) 'energy_index:', energy_index
+    if(on_root .and. allow_debug_output) write(stdout,*) 'energy_index:', energy_index
 
     ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
@@ -3249,7 +3242,7 @@ contains
       if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (allow_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
       write (stdout, 126) shape(foptical_matrix_weights)
       write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -3383,7 +3376,7 @@ contains
                                                           (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
                                                            pdos_weights_k_band(n_eigen, N_spin, N)))* &
                                                (1.0_dp + field_emission(n_eigen, N_spin, N))
-            if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+            if (allow_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
               write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
                 foptical_matrix_weights(n_eigen, N, N_spin, 1), &
@@ -3442,7 +3435,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    if (index(devel_flag, 'print_kpt_qe_data') > 0) then
+    if (allow_debug_output .and. index(devel_flag, 'print_kpt_qe_data') > 0) then
       if (on_root) then
         qe_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
