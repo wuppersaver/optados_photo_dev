@@ -652,7 +652,7 @@ contains
     use od_parameters, only: iprint
     use od_io, only: stdout, io_time, io_error
     implicit none
-    integer         :: N, N_spin, n_eigen, ierr
+    integer         :: N_k, N_spin, n_eigen, ierr
     real(kind=dp)   :: time0, time1
 
     time0 = io_time()
@@ -660,11 +660,11 @@ contains
     allocate (min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_band_info - allocation of min_index_unocc failed')
 
-    do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
       do N_spin = 1, nspins                           ! Loop over spins
         do n_eigen = 2, nbands                        ! Loop over bands
           ! TODO: Test if this is the behaviour we want and or if we have to change the condition
-          if (band_energy(n_eigen - 1, N_spin, N) .gt. band_energy(n_eigen, N_spin, N)) then
+          if (band_energy(n_eigen - 1, N_spin, N_k) .gt. band_energy(n_eigen, N_spin, N_k)) then
             call io_error('Error: the band energies in the .bands file used are NOT ORDERED CORRECTLY (i.e. by increasing energy) &
             & which will give WRONG RESULTS with the current code!')
           end if
@@ -672,12 +672,12 @@ contains
       end do
     end do
 
-    do N = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
       do N_spin = 1, nspins                           ! Loop over spins
         do n_eigen = 1, nbands                        ! Loop over bands
           ! TODO: Test if this is the behaviour we want and or if we have to change the condition
-          if (band_energy(n_eigen, N_spin, N) .gt. efermi) then
-            min_index_unocc(N_spin, N) = n_eigen
+          if (band_energy(n_eigen, N_spin, N_k) .gt. efermi) then
+            min_index_unocc(N_spin, N_k) = n_eigen
             exit
           end if
         end do
@@ -909,7 +909,7 @@ contains
     implicit none
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
-    integer :: N, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit = 32
+    integer :: N_k, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit = 32
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -926,7 +926,7 @@ contains
       pdos_weights_boxes = 0.0_dp
     end if
 
-    do N = 1, num_kpoints_on_node(my_node_id)
+    do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, pdos_mwab%nbands
           i = 1
@@ -936,23 +936,23 @@ contains
                 i = i + 1
               end if
             end if
-            pdos_weights_atoms(n_eigen, N_spin, N, i) = &
-              pdos_weights_atoms(n_eigen, N_spin, N, i) + &
-              pdos_weights(np, n_eigen, N, N_spin)
+            pdos_weights_atoms(n_eigen, N_spin, N_k, i) = &
+              pdos_weights_atoms(n_eigen, N_spin, N_k, i) + &
+              pdos_weights(np, n_eigen, N_k, N_spin)
           end do
         end do
       end do
     end do
     i_max = i
     do atom = 1, num_atoms
-      do N = 1, num_kpoints_on_node(my_node_id)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, pdos_mwab%nbands
-            if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
-              pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
+            if (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) .lt. 0.0_dp) then
+              pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) = 0.0_dp
             end if
-            pdos_weights_k_band(n_eigen, N_spin, N) = pdos_weights_k_band(n_eigen, N_spin, N) + &
-                                                      pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
+            pdos_weights_k_band(n_eigen, N_spin, N_k) = pdos_weights_k_band(n_eigen, N_spin, N_k) + &
+                                                      pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))
           end do
         end do
       end do
@@ -960,15 +960,15 @@ contains
     if (new_geom_choice) then
       do atom = 1, max_atoms
         ! write (stdout, *) 'atom #', atom, 'box #', box_atom(atom)
-        do N = 1, num_kpoints_on_node(my_node_id)
+        do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
             do n_eigen = 1, pdos_mwab%nbands
-              if (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) .lt. 0.0_dp) then
-                pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)) = 0.0_dp
+              if (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) .lt. 0.0_dp) then
+                pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) = 0.0_dp
               end if
-              pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) = &
-                pdos_weights_boxes(n_eigen, N_spin, N, box_atom(atom)) + &
-                pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))
+              pdos_weights_boxes(n_eigen, N_spin, N_k, box_atom(atom)) = &
+                pdos_weights_boxes(n_eigen, N_spin, N_k, box_atom(atom)) + &
+                pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))
             end do
           end do
         end do
@@ -981,8 +981,8 @@ contains
       call cell_calc_kpoint_r_cart
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       i = 0
-      do N = 1, num_kpoints_on_node(my_node_id)
-        write (stdout, '(1x,I4,4x,3(1x,E22.15))') i, kpoint_r_cart(:, N)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        write (stdout, '(1x,I4,4x,3(1x,E22.15))') i, kpoint_r_cart(:, N_k)
         i = i + 1
       end do
       call io_date(cdate, ctime)
@@ -999,9 +999,9 @@ contains
         write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ B O X _ W E I G H T S'
         write (pdos_unit, '(1x,a28)') '############################'
         do box = 1, num_boxes
-          do N = 1, num_kpoints_on_node(my_node_id)
+          do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
-              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_boxes(n_eigen, N_spin, N, box), n_eigen=1, pdos_mwab%nbands)
+              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_boxes(n_eigen, N_spin, N_k, box), n_eigen=1, pdos_mwab%nbands)
             end do
           end do
         end do
@@ -1017,9 +1017,9 @@ contains
         write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ A T O M _ W E I G H T S'
         write (pdos_unit, '(1x,a28)') '############################'
         do atom = 1, num_atoms
-          do N = 1, num_kpoints_on_node(my_node_id)
+          do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
-              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_atoms(n_eigen, N_spin, N, atom), n_eigen=1, pdos_mwab%nbands)
+              write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_atoms(n_eigen, N_spin, N_k, atom), n_eigen=1, pdos_mwab%nbands)
             end do
           end do
         end do
@@ -1035,9 +1035,9 @@ contains
       write (pdos_unit, '(1x,a24,1x,I4)') '# Number of K-points   :', size(pdos_weights_k_band, 3)
       write (pdos_unit, '(1x,a45)') '# F U L L _ P D O S _ K _ B A N D _ W E I G H T S'
       write (pdos_unit, '(1x,a28)') '############################'
-      do N = 1, num_kpoints_on_node(my_node_id)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
-          write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_k_band(n_eigen, N_spin, N), n_eigen=1, pdos_mwab%nbands)
+          write (pdos_unit, '(9999(1x,es24.16))') (pdos_weights_k_band(n_eigen, N_spin, N_k), n_eigen=1, pdos_mwab%nbands)
         end do
       end do
       close (unit=pdos_unit)
@@ -1048,15 +1048,15 @@ contains
       write (stdout, 125) shape(pdos_weights_atoms)
       write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
 125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N, i), N_spin=1, nspins) &
-                                          , n_eigen=1, pdos_mwab%nbands), N=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
+      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N_k, i), N_spin=1, nspins) &
+                                          , n_eigen=1, pdos_mwab%nbands), N_k=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
       write (stdout, '(1x,a78)') '+----------------------- Printing pDOS_weights_k_band -----------------------+'
       write (stdout, 124) shape(pdos_weights_k_band)
       write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
 124   format(3(1x, I4))
-      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N), &
-                                          N=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
+      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N_k), &
+                                          N_k=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
   end subroutine make_pdos_weights_atoms
@@ -1080,7 +1080,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: dos_matrix_weights
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
-    integer :: N, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, energy, box, initial
+    integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, energy, box, initial
     integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
     real(kind=dp)    :: num_energies, temp, time0, time1
     logical, dimension(3) :: gam
@@ -1113,9 +1113,9 @@ contains
 
     if (index(devel_flag, 'output_ome_itof') > 0 .and. on_root) then
       call io_date(cdate, ctime)
-      do N = 1, size(kpoint_r, 2)
-        if (all(abs(kpoint_r(:, N)) < 1.0E-10_dp)) then
-          is = N
+      do N_k = 1, size(kpoint_r, 2)
+        if (all(abs(kpoint_r(:, N_k)) < 1.0E-10_dp)) then
+          is = N_k
           exit
         end if
       end do
@@ -1143,8 +1143,8 @@ contains
       write (stdout, '(1x,a78)') '+-------------------------- Printing Matrix Weights -------------------------+'
       write (stdout, 126) shape(matrix_weights)
       write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-      write (stdout, '(9999(es15.8))') (((((matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2), N2=1, N_geom), &
-                          N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, nbands)
+      write (stdout, '(9999(es15.8))') (((((matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom), &
+                          N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1161,22 +1161,22 @@ contains
           projected_matrix_weights = 0.0_dp
 
           do N2 = 1, N_geom
-            do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+            do N_k = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
               do N_spin = 1, nspins                    ! Loop over spins
                 do n_eigen = 1, nbands               ! Loop over state 1
                   do n_eigen_final = n_eigen, nbands    ! Loop over state 2
-                    if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen_final) cycle
-                    if (band_energy(n_eigen_final, N_spin, N) < efermi .and. n_eigen /= n_eigen_final) cycle
-                    if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
-                      ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
-                      ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
-                      ! pdos_weights_k_band(n_eigen, N_spin, N)
+                    if (band_energy(n_eigen, N_spin, N_k) > efermi .and. n_eigen /= n_eigen_final) cycle
+                    if (band_energy(n_eigen_final, N_spin, N_k) < efermi .and. n_eigen /= n_eigen_final) cycle
+                    if (pdos_weights_k_band(n_eigen, N_spin, N_k) .eq. 0.0_dp) then
+                      ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N_k, N_spin, n_eigen
+                      ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)),&
+                      ! pdos_weights_k_band(n_eigen, N_spin, N_k)
                       ! call FLUSH()
                       cycle
                     end if
-                    projected_matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2) = &
-                      matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2)* &
-                      (pdos_weights_boxes(n_eigen, N_spin, N, box)/pdos_weights_k_band(n_eigen, N_spin, N))
+                    projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2) = &
+                      matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2)* &
+                      (pdos_weights_boxes(n_eigen, N_spin, N_k, box)/pdos_weights_k_band(n_eigen, N_spin, N_k))
                   end do                        ! Loop over state 2
                 end do                            ! Loop over state 1
               end do                                ! Loop over spins
@@ -1189,8 +1189,8 @@ contains
             write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
             write (stdout, 126) shape(projected_matrix_weights)
             write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-            write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2), N2=1, N_geom), &
-                                                N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
+            write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom),&
+                                                N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
                                               n_eigen_final=1, nbands), n_eigen=1, nbands)
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
@@ -1234,9 +1234,9 @@ contains
             if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
             dos_at_e = 0.0_dp
             weighted_dos_at_e = 0.0_dp
-            do N = 1, size(matrix_weights, 5)
+            do N_k = 1, size(matrix_weights, 5)
               do N2 = 1, nbands
-                dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
+                dos_matrix_weights(N_k, N2, :, :) = matrix_weights(N2, N2, :, :, N_k)
               end do
             end do
             call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
@@ -1250,7 +1250,7 @@ contains
               write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
               write (stdout, 125) shape(dos_matrix_weights)
               write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
-              write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen_final, N, s), s=1, nspins), N=1, &
+              write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen_final, N_k, s), s=1, nspins), N_k=1, &
                                                   num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, &
                                                 size(matrix_weights, 5))
               write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1290,9 +1290,10 @@ contains
               write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
               write (stdout, 125) shape(epsilon)
               if (.not. optics_intraband) then
-                write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
+                write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2),  &
+                N2=1, N_geom)
               else
-                write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), &
+                write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2), &
                 N2=1, N_geom), i=1, 3)
               end if
               write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1357,22 +1358,22 @@ contains
         projected_matrix_weights = 0.0_dp
 
         do N2 = 1, N_geom
-          do N = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
+          do N_k = 1, num_kpoints_on_node(my_node_id)    ! Loop over kpoints
             do N_spin = 1, nspins                    ! Loop over spins
               do n_eigen = 1, nbands               ! Loop over state 1
                 do n_eigen_final = n_eigen, nbands    ! Loop over state 2
-                  if (band_energy(n_eigen, N_spin, N) > efermi .and. n_eigen /= n_eigen_final) cycle
-                  if (band_energy(n_eigen_final, N_spin, N) < efermi .and. n_eigen /= n_eigen_final) cycle
-                  if (pdos_weights_k_band(n_eigen, N_spin, N) .eq. 0.0_dp) then
-                    ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N, N_spin, n_eigen
-                    ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)),&
-                    ! pdos_weights_k_band(n_eigen, N_spin, N)
+                  if (band_energy(n_eigen, N_spin, N_k) > efermi .and. n_eigen /= n_eigen_final) cycle
+                  if (band_energy(n_eigen_final, N_spin, N_k) < efermi .and. n_eigen /= n_eigen_final) cycle
+                  if (pdos_weights_k_band(n_eigen, N_spin, N_k) .eq. 0.0_dp) then
+                    ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N_k, N_spin, n_eigen
+                    ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)),&
+                    ! pdos_weights_k_band(n_eigen, N_spin, N_k)
                     ! call FLUSH()
                     cycle
                   end if
-                  projected_matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2) = &
-                    matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2)* &
-                    (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N))
+                  projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2) = &
+                    matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2)* &
+                    (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))/pdos_weights_k_band(n_eigen, N_spin, N_k))
                 end do                        ! Loop over state 2
               end do                            ! Loop over state 1
             end do                                ! Loop over spins
@@ -1385,8 +1386,8 @@ contains
           write (stdout, 126) shape(projected_matrix_weights)
           write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
 126       format(5(1x, I4))
-          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N, N_spin, N2), N2=1, N_geom), &
-                                               N_spin=1, nspins), N=1, num_kpoints_on_node(my_node_id)), &
+          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom), &
+                                               N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
                                              n_eigen_final=1, nbands), n_eigen=1, nbands)
           write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
@@ -1431,9 +1432,9 @@ contains
           if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
           dos_at_e = 0.0_dp
           weighted_dos_at_e = 0.0_dp
-          do N = 1, size(matrix_weights, 5)
+          do N_k = 1, size(matrix_weights, 5)
             do N2 = 1, nbands
-              dos_matrix_weights(N, N2, :, :) = matrix_weights(N2, N2, :, :, N)
+              dos_matrix_weights(N_k, N2, :, :) = matrix_weights(N2, N2, :, :, N_k)
             end do
           end do
           call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
@@ -1447,7 +1448,7 @@ contains
             write (stdout, 125) shape(dos_matrix_weights)
             write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
 125         format(4(1x, I4))
-            write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen_final, N, s), s=1, nspins), N=1, &
+            write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen_final, N_k, s), s=1, nspins), N_k=1, &
                                                 num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, &
                                               size(matrix_weights, 5))
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1487,10 +1488,10 @@ contains
             write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
             write (stdout, 125) shape(epsilon)
             if (.not. optics_intraband) then
-              write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N, N2, 1), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom)
+              write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2), N2=1, N_geom)
             else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N, N2, i), jdos_bin=1, jdos_nbins), N=1, 2), N2=1, N_geom), &
-                                                 i=1, 3)
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2),&
+               N2=1, N_geom), i=1, 3)
             end if
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1685,7 +1686,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: temp_emission
     real(kind=dp) :: fermi_dirac, barrier_height, argument, exponent
     real(kind=dp) :: l_prime, p_term, q_term, v_function, transmission_prob
-    integer :: N, N_spin, n_eigen
+    integer :: N_k, N_spin, n_eigen
 
     allocate (field_emission(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_field_emission - allocation of field_emission failed')
@@ -1705,12 +1706,12 @@ contains
 
     evacuum = efermi + photo_work_function
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          barrier_height = photo_work_function - (band_energy(n_eigen, N_spin, N) - efermi)
-          field_energy(n_eigen, N_spin, N) = abs(evacuum - band_energy(n_eigen, N_spin, N))
-          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
+          barrier_height = photo_work_function - (band_energy(n_eigen, N_spin, N_k) - efermi)
+          field_energy(n_eigen, N_spin, N_k) = abs(evacuum - band_energy(n_eigen, N_spin, N_k))
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
           ! that this corresponds to a exponential value of ~1E+/-250
           ! and this cutoff condition saves us from running into arithmetic
@@ -1723,9 +1724,10 @@ contains
             fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
 
-          if ((photo_elec_field/(4.0_dp*pi*epsilon_zero*1E-4_dp)*photo_elec_field) .lt. (field_energy(n_eigen, N_spin, N)**2)) then
+          if ((photo_elec_field/(4.0_dp*pi*epsilon_zero*1E-4_dp)*photo_elec_field) .lt. (field_energy(n_eigen, N_spin, N_k)**2))&
+           then
             if (barrier_height .le. 0.0_dp) then
-              field_emission(n_eigen, N_spin, N) = 1.0_dp
+              field_emission(n_eigen, N_spin, N_k) = 1.0_dp
             else
               l_prime = (e_charge/4*pi*epsilon_zero*1E-4_dp)*photo_elec_field*(1/barrier_height**2)
               p_term = 1.0_dp + (p1*l_prime) + (p2*l_prime**2.0_dp) + (p3*l_prime**3.0_dp) + (p4*l_prime**4.0_dp)
@@ -1738,10 +1740,10 @@ contains
               else
                 transmission_prob = exp(exponent)
               end if
-              field_emission(n_eigen, N_spin, N) = transmission_prob
+              field_emission(n_eigen, N_spin, N_k) = transmission_prob
             end if
           end if
-          temp_emission(n_eigen, N_spin, N) = field_emission(n_eigen, N_spin, N)*fermi_dirac
+          temp_emission(n_eigen, N_spin, N_k) = field_emission(n_eigen, N_spin, N_k)*fermi_dirac
         end do
       end do
     end do
@@ -1782,7 +1784,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: hbar, ev_to_j, j_to_ev, e_mass, rad_to_deg
     implicit none
-    integer :: N, N_spin, n_eigen, ierr
+    integer :: N_k, N_spin, n_eigen, ierr
 
     real(kind=dp), allocatable, dimension(:, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :):: E_y
@@ -1836,66 +1838,66 @@ contains
                                                 on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       call cell_calc_kpoint_r_cart
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
-      do N = 1, num_kpoints_on_node(my_node_id)
-        write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N_k)
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           if (index(photo_momentum, 'kp') > 0) then
-            E_x(n_eigen, N_spin, N) = abs &
-                                      (0.5_dp*(1/(band_curvature(n_eigen, 1, 1, N, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
-                                       (band_gradient(n_eigen, 1, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N_spin, N) = abs &
-                                      (0.5_dp*(1/(band_curvature(n_eigen, 2, 2, N, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
-                                       (band_gradient(n_eigen, 2, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+            E_x(n_eigen, N_spin, N_k) = abs &
+                                      (0.5_dp*(1/(band_curvature(n_eigen, 1, 1, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
+                                       (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+            E_y(n_eigen, N_spin, N_k) = abs &
+                                      (0.5_dp*(1/(band_curvature(n_eigen, 2, 2, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
+                                       (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
           end if
           if (index(photo_momentum, 'crystal') > 0) then
-            E_x(n_eigen, N_spin, N) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N)*1E+10)**2))*j_to_ev
-            E_y(n_eigen, N_spin, N) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N)*1E+10)**2))*j_to_ev
+            E_x(n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N_k)*1E+10)**2))*j_to_ev
+            E_y(n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N_k)*1E+10)**2))*j_to_ev
           end if
           if (index(photo_momentum, 'operator') > 0) then
-            E_x(n_eigen, N_spin, N) = abs &
+            E_x(n_eigen, N_spin, N_k) = abs &
                                       (0.5_dp*e_mass* &
-                                       (band_gradient(n_eigen, 1, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N_spin, N) = abs &
+                                       (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+            E_y(n_eigen, N_spin, N_k) = abs &
                                       (0.5_dp*e_mass* &
-                                       (band_gradient(n_eigen, 2, N, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+                                       (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
           end if
-          E_transverse(n_eigen, N_spin, N) = E_x(n_eigen, N_spin, N) + E_y(n_eigen, N_spin, N)
+          E_transverse(n_eigen, N_spin, N_k) = E_x(n_eigen, N_spin, N_k) + E_y(n_eigen, N_spin, N_k)
         end do
       end do
     end do
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((abs(E_x(n_eigen, N_spin, N)) .lt. tol) .and. (abs(E_y(n_eigen, N_spin, N)) .lt. tol)) then
-            phi_arpes(n_eigen, N_spin, N) = 0.0_dp
-          elseif ((abs(E_y(n_eigen, N_spin, N)) .lt. tol)) then
-            phi_arpes(n_eigen, N_spin, N) = 90.0_dp
+          if ((abs(E_x(n_eigen, N_spin, N_k)) .lt. tol) .and. (abs(E_y(n_eigen, N_spin, N_k)) .lt. tol)) then
+            phi_arpes(n_eigen, N_spin, N_k) = 0.0_dp
+          elseif ((abs(E_y(n_eigen, N_spin, N_k)) .lt. tol)) then
+            phi_arpes(n_eigen, N_spin, N_k) = 90.0_dp
           else
-            phi_arpes(n_eigen, N_spin, N) = atan(E_x(n_eigen, N_spin, N)/E_y(n_eigen, N_spin, N))*rad_to_deg
+            phi_arpes(n_eigen, N_spin, N_k) = atan(E_x(n_eigen, N_spin, N_k)/E_y(n_eigen, N_spin, N_k))*rad_to_deg
           end if
         end do
       end do
     end do
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
 
-          E_kinetic(n_eigen, N_spin, N) = (band_energy(n_eigen, N_spin, N) + temp_photon_energy - evacuum_eff)
+          E_kinetic(n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff)
 
           ! E_kinetic is the final kinetic energy of the electron after emissions
           ! if the E_kin is less than 0, there is no emission and the theta angle stays < 0 deg
-          if (E_kinetic(n_eigen, N_spin, N) .lt. tol) cycle
+          if (E_kinetic(n_eigen, N_spin, N_k) .lt. tol) cycle
           
-          theta_arpes(n_eigen, N_spin, N) = (acos((E_kinetic(n_eigen, N_spin, N) - E_transverse(n_eigen, N_spin, N))/ &
-                                                    E_kinetic(n_eigen, N_spin, N)))*rad_to_deg
+          theta_arpes(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) - E_transverse(n_eigen, N_spin, N_k))/ &
+                                                    E_kinetic(n_eigen, N_spin, N_k)))*rad_to_deg
         end do
       end do
     end do
@@ -1904,7 +1906,7 @@ contains
       write (stdout, '(1x,a78)') '+------------------------ Printing Transverse Energy ------------------------+'
       write (stdout, '(3(1x,I4))') shape(E_transverse)
       write (stdout, '(3(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins
-      write (stdout, '(9999(es15.8))') (((E_transverse(n_eigen, N_spin, N), N_spin=1, nspins), N=1, &
+      write (stdout, '(9999(es15.8))') (((E_transverse(n_eigen, N_spin, N_k), N_spin=1, nspins), N_k=1, &
                                          num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
@@ -1950,7 +1952,7 @@ contains
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_imfp_const, devel_flag, iprint
     implicit none
-    integer :: atom, N, N_spin, n_eigen, ierr, i
+    integer :: atom, N_k, N_spin, n_eigen, ierr, i
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
@@ -2006,17 +2008,17 @@ contains
       atom_imfp = photo_imfp_const(1)
     end if
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           do atom = 1, max_atoms
-            if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
+            if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
               exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-                          cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(atom)
+                          cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
               if (exponent .gt. -575.0_dp) then
-                electron_esc(n_eigen, N_spin, N, atom) = exp(exponent)
+                electron_esc(n_eigen, N_spin, N_k, atom) = exp(exponent)
               else
-                electron_esc(n_eigen, N_spin, N, atom) = 0.0_dp
+                electron_esc(n_eigen, N_spin, N_k, atom) = 0.0_dp
               end if
             end if
           end do
@@ -2031,7 +2033,7 @@ contains
       write (stdout, 125) shape(electron_esc)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
 125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N, atom), atom=1, max_atoms), N=1, &
+      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N_k, atom), atom=1, max_atoms), N_k=1, &
                                           num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
@@ -2056,7 +2058,7 @@ contains
     implicit none
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
     real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
-    integer :: N, N_spin, n_eigen, i, num_layers, ierr
+    integer :: N_k, N_spin, n_eigen, i, num_layers, ierr
     real(kind=dp) :: exponent, time0, time1
 
     time0 = io_time()
@@ -2090,16 +2092,16 @@ contains
 
       if (size(photo_imfp_const, 1) .gt. 1) then
         do i = 1, num_layers
-          do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
             do N_spin = 1, nspins                    ! Loop over spins
               do n_eigen = 1, nbands
-                if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
+                if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
                   exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                              cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(max_atoms)
+                              cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-575) is ~1E-250, this should be more than enough precision.
                   if (exponent .gt. -575.0_dp) then
-                    bulk_prob_tmp(n_eigen, N_spin, N, i) = exp(exponent)
+                    bulk_prob_tmp(n_eigen, N_spin, N_k, i) = exp(exponent)
                   end if
                 end if
               end do
@@ -2107,13 +2109,13 @@ contains
           end do
         end do
       else
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               do i = 1, num_layers
-                bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+                bulk_prob_tmp(n_eigen, N_spin, N_k, i) = bulk_prob_tmp(n_eigen, N_spin, N_k, i)*bulk_light_tmp(i)
               end do
-              bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
+              bulk_prob(n_eigen, N_spin, N_k) = sum(bulk_prob_tmp(n_eigen, N_spin, N_k, 1:num_layers))
             end do
           end do
         end do
@@ -2182,16 +2184,16 @@ contains
       bulk_prob_tmp = 0.0_dp
 
       do i = 1, num_layers
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad) .gt. 0.0_dp) then
+              if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
                 exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                            cos(theta_arpes(n_eigen, N_spin, N)*deg_to_rad))/atom_imfp(max_atoms)
+                            cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
                 ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                 ! As exp(-575) is ~1E-250, this should be more than enough precision.
                 if (exponent .gt. -575.0_dp) then
-                  bulk_prob_tmp(n_eigen, N_spin, N, i) = exp(exponent)
+                  bulk_prob_tmp(n_eigen, N_spin, N_k, i) = exp(exponent)
                 end if
               end if
             end do
@@ -2205,13 +2207,13 @@ contains
         bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
                             exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*i*box_height*1E-10))
       end do
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
             do i = 1, num_layers
-              bulk_prob_tmp(n_eigen, N_spin, N, i) = bulk_prob_tmp(n_eigen, N_spin, N, i)*bulk_light_tmp(i)
+              bulk_prob_tmp(n_eigen, N_spin, N_k, i) = bulk_prob_tmp(n_eigen, N_spin, N_k, i)*bulk_light_tmp(i)
             end do
-            bulk_prob(n_eigen, N_spin, N) = sum(bulk_prob_tmp(n_eigen, N_spin, N, 1:num_layers))
+            bulk_prob(n_eigen, N_spin, N_k) = sum(bulk_prob_tmp(n_eigen, N_spin, N_k, 1:num_layers))
           end do
         end do
       end do
@@ -2302,7 +2304,7 @@ contains
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, i, qe_unit, token, inode
+    integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, i, qe_unit, token, inode
     real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
@@ -2333,20 +2335,20 @@ contains
       write (stdout, '(1x,a78)') '+-------------------------- Calculating DS Like QE --------------------------+'
     end if
 
-    do N = 1, num_kpoints_on_node(my_node_id)
+    do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
           ! that this corresponds to a an exponent value of ~1E+/-250
           ! and this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible underflow.
           if (argument .gt. 575.0_dp) then
-            fermi_dirac(n_eigen, N_spin, N) = 0.0_dp
+            fermi_dirac(n_eigen, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -575.0_dp) then
-            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp
+            fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp
           else
-            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp/(exp(argument) + 1.0_dp)
+            fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
         end do
       end do
@@ -2367,36 +2369,36 @@ contains
     !   write (stdout, *) 'sub_cell_area : ', sub_cell_area
     ! end if
     ! sub_cell_area = recip_lattice(1,1)*step(1)*recip_lattice(2,2)*step(2) - recip_lattice(1,2)*step(2)*recip_lattice(2,1)*step(1)
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen_final = min_index_unocc(N_spin, N), nbands
+        do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
           if (num_exclude_bands .gt. 1) then
             if (any(exclude_bands == n_eigen_final)) then
               cycle
             end if
           end if
-          excess_energy = band_energy(n_eigen_final, N_spin, N) - evacuum_eff
+          excess_energy = band_energy(n_eigen_final, N_spin, N_k) - evacuum_eff
           excess_energy = max(excess_energy, 0.0_dp)
-          final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N)
+          final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
           do n_eigen = 1, n_eigen_final - 1
-            ! excess_energy = band_energy(n_eigen, N_spin, N) + E(current_energy_index) - evacuum_eff
+            ! excess_energy = band_energy(n_eigen, N_spin, N_k) + E(current_energy_index) - evacuum_eff
             ! excess_energy = max(excess_energy, 0.0_dp)
-            initial_fd = fermi_dirac(n_eigen, N_spin, N)
+            initial_fd = fermi_dirac(n_eigen, N_spin, N_k)
             ! Calculating the QE denominator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N, 1) = delta_temp(n_eigen, n_eigen_final, N_spin, N)* &
-                                                      electrons_per_state*kpoint_weight(N)* &
+            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 1) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
+                                                      electrons_per_state*kpoint_weight(N_k)* &
                                                       final_fd*initial_fd
             ! Calculating the QE numerator and MTE denominator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N, 2) = delta_temp(n_eigen, n_eigen_final, N_spin, N)* &
-                                                      electrons_per_state*kpoint_weight(N)* &
+            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 2) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
+                                                      electrons_per_state*kpoint_weight(N_k)* &
                                                       final_fd*initial_fd*excess_energy
             ! Calculating the MTE numerator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N, 3) = delta_temp(n_eigen, n_eigen_final, N_spin, N)* &
-                                                      electrons_per_state*kpoint_weight(N)* &
+            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 3) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
+                                                      electrons_per_state*kpoint_weight(N_k)* &
                                                       final_fd*initial_fd*excess_energy**2
             ! if (i .le. 10) then
-            !   if (N .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen_final, N_spin, N, 1) .gt. 0.0_dp) then
-            !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen_final, N_spin, N, 1:3)
+            !   if (N_k .eq. 1 .and. on_root .and. qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 1) .gt. 0.0_dp) then
+            !     write (stdout, *) 'E, none, E**2 : ', qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 1:3)
             !     i = i + 1
             !   end if
             ! end if
@@ -2439,8 +2441,8 @@ contains
 
       ! allocate and sum the 3step qe matrix on non-root
       if (.not. on_root) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          qe_k_temp(N) = sum(qe_tsm(:, :, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N_k) = sum(qe_tsm(:, :, :, N_k, :))
         end do
         ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
         ! - wait for the token
@@ -2461,16 +2463,16 @@ contains
           call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
           ! write(stdout, *) 'received data from node ', inode, 'writing to file'
           ! write out the qe_matrix to the file
-          do N = 1, num_kpoints_on_node(inode)
-            write (qe_unit, *) qe_k_temp(N)
+          do N_k = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N_k)
           end do
           ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
           ! - receive the token from a node
           call comms_recv(token, 1, inode)
         end do
         ! - write root qe_matrix elements
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (qe_unit, *) sum(qe_tsm(:, :, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_tsm(:, :, :, N_k, :))
         end do
         close (unit=qe_unit)
       end if
@@ -2505,8 +2507,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: x(1:2), y(1:2), step(1:3)
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, qe_unit, token, inode
+    real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, &
+    time0, time1, final_fd, initial_fd, excess_energy
+    integer :: N_k, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, qe_unit, token, inode
     real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
@@ -2543,8 +2546,8 @@ contains
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
       do N2 = 1, N_geom
         do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') ((matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, N2), &
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            write (stdout, '(99999(es15.8))') ((matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, N2), &
                                                 n_eigen_final=1, nbands), n_eigen_init=1, nbands)
           end do
         end do
@@ -2563,8 +2566,8 @@ contains
       write (stdout, '(5(1x,I4))') shape(delta_temp)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins
       do N_spin = 1, nspins
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (stdout, '(99999(es15.8))') ((delta_temp(n_eigen_init, n_eigen_final, N_spin, N), &
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          write (stdout, '(99999(es15.8))') ((delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), &
           n_eigen_final=1, nbands), n_eigen_init=1, nbands)
         end do
       end do
@@ -2575,25 +2578,25 @@ contains
       i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
       write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', &
-        'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', &
+        'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
         'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
     end if
 
-    do N = 1, num_kpoints_on_node(my_node_id)
+    do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen_init = 1, nbands
-          argument = (band_energy(n_eigen_init, N_spin, N) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen_init, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
           ! that this corresponds to a an exponent value of ~1E+/-250
           ! and this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible underflow.
           if (argument .gt. 575.0_dp) then
-            fermi_dirac(n_eigen_init, N_spin, N) = 0.0_dp
+            fermi_dirac(n_eigen_init, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -575.0_dp) then
-            fermi_dirac(n_eigen_init, N_spin, N) = 1.0_dp
+            fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp
           else
-            fermi_dirac(n_eigen_init, N_spin, N) = 1.0_dp/(exp(argument) + 1.0_dp)
+            fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
         end do
       end do
@@ -2604,72 +2607,83 @@ contains
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', &
           "Calculating atom ", atom, " of", max_atoms, "<-- QE-3S |"
       end if
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen_final = min_index_unocc(N_spin, N), nbands
+          do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
             if (num_exclude_bands .gt. 1) then
               if (any(exclude_bands == n_eigen_final)) then
                 cycle
               end if
             end if
-            final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N)
+            final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
-              initial_fd = fermi_dirac(n_eigen_init, N_spin, N)
+              initial_fd = fermi_dirac(n_eigen_init, N_spin, N_k)
 
-              if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N)) .le. (evacuum_eff - efermi)) then
-                transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N)), &
+              if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)), &
                                         width, (evacuum_eff - efermi))/norm_vac
               else
-                transverse_g = 1.0_dp
+                transverse_gauss = 1.0_dp
               end if
-              if ((band_energy(n_eigen_init, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
-                vac_g = gaussian((band_energy(n_eigen_init, N_spin, N) + temp_photon_energy) + &
+              if ((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+                vacuum_gauss = gaussian((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) + &
                                  scissor_op, width, evacuum_eff)/norm_vac
               else
-                vac_g = 1.0_dp
+                vacuum_gauss = 1.0_dp
               end if
 
               !! this could be checked if it has an impact on the final value
-              ! if (band_energy(n_eigen_final, N_spin, N) .lt. efermi) cycle
+              ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
               if (allow_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
                 if (index(devel_flag, 'projected_pe') > 0) then
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) = matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)*&
-                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
-                                                               electrons_per_state*kpoint_weight(N)* &
-                                                               (pdos_weights_atoms(n_eigen_init, N_spin, N, atom_order(atom))/ &
-                                                                pdos_weights_k_band(n_eigen_init, N_spin, N))
+                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                                                               matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)*&
+                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                                                               electrons_per_state*kpoint_weight(N_k)* &
+                                                               (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
+                                                                pdos_weights_k_band(n_eigen_init, N_spin, N_k))
                 else
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) = matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)*&
-                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
-                                                               electrons_per_state*kpoint_weight(N)
+                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                                                               matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)*&
+                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                                                               electrons_per_state*kpoint_weight(N_k)
                 end if
               else
                 if (.not. new_geom_choice) then
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
-                                                                electron_esc(n_eigen_init, N_spin, N, atom)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
+                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_factor* &
+                                                               (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                                                                electron_esc(n_eigen_init, N_spin, N_k, atom)* &
+                                                                electrons_per_state*kpoint_weight(N_k)* &
                                                                 (I_layer(layer(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N)))* &
-                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N))
+                                                                transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
+                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
+                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
+                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 else
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)* &
-                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
-                                                                electron_esc(n_eigen_init, N_spin, N, atom)* &
-                                                                electrons_per_state*kpoint_weight(N)* &
+                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_factor* &
+                                                               (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                                                                electron_esc(n_eigen_init, N_spin, N_k, atom)* &
+                                                                electrons_per_state*kpoint_weight(N_k)* &
                                                                 (I_layer(box_atom(atom), current_photo_energy_index))* &
-                                                                transverse_g*vac_g*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N)))* &
-                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N))
+                                                                transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
+                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
+                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
+                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 end if
               end if
               ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. &
+              !     qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) .gt. 0.0_dp) then
               if (allow_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
+                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
+                  band_energy(n_eigen_init, N_spin, N_k), &
+                  band_energy(n_eigen_final, N_spin, N_k), matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
+                  delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(n_eigen_init, N_spin, N_k, atom), &
+                  kpoint_weight(N_k), I_layer(layer(atom), current_photo_energy_index), &
+                  transverse_gauss, vacuum_gauss, initial_fd, final_fd,&
+                  pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
               end if
             end do
           end do
@@ -2679,34 +2693,34 @@ contains
 
     call photo_calculate_delta(delta_temp, .true.)
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen_final = min_index_unocc(N_spin, N), nbands
-          final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N)
+        do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
+          final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
           do n_eigen_init = 1, n_eigen_final - 1
-            initial_fd = fermi_dirac(n_eigen_init, N_spin, N)
-            if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N)) .le. (evacuum_eff - efermi)) then
-              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N)), &
+            initial_fd = fermi_dirac(n_eigen_init, N_spin, N_k)
+            if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+              transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)), &
                                       width, (evacuum_eff - efermi))/norm_vac
             else
-              transverse_g = 1.0_dp
+              transverse_gauss = 1.0_dp
             end if
-            if ((band_energy(n_eigen_init, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
-              vac_g = gaussian((band_energy(n_eigen_init, N_spin, N) + temp_photon_energy) + &
+            if ((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+              vacuum_gauss = gaussian((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) + &
                                scissor_op, width, evacuum_eff)/norm_vac
             else
-              vac_g = 1.0_dp
+              vacuum_gauss = 1.0_dp
             end if
-            qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, max_atoms + 1) = qe_factor* &
-                                                                  (matrix_weights(n_eigen_init, n_eigen_final, N, N_spin, 1)* &
-                                                                   delta_temp(n_eigen_init, n_eigen_final, N_spin, N)* &
-                                                                   bulk_prob(n_eigen_init, N_spin, N)* &
-                                                                   electrons_per_state*kpoint_weight(N)* &
-                                                                   transverse_g*vac_g*initial_fd*final_fd* &
-                                                                   (pdos_weights_atoms(n_eigen_init, N_spin, N, &
+            qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1) = qe_factor* &
+                                                                  (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                                                                   delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                                                                   bulk_prob(n_eigen_init, N_spin, N_k)* &
+                                                                   electrons_per_state*kpoint_weight(N_k)* &
+                                                                   transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
+                                                                   (pdos_weights_atoms(n_eigen_init, N_spin, N_k, &
                                                                    atom_order(max_atoms))/&
-                                                                    pdos_weights_k_band(n_eigen_init, N_spin, N)))* &
-                                                                  (1.0_dp + field_emission(n_eigen_init, N_spin, N))
+                                                                    pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
+                                                                  (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
           end do
         end do
       end do
@@ -2732,8 +2746,8 @@ contains
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
       do atom = 1, max_atoms + 1
         do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen_init, n_eigen_final, N_spin, N, atom), &
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            write (stdout, '(99999(ES16.8E3))') ((qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
                                                   n_eigen_final=1, nbands), n_eigen_init=1, nbands)
           end do
         end do
@@ -2765,8 +2779,8 @@ contains
 
       ! allocate and sum the 3step qe matrix on non-root
       if (.not. on_root) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          qe_k_temp(N) = sum(qe_tsm(:, :, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N_k) = sum(qe_tsm(:, :, :, N_k, :))
         end do
         ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
         ! - wait for the token
@@ -2787,16 +2801,16 @@ contains
           call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
           ! write(stdout, *) 'received data from node ', inode, 'writing to file'
           ! write out the qe_matrix to the file
-          do N = 1, num_kpoints_on_node(inode)
-            write (qe_unit, *) qe_k_temp(N)
+          do N_k = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N_k)
           end do
           ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
           ! - receive the token from a node
           call comms_recv(token, 1, inode)
         end do
         ! - write root qe_matrix elements
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (qe_unit, *) sum(qe_tsm(:, :, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_tsm(:, :, :, N_k, :))
         end do
         close (unit=qe_unit)
       end if
@@ -3048,7 +3062,7 @@ contains
     real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
     real(kind=dp), dimension(2) :: num_occ
     real(kind=dp) :: q_weight1, q_weight2, factor, energy_max, tolerance = 0.0001_dp
-    integer :: N, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr, energy_index
+    integer :: N_k, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr, energy_index
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') > 0) then
       num_symm = 0
@@ -3159,19 +3173,19 @@ contains
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
 
-    do N = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state
           factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
-                       (qdir1(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
-                       (qdir1(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight1)
-              g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
-                       (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
-                       (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight2)
-              foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
+              g(1) = (((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
+                       (qdir1(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
+                       (qdir1(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
+              g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
+                       (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
+                       (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
+              foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
                 0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
@@ -3183,11 +3197,11 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight1)
-                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
+                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                   g(1) = 0.0_dp
                   ! Calculating foptical_matrix_weights contribution for qdir2
@@ -3197,21 +3211,21 @@ contains
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight2)
-                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
+                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                 end do
               end do
             end if !end unpolar symmetric
           elseif (index(optics_geom, 'polar') > 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N, N_spin)) + &
-                       (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N, N_spin)) + &
-                       (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
+              g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N_k, N_spin)) + &
+                       (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N_k, N_spin)) + &
+                       (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N_k, N_spin)))/q_weight)
+              foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
             else !begin polar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
@@ -3223,11 +3237,11 @@ contains
                     end do
                   end do
                   g(1) = 0.0_dp
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N, N_spin)))/q_weight)
-                  foptical_matrix_weights(n_eigen, N, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N, N_spin, N_geom) + &
+                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
+                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
+                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight)
+                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
                     (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
                 end do
               end do
@@ -3249,8 +3263,8 @@ contains
 126   format(5(1x, I4))
       do N2 = 1, N_geom
         do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N, N_spin, N2), n_eigen=1, nbands)
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_k, N_spin, N2), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -3280,9 +3294,9 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
-    integer :: N, N_spin, n_eigen, atom, ierr, i, kpt_total, inode, token, qe_unit
+    integer :: N_k, N_spin, n_eigen, atom, ierr, i, kpt_total, inode, token, qe_unit
 
-    real(kind=dp) :: width, norm_vac, vac_g, transverse_g, qe_factor, argument, time0, time1
+    real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, time0, time1
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     ! real(kind=dp) :: volume_factor, volume_factor_bulk
@@ -3323,20 +3337,20 @@ contains
     end if
     qe_osm = 0.0_dp
 
-    do N = 1, num_kpoints_on_node(my_node_id)
+    do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          argument = (band_energy(n_eigen, N_spin, N) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but it turns out
           ! that this corresponds to a an exponent value of ~1E+/-100
           ! and this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible underflow.
           if (argument .gt. 230.0_dp) then
-            fermi_dirac(n_eigen, N_spin, N) = 0.0_dp
+            fermi_dirac(n_eigen, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -230.0_dp) then
-            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp
+            fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp
           else
-            fermi_dirac(n_eigen, N_spin, N) = 1.0_dp/(exp(argument) + 1.0_dp)
+            fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
         end do
       end do
@@ -3346,71 +3360,71 @@ contains
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
       write (stdout, '(10(1x,a17))') 'calced_qe_value', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
-      & 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
+      & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
     do atom = 1, max_atoms
       if (iprint > 2 .and. on_root) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
       end if
-      do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
-              transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
+            if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+              transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)), &
                                       width, (evacuum_eff - efermi))/norm_vac
             else
-              transverse_g = 1.0_dp
+              transverse_gauss = 1.0_dp
             end if
-            if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
-              vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
+            if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+              vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
                                scissor_op, width, evacuum_eff)/norm_vac
             else
-              vac_g = 1.0_dp
+              vacuum_gauss = 1.0_dp
             end if
-            qe_osm(n_eigen, N_spin, N, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N, N_spin, 1)* &
-                                                          (electron_esc(n_eigen, N_spin, N, atom))* &
-                                                          electrons_per_state*kpoint_weight(N)* &
+            qe_osm(n_eigen, N_spin, N_k, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
+                                                          (electron_esc(n_eigen, N_spin, N_k, atom))* &
+                                                          electrons_per_state*kpoint_weight(N_k)* &
                                                           (I_layer(layer(atom), current_photo_energy_index))* &
-                                                          transverse_g*vac_g*fermi_dirac(n_eigen, N_spin, N)* &
-                                                          (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom))/ &
-                                                           pdos_weights_k_band(n_eigen, N_spin, N)))* &
-                                               (1.0_dp + field_emission(n_eigen, N_spin, N))
+                                                          transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
+                                                          (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))/ &
+                                                           pdos_weights_k_band(n_eigen, N_spin, N_k)))* &
+                                               (1.0_dp + field_emission(n_eigen, N_spin, N_k))
             if (allow_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-              write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N
-              write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N, atom), &
-                foptical_matrix_weights(n_eigen, N, N_spin, 1), &
-                electron_esc(n_eigen, N_spin, N, atom), kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), &
-                transverse_g, vac_g, fermi_dirac(n_eigen, N_spin, N), pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), &
-                pdos_weights_k_band(n_eigen, N_spin, N)
+              write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
+              write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
+                foptical_matrix_weights(n_eigen, N_k, N_spin, 1), &
+                electron_esc(n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), I_layer(layer(atom), current_photo_energy_index), &
+                transverse_gauss, vacuum_gauss, fermi_dirac(n_eigen, N_spin, N_k), &
+                pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
             end if
           end do
         end do
       end do
     end do
     atom = max_atoms + 1
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N)) .le. (evacuum_eff - efermi)) then
-            transverse_g = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N)), &
+          if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+            transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)), &
                                     width, (evacuum_eff - efermi))/norm_vac
           else
-            transverse_g = 1.0_dp
+            transverse_gauss = 1.0_dp
           end if
-          if ((band_energy(n_eigen, N_spin, N) + temp_photon_energy) .lt. evacuum_eff) then
-            vac_g = gaussian((band_energy(n_eigen, N_spin, N) + temp_photon_energy) + &
+          if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+            vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
                              scissor_op, width, evacuum_eff)/norm_vac
           else
-            vac_g = 1.0_dp
+            vacuum_gauss = 1.0_dp
           end if
-          qe_osm(n_eigen, N_spin, N, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N, N_spin, 1)* &
-                                                        bulk_prob(n_eigen, N_spin, N)* &
-                                                        electrons_per_state*kpoint_weight(N)* &
-                                                        transverse_g*vac_g*fermi_dirac(n_eigen, N_spin, N)* &
-                                                        (pdos_weights_atoms(n_eigen, N_spin, N, atom_order(max_atoms))/ &
-                                                         pdos_weights_k_band(n_eigen, N_spin, N)))* &!+&
-                                             (1.0_dp + field_emission(n_eigen, N_spin, N))
+          qe_osm(n_eigen, N_spin, N_k, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
+                                                        bulk_prob(n_eigen, N_spin, N_k)* &
+                                                        electrons_per_state*kpoint_weight(N_k)* &
+                                                        transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
+                                                        (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
+                                                         pdos_weights_k_band(n_eigen, N_spin, N_k)))* &!+&
+                                             (1.0_dp + field_emission(n_eigen, N_spin, N_k))
         end do
       end do
     end do
@@ -3419,16 +3433,15 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    if ((index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0&
-    & .and. on_root)) then
+    if ((index(devel_flag, 'print_qe_constituents') > 0 .or. index(devel_flag, 'print_qe_matrix_full') > 0) .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------- Printing 1step QE Matrix -------------------------+'
       write (stdout, 125) shape(qe_osm)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
 125   format(4(1x, I4))
       do atom = 1, max_atoms + 1
         do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            write (stdout, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -3453,8 +3466,8 @@ contains
 
       ! allocate and sum the 3step qe matrix on non-root
       if (.not. on_root) then
-        do N = 1, num_kpoints_on_node(my_node_id)
-          qe_k_temp(N) = sum(qe_osm(:, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          qe_k_temp(N_k) = sum(qe_osm(:, :, N_k, :))
         end do
         ! write (stdout, *) 'node', my_node_id, 'receiving token from root'
         ! - wait for the token
@@ -3475,16 +3488,16 @@ contains
           call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
           ! write(stdout, *) 'received data from node ', inode, 'writing to file'
           ! write out the qe_matrix to the file
-          do N = 1, num_kpoints_on_node(inode)
-            write (qe_unit, *) qe_k_temp(N)
+          do N_k = 1, num_kpoints_on_node(inode)
+            write (qe_unit, *) qe_k_temp(N_k)
           end do
           ! write(stdout, *) 'wrote data from node ', inode, 'receiving token from', inode
           ! - receive the token from a node
           call comms_recv(token, 1, inode)
         end do
         ! - write root qe_matrix elements
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (qe_unit, *) sum(qe_osm(:, :, N, :))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          write (qe_unit, *) sum(qe_osm(:, :, N_k, :))
         end do
         close (unit=qe_unit)
       end if
@@ -3521,7 +3534,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp), allocatable, dimension(:) :: layer_e_transverse
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
-    integer :: N, N_spin, n_eigen, atom, ierr
+    integer :: N_k, N_spin, n_eigen, atom, ierr
 
     time0 = io_time()
 
@@ -3549,13 +3562,13 @@ contains
       ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
       ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
       do atom = 1, max_atoms + 1
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, min_index_unocc(N_spin, N) - 1
-              !do n_eigen_final = min_index_unocc(N_spin, N), nbands
-              ! if (band_energy(n_eigen_final, N_spin, N) .lt. efermi) cycle ! Skip occupied final states
-              te_tsm_temp(n_eigen, N_spin, N, atom) = E_transverse(n_eigen, N_spin, N) &
-                                                      *sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
+            do n_eigen = 1, min_index_unocc(N_spin, N_k) - 1
+              !do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
+              ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle ! Skip occupied final states
+              te_tsm_temp(n_eigen, N_spin, N_k, atom) = E_transverse(n_eigen, N_spin, N_k) &
+                                                      *sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom))
               !end do
             end do
           end do
@@ -3599,12 +3612,12 @@ contains
       if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
       te_osm_temp = 0.0_dp
       do atom = 1, max_atoms + 1
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              !if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
-              te_osm_temp(n_eigen, N_spin, N, atom) = &
-                E_transverse(n_eigen, N_spin, N)*qe_osm(n_eigen, N_spin, N, atom)
+              !if(band_energy(n_eigen,N_spin,N_k).ge.efermi) cycle
+              te_osm_temp(n_eigen, N_spin, N_k, atom) = &
+                E_transverse(n_eigen, N_spin, N_k)*qe_osm(n_eigen, N_spin, N_k, atom)
             end do
           end do
         end do
@@ -3740,7 +3753,7 @@ contains
     real(kind=dp) :: qe_temp
 
     real(kind=dp) :: qe_norm, total_weighted
-    integer :: N, N_spin, n_eigen, atom, e_scale, ierr
+    integer :: N_k, N_spin, n_eigen, atom, e_scale, ierr
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
@@ -3762,12 +3775,12 @@ contains
       t_energy(e_scale) = real(e_scale - 1, dp)/1000
     end do
 
-    do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
           do e_scale = 1, max_energy
-            binding_temp(e_scale, n_eigen, N_spin, N) = &
-              gaussian((efermi - band_energy(n_eigen, N_spin, N)), photo_bindenergy_broadening, t_energy(e_scale))
+            binding_temp(e_scale, n_eigen, N_spin, N_k) = &
+              gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
         end do
       end do
@@ -3775,17 +3788,17 @@ contains
 
     if (index(photo_model, '3step') > 0) then
       do atom = 1, max_atoms + 1
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N_spin, N) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N_spin, N) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N_spin, N) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N_spin, N) .le. photo_phi_max) then
-                  qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom))
+              if (theta_arpes(n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N_spin, N_k) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N_spin, N_k) .le. photo_phi_max) then
+                  qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom))
                   do e_scale = 1, max_energy
-                    weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
-                      binding_temp(e_scale, n_eigen, N_spin, N)*qe_temp
+                    weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
+                      binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_temp
                   end do
                 end if
               end if
@@ -3796,17 +3809,17 @@ contains
 
     elseif (index(photo_model, '1step') > 0) then
       do atom = 1, max_atoms + 1
-        do N = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N_spin, N) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N_spin, N) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N_spin, N) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N_spin, N) .le. photo_phi_max) then
-                  ! if(band_energy(n_eigen,N_spin,N).ge.efermi) cycle
+              if (theta_arpes(n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
+                  theta_arpes(n_eigen, N_spin, N_k) .le. photo_theta_max) then
+                if (phi_arpes(n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
+                    phi_arpes(n_eigen, N_spin, N_k) .le. photo_phi_max) then
+                  ! if(band_energy(n_eigen,N_spin,N_k).ge.efermi) cycle
                   do e_scale = 1, max_energy
-                    weighted_temp(e_scale, n_eigen, N_spin, N, atom) = &
-                      binding_temp(e_scale, n_eigen, N_spin, N)*qe_osm(n_eigen, N_spin, N, atom)
+                    weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
+                      binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_osm(n_eigen, N_spin, N_k, atom)
                   end do
                 end if
               end if
@@ -3845,7 +3858,7 @@ contains
     use od_parameters, only: write_photo_output, photo_model, photo_work_function, iprint, devel_flag
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
-    integer :: N, N_spin, n_eigen, kpt_total, band_num
+    integer :: N_k, N_spin, n_eigen, kpt_total, band_num
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     real(kind=dp) :: time0, time1
@@ -3894,9 +3907,9 @@ contains
                                                 & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-              do N = 1, num_kpoints_on_node(my_node_id)
+              do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N, atom), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N_k, atom), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3907,9 +3920,9 @@ contains
                                                 & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-              do N = 1, num_kpoints_on_node(my_node_id)
+              do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N, atom)), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3920,9 +3933,9 @@ contains
                                                 & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-              do N = 1, num_kpoints_on_node(my_node_id)
+              do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3934,9 +3947,9 @@ contains
                                  & ')'
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
-            do N = 1, num_kpoints_on_node(my_node_id)
+            do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+                write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
               end do
             end do
           end do
@@ -4029,7 +4042,7 @@ contains
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: N, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+    integer:: N_k, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
 
     ! On root open file and write header
 
@@ -4091,9 +4104,9 @@ contains
           ! - receive the qe_matrix from the other notes and write it to the file
           call comms_recv(qe_mat_temp(1, 1, 1), nbands*nspins*num_kpoints_on_node(inode), inode)
           ! write out the qe_matrix to the file
-          do N = 1, num_kpoints_on_node(inode)
+          do N_k = 1, num_kpoints_on_node(inode)
             do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_mat_temp(n_eigen, N_spin, N), n_eigen=1, nbands)
+              write (matrix_unit, '(9999(ES16.8E3))') (qe_mat_temp(n_eigen, N_spin, N_k), n_eigen=1, nbands)
             end do
           end do
           ! - receive the token from a node
@@ -4102,22 +4115,22 @@ contains
         ! - write root qe_matrix elements
         if (index(photo_model, '3step') > 0) then
           if (index(devel_flag, 'final') > 0) then
-            do N = 1, num_kpoints_on_node(my_node_id)
+            do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N, atom)), n_eigen=1, nbands)
+                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
               end do
             end do
           else
-            do N = 1, num_kpoints_on_node(my_node_id)
+            do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N, atom)), n_eigen=1, nbands)
+                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
               end do
             end do
           end if
         elseif (index(photo_model, '1step') > 0) then
-          do N = 1, num_kpoints_on_node(my_node_id)
+          do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N, atom), n_eigen=1, nbands)
+              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
             end do
           end do
         end if
@@ -4158,7 +4171,7 @@ contains
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: N, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+    integer:: N_k, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
 
     ! On root open file and write header
 
@@ -4199,8 +4212,8 @@ contains
         call comms_recv(fem_mat_temp(1, 1, 1), nbands*nspins*num_kpoints_on_node(inode), inode)
         ! write out the qe_matrix to the file
         do N_spin = 1, nspins
-          do N = 1, num_kpoints_on_node(inode)
-            write (matrix_unit, '(9999(ES16.8E3))') (fem_mat_temp(n_eigen, N, N_spin), n_eigen=1, nbands)
+          do N_k = 1, num_kpoints_on_node(inode)
+            write (matrix_unit, '(9999(ES16.8E3))') (fem_mat_temp(n_eigen, N_k, N_spin), n_eigen=1, nbands)
           end do
         end do
         ! - receive the token from a node
@@ -4208,8 +4221,8 @@ contains
       end do
       ! - write root qe_matrix elements
       do N_spin = 1, nspins
-        do N = 1, num_kpoints_on_node(my_node_id)
-          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N, N_spin, 1), n_eigen=1, nbands)
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N_k, N_spin, 1), n_eigen=1, nbands)
         end do
       end do
       close (unit=matrix_unit)
