@@ -121,7 +121,7 @@ module od_parameters
 
   ! Photoemission parameters - V.Chang, et al. Dec-2022
   character(len=20), public, save :: photo_model
-  character(len=20), public, save :: write_photo_output
+  character(len=20), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
   character(len=20), public, save :: photo_layer_choice
   integer, public, save           :: photo_max_layer
@@ -139,8 +139,9 @@ module od_parameters
   real(kind=dp), public, save :: photo_bulk_cutoff
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
-  integer, public, save       :: photo_len_imfp_const
-  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_const
+  integer, public, save       :: photo_len_imfp_value
+  real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_value
+  character(len=20),public, save :: photo_imfp_choice
   ! real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_list
   ! logical, public, save :: photo_e_units
   ! logical, public, save :: photo_mte
@@ -245,7 +246,7 @@ contains
     if (pdis .and. (optics .or. core .or. jdos .or. pdos .or. dos .or. compare_dos .or. compare_jdos .or. photo)) &
       call io_error('Error: projected bandstructure not compatible with any other tasks')
 
-    i_temp = 0
+
     fixed = .false.; adaptive = .false.; linear = .false.; quad = .false.
     call param_get_keyword('broadening', found, c_value=c_string)
     if (found) then
@@ -454,11 +455,11 @@ contains
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
-    write_photo_output = 'off'
-    call param_get_keyword('write_photo_output', found, c_value=write_photo_output)
-    if (index(write_photo_output, 'qe_matrix') == 0 .and. index(write_photo_output, 'e_bind') == 0 .and. &
-      & index(write_photo_output, 'off') == 0) then
-      call io_error('Error: value of write_photo_output output not recognised in param_read')
+    photo_output = 'off'
+    call param_get_keyword('photo_output', found, c_value=photo_output)
+    if (index(photo_output, 'qe_matrix') == 0 .and. index(photo_output, 'e_bind') == 0 .and. &
+      & index(photo_output, 'off') == 0) then
+      call io_error('Error: value of photo_output output not recognised in param_read')
     end if
 
     photo_model = '1step'
@@ -535,20 +536,31 @@ contains
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
 
-    call param_get_vector_length('photo_imfp_const', found, i_temp)
-    if (found) then
-      photo_len_imfp_const = i_temp
-      allocate (photo_imfp_const(i_temp), stat=ierr)
-      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
-      call param_get_keyword_vector('photo_imfp_const', found, i_temp, r_value=photo_imfp_const)
-    else
-      photo_len_imfp_const = 1
-      allocate (photo_imfp_const(1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_const')
-      photo_imfp_const = 0.0_dp
+    photo_imfp_choice = 'const'
+    call param_get_keyword('photo_imfp_choice', found, c_value=photo_imfp_choice)
+
+    i_temp = 0
+    call param_get_vector_length('photo_imfp_value', found, i_temp)
+    
+    if (index(photo_imfp_choice,'const') > 0) then
+      if (i_temp .gt. 1) call io_error('Error: IMFP choice set to const, but supplied more than 1 value')
+      photo_len_imfp_value = i_temp
+      allocate (photo_imfp_value(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+
+    else if (index(photo_imfp_choice,'layers') > 0) then
+      photo_len_imfp_value = i_temp
+      allocate (photo_imfp_value(i_temp), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+    
+    else if (index(photo_imfp_choice,'curve') > 0) then
+      allocate (photo_imfp_value(1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_imfp_value')     
+      call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
+      photo_imfp_value = 0.0_dp
     end if
-    if (photo .and. .not. found) &
-      call io_error('Error: constant imfp, but photo_imfp_const is not set')
 
     num_atoms = 0
     num_species = 0
@@ -993,11 +1005,13 @@ contains
       if (index(photo_layer_choice, 'user') > 0) then
         write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
       end if
-      if (size(photo_imfp_const, 1) .eq. 1) then
-        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_const(1), '|'
-      else
-        write (stdout, '(1x,a78)') '|  IMFP Constant              (Ang)          : Layer values provided by user |'
-        write (stdout, '(1x,a78)') '|                                              values will be printed later  |'
+      if (index(photo_imfp_choice,'const') > 0) then
+        write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
+      else if (index(photo_imfp_choice,'layers') > 0) then
+        write (stdout, '(1x,a78)') '|  Layer by Layer IMFP Constants     (Ang)   : Layer values provided by user |'
+        write (stdout, '(1x,a78)') '|                                              will be printed later         |'
+      else if (index(photo_imfp_choice,'curve') > 0) then
+        write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve               : Values will be printed later  |'
       end if
       write (stdout, '(1x,a46,4x,E11.4,16x,a1)') '|  Approx. Bulk P_escape Cutoff              :', exp(-1*photo_bulk_cutoff), '|'
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
@@ -1011,10 +1025,10 @@ contains
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
       end if
       ! TODO: Edit the output to reflect the changes made to the printing subroutines
-      if (index(write_photo_output, 'qe_matrix') > 0) then
+      if (index(photo_output, 'qe_matrix') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Quantum Efficiency Matrix   to :     *SEED*_qe_matrix.dat         |'
       end if
-      if (index(write_photo_output, 'e_bind') > 0) then
+      if (index(photo_output, 'e_bind') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
@@ -1770,15 +1784,16 @@ contains
     call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
     call comms_bcast(photo_remove_box_states,1)
-    call comms_bcast(photo_len_imfp_const, 1)
+    call comms_bcast(photo_len_imfp_value, 1)
     if (.not. on_root) then
-      allocate (photo_imfp_const(photo_len_imfp_const), stat=ierr)
-      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_const')
+      allocate (photo_imfp_value(photo_len_imfp_value), stat=ierr)
+      if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_value')
     end if
-    call comms_bcast(photo_imfp_const(1), photo_len_imfp_const)
+    call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
+    call comms_bcast(photo_imfp_choice, 1)
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
-    call comms_bcast(write_photo_output, len(write_photo_output))
+    call comms_bcast(photo_output, len(photo_output))
     call comms_bcast(photo_theta_min, 1)
     call comms_bcast(photo_theta_max, 1)
     call comms_bcast(photo_phi_min, 1)
