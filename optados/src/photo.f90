@@ -1577,8 +1577,7 @@ contains
   subroutine calc_angle
     !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
-    ! Theta: angle between the photoemitted electron and the perpendicular
-    !        of the surface
+    ! Theta: angle between the photoemitted electron and the surface normal
     ! Phi: angle between the x and y components parallel to the surface
     ! orig. Victor Chang, 7th February 2020
     ! parts rewritten Felix Mildner, after Mar 2023
@@ -1613,13 +1612,15 @@ contains
       allocate (theta_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes failed')
     end if
-    theta_arpes = 0.0_dp
+    ! Impossible value as default that is equal to no emission
+    theta_arpes = 91.0_dp
 
     if (.not. allocated(theta_arpes_internal)) then
       allocate (theta_arpes_internal(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes_internal failed')
     end if
-    theta_arpes_internal = 0.0_dp
+    ! Impossible value as default that is equal to no emission
+    theta_arpes_internal = 91.0_dp
 
     if (.not. allocated(phi_arpes)) then
       allocate (phi_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1701,21 +1702,21 @@ contains
         end do
       end do
     end do
+    ! theta is the angle between emitted electron and the surface normal 
     ! 3 Step Model - calculating the final energy of the electrons as the final state energy
     if (index(photo_model, '3step') > 0) then
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            ! total kinetic energy after emission from the excited band
             E_kinetic(n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) - evacuum_eff)
-
-          ! E_kinetic is the final kinetic energy of the electron after emissions
-          ! if the E_kin is less than 0, there is no emission and the theta angle stays < 0 deg
-          if (E_kinetic(n_eigen, N_spin, N_k) .lt. tol) cycle
+            
+            if (E_kinetic(n_eigen, N_spin, N_k) .lt. E_transverse(n_eigen, N_spin, N_k)) cycle
             ! Angle of electron outside material, after passing the surface and loosing E(work_function)
+            ! acos(E_ortho/E_kinetic)
             theta_arpes(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) - E_transverse(n_eigen, N_spin, N_k))/ &
                                                       E_kinetic(n_eigen, N_spin, N_k)))*rad_to_deg
-            ! Angle of electron within material, before passing the surface
+            ! angle of electron within material, before passing the surface
             theta_arpes_internal(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) + work_function_eff&
             - E_transverse(n_eigen, N_spin, N_k))/(E_kinetic(n_eigen, N_spin, N_k) + work_function_eff)))*rad_to_deg
           end do
@@ -1726,20 +1727,21 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
+            ! total kinetic energy after emission and passing through work function potential step
             E_kinetic(n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff)
             
-            ! E_kinetic is the final kinetic energy of the electron after emissions
-            ! if the E_kin is less than 0, there is no emission and the theta angle stays < 0 deg
-            if (E_kinetic(n_eigen, N_spin, N_k) .lt. tol) cycle
+            ! E_kinetic is the final kinetic energy of the electron after emission
+            if (E_kinetic(n_eigen, N_spin, N_k) .lt. E_transverse(n_eigen, N_spin, N_k)) cycle
             ! Angle of electron outside material, after passing the surface and loosing E(work_function)
-          theta_arpes(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) - E_transverse(n_eigen, N_spin, N_k))/ &
+            ! acos(E_ortho/E_kinetic)
+            theta_arpes(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) - E_transverse(n_eigen, N_spin, N_k))/ &
                                                     E_kinetic(n_eigen, N_spin, N_k)))*rad_to_deg
             ! Angle of electron within material, before passing the surface
             theta_arpes_internal(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) + work_function_eff&
             - E_transverse(n_eigen, N_spin, N_k))/(E_kinetic(n_eigen, N_spin, N_k) + work_function_eff)))*rad_to_deg
+          end do
         end do
       end do
-    end do
     end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
@@ -1790,8 +1792,10 @@ contains
     use od_parameters, only: photo_imfp_value, photo_imfp_choice, devel_flag, iprint
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i
+    real(kind=dp) :: tolerance
     real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
 
+    tolerance = 0.00000000001_dp
     time0 = io_time()
     allocate (new_atom_coordinates(3, max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atom_coordinates failed')
@@ -1875,31 +1879,32 @@ contains
 
     if ((index(photo_imfp_choice,'const') > 0) .or. (index(photo_imfp_choice,'layers') > 0)) then
       do atom = 1, max_atoms
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-              if (cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              ! is the emission possible?
+              if (cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
                 ! The electron's kinetic energy inside the material is higher, than after the emission
                 ! through the surface. Thus follows an angle closer to normal direction and one needs
                 ! the internal theta angle.
                 exponent = (new_atom_coordinates(3, atom_order(atom))/ &
                             cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
-              if (exponent .gt. -575.0_dp) then
-                electron_esc(n_eigen, N_spin, N_k, atom) = exp(exponent)
-              else
-                electron_esc(n_eigen, N_spin, N_k, atom) = 0.0_dp
+                if (exponent .gt. -575.0_dp) then
+                  electron_esc(n_eigen, N_spin, N_k, atom) = exp(exponent)
+                else
+                  electron_esc(n_eigen, N_spin, N_k, atom) = 0.0_dp
+                end if
               end if
-            end if
+            end do
           end do
         end do
       end do
-    end do
     else if ((index(photo_imfp_choice,'curve') > 0)) then
       do atom = 1, max_atoms
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+              if (cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
                 exponent = (new_atom_coordinates(3, atom_order(atom))/ &
                             cos(theta_arpes_internal(n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
                 if ((exponent .gt. -575.0_dp) .and. (exponent .lt. 575.0_dp)) then
