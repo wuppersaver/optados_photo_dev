@@ -5,7 +5,7 @@ module od_conv
   use od_constants, only: dp
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
-       & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info
+       & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info, tmcoeff_file_header
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -33,9 +33,11 @@ contains
     write (stdout, '(A)') " <in_type> and <out_type> is one of: "
     write (stdout, '(A)') "       ome_fmt : a formatted optical matrix element file"
     write (stdout, '(A)') "       ome_bin : an unformatted optical matrix element file"
-    ! Added by F. Mildner (04/2023) for photoemission
+    ! Added by F. Mildner (04/2023+02/2025) for photoemission
     write (stdout, '(A)') "       fem_fmt : a formatted free electron optical matrix element file"
     write (stdout, '(A)') "       fem_bin : an unformatted free electron optical matrix element file"
+    write (stdout, '(A)') "       tmcoeff_fmt : a formatted bandwise electron transmission coefficient file"
+    write (stdout, '(A)') "       tmcoeff_bin : an unformatted bandwise electron transmission coefficient file"
 
     write (stdout, '(A)') "      dome_fmt : a formatted diagonal optical matrix element file"
     write (stdout, '(A)') "      dome_bin : an unformatted diagonal optical matrix element file"
@@ -285,7 +287,7 @@ contains
       write (stdout, *) " Allocating foptical_mat."
       allocate (foptical_mat(nbands, 3, energy_count, nkpoints, nspins), stat=ierr)
     end if
-    ! Total number of elements of ome
+    ! Total number of elements of fem
     write(stdout,*) 'nbands', nbands, 'energy_count', energy_count
     write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
     write(stdout,*) string
@@ -403,6 +405,140 @@ contains
 
     write (stdout, *) " Sucesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
   end subroutine write_fem_bin
+
+  !=========================================================================
+  ! B A N D   T R A N S M I S S I O N   C O E F F I C I E N T S 
+  !=========================================================================
+
+  !=========================================================================
+  !=========================================================================
+  subroutine read_tmcoeff_fmt()
+    !! Read a formatted Optical Matrix Elements file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, transmit_coeff
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string, string2
+    integer :: ik, is, ib, i, jb, energy_count, ierr, tmcoeff_unit = 6
+
+    write (stdout, *) " Read a formatted .tmcoeff file. "
+
+    open (unit=tmcoeff_unit, form='formatted', recl=1073741824, file=trim(seedname)//".tmcoeff_fmt")
+    read (tmcoeff_unit, '('//trim(format_precision)//')') file_version
+
+    read (tmcoeff_unit, '(a80)') tmcoeff_file_header
+
+    if (.not. allocated(transmit_coeff)) then
+      write (stdout, *) " Allocating transmit_coeffs."
+      allocate (transmit_coeff(nbands, nspins, nkpoints), stat=ierr)
+    end if
+    ! ! Total number of elements of tmcoeff
+    ! write(stdout,*) 'nbands', nbands
+    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    ! write(stdout,*) string
+
+    ! write(string,'(a)') trim(format_precision)
+    ! write(stdout,*) nkpoints, nspins, nbands
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        read (tmcoeff_unit, '('//trim(string)//')') (transmit_coeff(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    close (unit=tmcoeff_unit)
+
+    write (stdout, *) trim(seedname)//".tmcoeff_fmt"//"--> Formatted tmcoeff sucessfully read. "
+
+  end subroutine read_tmcoeff_fmt
+
+  !=========================================================================
+  subroutine write_tmcoeff_fmt()
+    !! Write a formatted ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, transmit_coeff
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb, tmcoeff_unit = 6
+    
+    write (stdout, *) " Write a formatted .tmcoeff file. "
+
+    open (unit=tmcoeff_unit, form='formatted', file=trim(outseedname)//".tmcoeff_fmt")
+
+    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    ! write(stdout, *) string
+
+    write (stdout, '(a80)') tmcoeff_file_header
+    write (stdout, '(a80)') adjustl(tmcoeff_file_header)
+
+    write (tmcoeff_unit, '('//trim(format_precision)//')') file_version
+    write (tmcoeff_unit, '(a80)') adjustl(tmcoeff_file_header)
+
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (tmcoeff_unit, '('//trim(string)//')') (transmit_coeff(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    close (unit=tmcoeff_unit)
+
+    write (stdout, *) " Sucesfully written a formatted tmcoeff file --> "//trim(outseedname)//".tmcoeff_fmt"
+  end subroutine write_tmcoeff_fmt
+
+  !=========================================================================
+  subroutine read_tmcoeff_bin()
+    !! Read a binary ome file. Wrapper to keep the naming tidy.
+    implicit none
+    write (stdout, *) " Read a formatted tmcoeff file. "
+
+    call elec_read_transmit_coeff()
+    write (stdout, *) " "//trim(seedname)//".tmcoeff_bin"//"--> Unformatted tmcoeff sucessfully read. "
+  end subroutine read_tmcoeff_bin
+
+  !=========================================================================
+  subroutine write_tmcoeff_bin()
+    !! Write a binary ome file.
+    use od_constants, only: dp, bohr2ang, H2eV
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_electronic, only: nspins, nbands, transmit_coeff
+    use od_constants, only: bohr2ang, H2eV
+    implicit none
+
+    real(dp):: file_version = 1.0_dp          ! File version
+    character(len=100):: string
+    integer :: ik, is, ib, i, jb,energy_count, tmcoeff_unit = 6
+
+    write (stdout, *) " Write a binary tmcoeff file."
+
+    open (unit=tmcoeff_unit, form='unformatted', file=trim(outseedname)//".tmcoeff_bin")
+
+    write (stdout, *) "-> TmCoeffFile_version ", file_version
+    write (tmcoeff_unit) file_version
+    write (stdout, *) "-> TmCoeffFile_header ", trim(tmcoeff_file_header)
+    write (tmcoeff_unit) adjustl(tmcoeff_file_header)
+
+    ! write(0,*) nkpoints, nspins, nbands
+    do ik = 1, nkpoints
+      do is = 1, nspins
+        write (tmcoeff_unit) (transmit_coeff(ib, ik, is), ib=1, nbands)
+      end do
+    end do
+
+    write (stdout, *) " Sucesfully written an unformatted tmcoeff file --> "//trim(outseedname)//".tmcoeff_bin"
+  end subroutine write_tmcoeff_bin
 
   !=========================================================================
   ! D I A G O N A L  O P T I C A L   M A T R I X   E L E M E N T S
