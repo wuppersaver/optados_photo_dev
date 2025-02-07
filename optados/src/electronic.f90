@@ -40,13 +40,17 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: optical_mat(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:, :, :, :, :)
 
-  !Additional variables for photoemission.- V.Chang Nov-2020
+  !Additional variables for photoemission.- V.Chang Nov-2020, 
   real(kind=dp), allocatable, public, save     :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
   ! F. Mildner April-2023
   character(len=80), public, save              :: femfile_header
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   real(kind=dp), dimension(5), public, save            :: fem_energy_info
+  ! F.Mildner Feb-2025
+  real(kind=dp), allocatable, public, save     :: transmit_prob(:,:,:)
+  character(len=80), public, save              :: tmprob_file_header
+
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -125,6 +129,7 @@ module od_electronic
   !Additional functions for photoemission - V.Chang Nov-2020
   public :: elec_read_band_curvature
   public :: elec_read_foptical_mat
+  public :: elec_read_transmit_prob
 
   !-------------------------------------------------------------------------!
 
@@ -602,7 +607,7 @@ contains
     implicit none
 
     integer :: fem_unit, i, ib, jb, is, ik, inodes, ierr, gam_unit = 23, inode = 0, ktmp, energy_count
-    character(filename_len) :: gradient_filename
+    character(filename_len) :: fem_filename
     real(kind=dp) :: time0, time1, file_version, tolerance = 0.000001_dp
     real(kind=dp), parameter :: file_ver = 1.0_dp
     complex(kind=dp), dimension(:, :, :, :), allocatable :: foptical_mat_temp
@@ -615,9 +620,9 @@ contains
     time0 = io_time()
     if (on_root) then
       fem_unit = io_file_unit()
-      gradient_filename = trim(seedname)//".fem_bin"
-      if (iprint > 1) write (stdout, '(1x,a)') 'Reading foptical matrix elements from file: '//trim(gradient_filename)
-      open (unit=fem_unit, file=gradient_filename, status="old", form='unformatted', err=102)
+      fem_filename = trim(seedname)//".fem_bin"
+      if (iprint > 1) write (stdout, '(1x,a)') 'Reading foptical matrix elements from file: '//trim(fem_filename)
+      open (unit=fem_unit, file=fem_filename, status="old", form='unformatted', err=102)
       read (fem_unit) file_version
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of fem_bin file. Update optados!')
@@ -636,8 +641,8 @@ contains
     if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
     if (on_root) then
       do inodes = 1, num_nodes - 1
-        do is = 1, nspins
-          do ik = 1, num_kpoints_on_node(inodes)
+        do ik = 1, num_kpoints_on_node(inodes)
+          do is = 1, nspins
             read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
           end do
         end do
@@ -752,6 +757,93 @@ contains
 102 call io_error('Error: Problem opening fem_bin file in read_band_foptical_mat')
 
   end subroutine elec_read_foptical_mat
+
+  subroutine elec_read_transmit_prob()
+    !=========================================================================
+    ! Read the .tmprob_bin file in paralell if appropriate. These are electron
+    ! transmission coefficients at the surface into the vacuum for each band
+    ! and spin at all the k-points.
+    !-------------------------------------------------------------------------
+    ! Arguments: None
+    !-------------------------------------------------------------------------
+    ! Parent module variables: transmit_probabils,nspins,nbands
+    !-------------------------------------------------------------------------
+    ! Modules used:  See below
+    !-------------------------------------------------------------------------
+    ! Key Internal Variables: None
+    !-------------------------------------------------------------------------
+    ! Necessary conditions: None
+    !-------------------------------------------------------------------------
+    ! Known Worries: None
+    !-------------------------------------------------------------------------
+    ! Written by  V Chang                                             Nov 2020
+    !=========================================================================
+    use od_comms, only: on_root, my_node_id, num_nodes, root_id,&
+         & comms_recv, comms_send, comms_reduce, comms_bcast
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+         & io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
+    use od_constants, only: bohr2ang, H2eV
+    use od_parameters, only: legacy_file_format, iprint, devel_flag
+    use od_algorithms, only: algor_dist_array
+    implicit none
+    
+    integer :: tmprob_unit ,i, ib, jb, is, ik, inodes, ierr
+    real(kind=dp) :: time0, time1, file_version
+    real(kind=dp), parameter :: file_ver = 1.0_dp
+    character(filename_len) :: tmcoeff_filename
+
+    time0 = io_time()
+
+    if (allocated(transmit_prob)) return
+
+    if (on_root) then
+      tmprob_unit = io_file_unit()
+      tmcoeff_filename = trim(seedname)//".tmprob_bin"
+      if (iprint > 1) write (stdout, '(1x,a)') 'Reading transmission probabilities from file: '//trim(tmcoeff_filename)
+      open (unit=tmprob_unit, file=tmcoeff_filename, status="old", form='unformatted', err=102)
+      read (tmprob_unit) file_version
+      if ((file_version - file_ver) > 0.001_dp) &
+        call io_error('Error: Trying to read newer version of tmprob_bin file. Update optados!')
+      read (tmprob_unit) tmprob_file_header
+      if (iprint > 1) write (stdout, '(1x,a)') trim(tmprob_file_header)
+    end if
+
+    call algor_dist_array(nkpoints, num_kpoints_on_node)
+    allocate (transmit_prob(1:nbands, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
+    if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
+    if (on_root) then
+      do inodes = 1, num_nodes - 1
+        do ik = 1, num_kpoints_on_node(inodes)
+          do is = 1, nspins
+            read (tmprob_unit) (transmit_prob(ib, ik, is), ib=1, nbands)
+          end do
+        end do
+        call comms_send(transmit_prob(1, 1, 1), (nbands)*nspins*num_kpoints_on_node(inodes), inodes)
+      end do
+      do ik = 1, num_kpoints_on_node(0)
+        do is = 1, nspins
+          read (tmprob_unit) (transmit_prob(ib, ik, is), ib=1, nbands)
+        end do
+      end do
+    end if
+
+    if (.not. on_root) then
+      call comms_recv(transmit_prob(1, 1, 1), (nbands)*nspins*num_kpoints_on_node(my_node_id), root_id)
+    end if
+
+    if (on_root) close (unit=tmprob_unit)
+
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a59,f11.3,a8)') &
+           '+ Time to read Free electron Matrix Elements                   &
+           &      ', time1 - time0, ' (sec) +'
+    end if
+
+    return
+    102 call io_error('Error: Problem opening tmprob_bin file in read_transmit_probabil')
+  end subroutine elec_read_transmit_prob
 
   !=========================================================================
   subroutine elec_read_band_energy !(band_energy,kpoint_r,kpoint_weight)
@@ -1463,6 +1555,7 @@ contains
     integer                              :: dummyi, ib, ik, is, iorbitals
     integer                              :: pdos_in_unit, ierr, inodes
     character(filename_len) :: pdos_filename
+    logical :: full_debug_pdos_weights = .False.
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
 

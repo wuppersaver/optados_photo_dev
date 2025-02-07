@@ -2386,7 +2386,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-      elec_read_band_curvature
+      elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
       exclude_bands, photo_model
@@ -2433,6 +2433,16 @@ contains
     end if
     fermi_dirac = 0.0_dp
 
+    if (index(devel_flag, 'no_transmit') > 0) then 
+      if (.not. allocated(transmit_prob)) then
+        allocate (transmit_prob(nbands, num_kpoints_on_node(my_node_id), nspins))
+        if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+      end if
+      transmit_prob = 1.0_dp
+    else
+      call elec_read_transmit_prob()
+    end if
+
     if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
       write (stdout, '(5(1x,I4))') shape(matrix_weights)
@@ -2469,7 +2479,7 @@ contains
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) &
     then
-      i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+      i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
       write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', &
         'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
@@ -2550,6 +2560,7 @@ contains
                                                                (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
                                                                 delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
                                                                 electron_esc(n_eigen_final, N_spin, N_k, atom)* &
+                                                                transmit_prob(n_eigen_final,N_k, N_spin)*&
                                                                 electrons_per_state*kpoint_weight(N_k)* &
                                                                 (I_layer(layer(atom), current_photo_energy_index))* &
                                                                 transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
@@ -2561,6 +2572,7 @@ contains
                                                                (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
                                                                 delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
                                                                 electron_esc(n_eigen_final, N_spin, N_k, atom)* &
+                                                                transmit_prob(n_eigen_final,N_k, N_spin)*&
                                                                 electrons_per_state*kpoint_weight(N_k)* &
                                                                 (I_layer(box_atom(atom), current_photo_energy_index))* &
                                                                 transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
@@ -2571,12 +2583,12 @@ contains
               end if
               if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
-                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
+                write (stdout, '(17(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
                   band_energy(n_eigen_init, N_spin, N_k), &
                   band_energy(n_eigen_final, N_spin, N_k), matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
                   delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(n_eigen_final, N_spin, N_k, atom), &
-                  kpoint_weight(N_k), I_layer(layer(atom), current_photo_energy_index), &
-                  transverse_gauss, vacuum_gauss, initial_fd, final_fd,&
+                  transmit_prob(n_eigen_final, N_k, N_spin), kpoint_weight(N_k), I_layer(layer(atom), &
+                  current_photo_energy_index),transverse_gauss, vacuum_gauss, initial_fd, final_fd,&
                   pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
               end if
             end do
@@ -2609,6 +2621,7 @@ contains
                                                                   (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
                                                                    delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
                                                                    bulk_prob(n_eigen_final, N_spin, N_k)* &
+                                                                   transmit_prob(n_eigen_final,N_k, N_spin)*&
                                                                    electrons_per_state*kpoint_weight(N_k)* &
                                                                    transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
                                                                    (pdos_weights_atoms(n_eigen_init, N_spin, N_k, &
@@ -2632,6 +2645,11 @@ contains
     if (allocated(fermi_dirac)) then
       deallocate (fermi_dirac, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate fermi_dirac')
+    end if
+
+    if (allocated(transmit_prob)) then
+      deallocate (transmit_prob, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
     end if
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) then
