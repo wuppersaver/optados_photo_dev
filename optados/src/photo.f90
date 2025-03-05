@@ -3346,7 +3346,7 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(10(1x,a17))') 'calced_qe_value', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
+      write (stdout, '(10(7x,a17))') 'calced_qe_value', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
       & 'I_layer', 'transverse_g', 'vac_g', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
