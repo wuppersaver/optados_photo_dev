@@ -930,7 +930,7 @@ contains
 
     if (.not. on_root) then
       call comms_recv(photo_spectral_func(1, 1, 1, 1, 1), &
-                      3*max_gvec*nbands*nspins*num_kpoints_on_node(inodes), root_id)
+                      3*max_gvec*nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
     
     if (on_root) close (unit=photo_specfn_unit)
