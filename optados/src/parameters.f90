@@ -151,6 +151,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
   logical, public, save       :: photo_remove_box_states
+  integer, public, save       :: photo_sf_max_vectors
 
   real(kind=dp), public, save :: lenconfac
 
@@ -452,7 +453,8 @@ contains
     ! Photoemission parameters - V.Chang Nov-2020
     photo_momentum = 'crystal'
     call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
-    if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0) &
+    if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
+       .and. index(photo_momentum, 'specfn') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
     photo_output = 'off'
@@ -561,6 +563,12 @@ contains
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
       photo_imfp_value = 0.0_dp
     end if
+
+    photo_sf_max_vectors = 1
+    call param_get_keyword('photo_sf_max_vectors', found, i_value = photo_sf_max_vectors)
+    if ((photo_sf_max_vectors .gt. 1) .and. (index(photo_momentum,'specfn') .eq. 0)) then
+      call io_error('Error: When choosing a photo_momentum other than specfn, photo_sf_max_vectors = 1')
+    end if  
 
     num_atoms = 0
     num_species = 0
@@ -1031,6 +1039,7 @@ contains
       if (index(photo_output, 'e_bind') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
+      write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| Max # of k + G SpecFn Contributions     :    ', photo_sf_max_vectors,'|'
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
@@ -1798,6 +1807,7 @@ contains
     call comms_bcast(photo_theta_max, 1)
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
+    call comms_bcast(photo_sf_max_vectors, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then
