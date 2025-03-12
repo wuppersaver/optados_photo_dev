@@ -1039,7 +1039,9 @@ contains
       if (index(photo_output, 'e_bind') > 0) then
         write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
       end if
-      write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| Max # of k + G SpecFn Contributions     :    ', photo_sf_max_vectors,'|'
+      if (index(photo_momentum,'specfn') > 0) then 
+        write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of k + G SpecFn Contributions        : ', photo_sf_max_vectors,'|'
+      end if
       write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
       write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
@@ -1799,7 +1801,7 @@ contains
       if (ierr /= 0) call io_error('Error: param_dist - allocation failed for photo_imfp_value')
     end if
     call comms_bcast(photo_imfp_value(1), photo_len_imfp_value)
-    call comms_bcast(photo_imfp_choice, 1)
+    call comms_bcast(photo_imfp_choice, len(photo_imfp_choice))
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(photo_output, len(photo_output))
