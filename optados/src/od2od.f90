@@ -20,7 +20,8 @@ module od_conv
   !! Type of file to convert to.
   character(len=10), save :: format_precision = "es23.10"
   !! Things get messy below 10 s.f. between bin files and fmt files
-  integer, save :: max_gvec = 72
+  integer :: max_gvec
+  character(len=7), save :: str_gvec
 contains
   !=========================================================================
   subroutine print_usage()
@@ -89,6 +90,9 @@ contains
       case ("-w", "--out_seedname")
         i = i + 1
         call get_command_argument(i, outseedname)
+      case ("-gv")
+        i = i + 1
+        call get_command_argument(i, str_gvec)
       case ("--") !! End of flags
         i = i + 1
         call get_command_argument(i, seedname)
@@ -568,7 +572,7 @@ contains
     read (specfn_unit, '('//trim(format_precision)//')') file_version
 
     read (specfn_unit, '(a80)') photo_specfn_file_header
-
+    read (str_gvec, *) max_gvec
     if (.not. allocated(photo_spectral_func)) then
       write (stdout, *) " Allocating spectral function."
       allocate (photo_spectral_func(3,max_gvec,nbands, nspins, nkpoints), stat=ierr)
@@ -639,7 +643,7 @@ contains
     !! Read a binary ome file. Wrapper to keep the naming tidy.
     implicit none
     write (stdout, *) " Read an unformatted specfn file. "
-
+    read (str_gvec, *) max_gvec
     call elec_read_spec_function(max_gvec)
     write (stdout, *) " "//trim(seedname)//".specfn_bin"//"--> Unformatted specfn sucessfully read. "
   end subroutine read_specfn_bin
@@ -660,7 +664,7 @@ contains
     integer :: ik, is, ib, i, gdx, jb,energy_count, specfn_unit = 6
 
     write (stdout, *) " Write a binary specfn file."
-
+    
     open (unit=specfn_unit, form='unformatted', file=trim(outseedname)//".specfn_bin")
 
     write (stdout, *) "-> specfn file_version ", file_version
