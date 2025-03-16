@@ -484,7 +484,7 @@ contains
     call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
     photo_phi_max = 90.0_dp
     call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
-    photo_bindenergy_broadening = linear_smearing
+    photo_bindenergy_broadening = 0.0259
     call param_get_keyword('photo_bindenergy_broadening',found, r_value=photo_bindenergy_broadening)
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
