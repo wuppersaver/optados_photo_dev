@@ -1837,7 +1837,7 @@ contains
     end do
 
     if (.not. allocated(electron_esc)) then
-      allocate (electron_esc(photo_sf_max_vectors,nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
+      allocate (electron_esc(photo_sf_max_vectors,nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     end if
     electron_esc = 0.0_dp
@@ -1984,11 +1984,11 @@ contains
     real(kind=dp) :: exponent, time0, time1, band_imfp_max
 
     time0 = io_time()
-    if (.not. allocated(bulk_prob)) then
-      allocate (bulk_prob(photo_sf_max_vectors,nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
-    end if
-    bulk_prob = 0.0_dp
+    ! if (.not. allocated(bulk_prob)) then
+    !   allocate (bulk_prob(photo_sf_max_vectors,nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
+    ! end if
+    ! bulk_prob = 0.0_dp
 
 235 format(1x, a1, 5x, a8, I3, 5x, a10, E13.6E2, 2x, a8, E13.6E2, 9x, a1)
     if (.not. new_geom_choice) then
@@ -2031,7 +2031,9 @@ contains
                     ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                     ! As exp(-575) is ~1E-250, this should be more than enough precision.
                     if (exponent .gt. -575.0_dp) then
-                      bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2051,7 +2053,9 @@ contains
                     ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                     ! As exp(-575) is ~1E-250, this should be more than enough precision.
                     if (exponent .gt. -575.0_dp) then
-                      bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2134,25 +2138,27 @@ contains
       end do
 
       if ((index(photo_imfp_choice,'layers') > 0) .or. (index(photo_imfp_choice,'const') > 0)) then
-      do i = 1, num_layers
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              do gdx = 1, photo_sf_max_vectors
-                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
-                  ! This makes sure, that exp(exponent) does not underflow the dp fp value.
-                  ! As exp(-575) is ~1E-250, this should be more than enough precision.
-                  if (exponent .gt. -575.0_dp) then
-                      bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
+        do i = 1, num_layers
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                do gdx = 1, photo_sf_max_vectors
+                  if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                    exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
+                                cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
+                    ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                    ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                    if (exponent .gt. -575.0_dp) then
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
+                    end if
                   end if
-                end if
+                end do
               end do
             end do
           end do
         end do
-      end do
       else if (index(photo_imfp_choice,'curve') > 0) then
         do i = 1, num_layers
           do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -2165,7 +2171,9 @@ contains
                     ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                     ! As exp(-575) is ~1E-250, this should be more than enough precision.
                     if (exponent .gt. -575.0_dp) then
-                      bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2666,7 +2674,7 @@ contains
                                                                     photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k)* &
                                                                     (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
                                                                     delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                                    bulk_prob(gdx, n_eigen_final, N_spin, N_k)* &
+                                                                    electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1)* &
                                                                     transmit_prob(n_eigen_final,N_k, N_spin)*&
                                                                     electrons_per_state*kpoint_weight(N_k)* &
                                                                     transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
@@ -3306,8 +3314,8 @@ contains
       & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
-    do atom = 1, max_atoms
-      if (iprint > 2 .and. on_root) then
+    do atom = 1, max_atoms + 1
+      if (iprint > 2 .and. on_root .and. (atom .le. max_atoms)) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
       end if
       do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -3350,36 +3358,36 @@ contains
         end do
       end do
     end do
-    atom = max_atoms + 1
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-          do gdx = 1, photo_sf_max_vectors
-            if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-              transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-                                      width, (evacuum_eff - efermi))/norm_vac
-            else
-              transverse_gauss = 1.0_dp
-            end if
-            if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-              vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
-                              scissor_op, width, evacuum_eff)/norm_vac
-            else
-              vacuum_gauss = 1.0_dp
-            end if
-            qe_osm(gdx, n_eigen, N_spin, N_k, atom) = qe_factor*&
-                                                      photo_spectral_func(3,gdx, n_eigen, N_spin, N_k)* &
-                                                      (foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
-                                                      bulk_prob(gdx, n_eigen, N_spin, N_k)* &
-                                                      electrons_per_state*kpoint_weight(N_k)* &
-                                                      transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
-                                                      (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
-                                                      pdos_weights_k_band(n_eigen, N_spin, N_k)))* &!+&
-                                                      (1.0_dp + field_emission(n_eigen, N_spin, N_k))
-          end do
-        end do
-      end do
-    end do
+    ! atom = max_atoms + 1
+    ! do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+    !   do N_spin = 1, nspins                    ! Loop over spins
+    !     do n_eigen = 1, nbands
+    !       do gdx = 1, photo_sf_max_vectors
+    !         if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+    !           transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+    !                                   width, (evacuum_eff - efermi))/norm_vac
+    !         else
+    !           transverse_gauss = 1.0_dp
+    !         end if
+    !         if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+    !           vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
+    !                           scissor_op, width, evacuum_eff)/norm_vac
+    !         else
+    !           vacuum_gauss = 1.0_dp
+    !         end if
+    !         qe_osm(gdx, n_eigen, N_spin, N_k, atom) = qe_factor*&
+    !                                                   photo_spectral_func(3,gdx, n_eigen, N_spin, N_k)* &
+    !                                                   (foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
+    !                                                   bulk_prob(gdx, n_eigen, N_spin, N_k)* &
+    !                                                   electrons_per_state*kpoint_weight(N_k)* &
+    !                                                   transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
+    !                                                   (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
+    !                                                   pdos_weights_k_band(n_eigen, N_spin, N_k)))* &!+&
+    !                                                   (1.0_dp + field_emission(n_eigen, N_spin, N_k))
+    !       end do
+    !     end do
+    !   end do
+    ! end do
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -4311,10 +4319,10 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate field_emission')
     end if
 
-    if (allocated(bulk_prob)) then
-      deallocate (bulk_prob, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate bulk_prob')
-    end if
+    ! if (allocated(bulk_prob)) then
+    !   deallocate (bulk_prob, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate bulk_prob')
+    ! end if
 
     if (allocated(qe_tsm)) then
       deallocate (qe_tsm, stat=ierr)
