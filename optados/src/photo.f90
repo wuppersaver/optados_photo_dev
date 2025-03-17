@@ -1390,7 +1390,7 @@ contains
     integer :: atom, box, i, ierr, num_layer
 
     if (.not. new_geom_choice) then
-      allocate (I_layer(max_layer, number_energies), stat=ierr)
+      allocate (I_layer(max_layer + 1, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
       I_layer = 0.0_dp
       I_0 = 1.0_dp
@@ -1412,7 +1412,7 @@ contains
         end do
       end if
     else
-      allocate (I_layer(num_boxes, number_energies), stat=ierr)
+      allocate (I_layer(num_boxes + 1, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
       I_layer = 0.0_dp
 
@@ -1437,6 +1437,11 @@ contains
         end do
       end if
     end if
+    ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
+    ! layer by layer emission probability array (does not contain light intensity), we have to set the
+    ! intensity value artifically to 1.0 to have it not influence the final value.
+    ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
+    I_layer(layer(max_atoms + 1),1:number_energies) = 1.0_dp
 
     if (allocated(reflect_photo)) then
       deallocate (reflect_photo, stat=ierr)
@@ -3381,7 +3386,7 @@ contains
     !                                                   electrons_per_state*kpoint_weight(N_k)* &
     !                                                   transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
     !                                                   (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
-    !                                                   pdos_weights_k_band(n_eigen, N_spin, N_k)))* &!+&
+    !                                                   pdos_weights_k_band(n_eigen, N_spin, N_k)))* &
     !                                                   (1.0_dp + field_emission(n_eigen, N_spin, N_k))
     !       end do
     !     end do
