@@ -3585,11 +3585,11 @@ contains
                 else
                   transverse_gauss = 1.0_dp
                 end if
-                sfn_contributions = sfn_contributions + (E_transverse(gdx, n_eigen, N_spin, N_k) &
-                                                        * qe_osm(n_eigen, N_spin, N_k, atom) &
-                                                        * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
+                sfn_contributions = sfn_contributions + E_transverse(gdx, n_eigen, N_spin, N_k) &
+                                                        * (qe_osm(n_eigen, N_spin, N_k, atom) &
+                                                        /  (photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
                                                         * electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
-                                                        * transverse_gauss)
+                                                        * transverse_gauss))
               end do
               te_osm_temp(n_eigen, N_spin, N_k, atom) = sfn_contributions
             end do
