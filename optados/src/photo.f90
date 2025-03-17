@@ -48,7 +48,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: absorp
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
-  real(kind=dp), dimension(:), allocatable :: volume_layer
+  ! real(kind=dp), dimension(:), allocatable :: volume_layer
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp)                            :: box_height
   real(kind=dp)                            :: box_volume
@@ -60,7 +60,7 @@ module od_photo
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   real(kind=dp), dimension(:,:,:), allocatable :: band_imfp
-  real(kind=dp), dimension(:), allocatable :: box_imfp
+  ! real(kind=dp), dimension(:), allocatable :: box_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
@@ -69,7 +69,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: bulk_prob
+  ! real(kind=dp), allocatable, dimension(:, :, :, :) :: bulk_prob
   real(kind=dp), allocatable, dimension(:) :: t_energy
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
@@ -95,8 +95,8 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  integer, allocatable, dimension(:, :, :) :: lgcl_box_states
-  real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
+  ! integer, allocatable, dimension(:, :, :) :: lgcl_box_states
+  ! real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
   ! The Free Electron Matrix (FEM) elements are calculated for a specific E_fermi offset, workfct and photon
   ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters 
   ! used for the OptaDOS run.
@@ -292,7 +292,7 @@ contains
     ! at the middle of the slab. The choice between the two is
     ! hardcoded in the variable "new_geom_choice" (True -> Boxes)
     use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
-    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, num_species, cell_volume, real_lattice
+    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_value, photo_slab_max, &
@@ -721,7 +721,7 @@ contains
 
   subroutine make_pdos_weights_atoms
     !!This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
     use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout, seedname, io_date
@@ -889,8 +889,7 @@ contains
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
-    use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-      photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
+    use od_parameters, only: optics_intraband, jdos_spacing, devel_flag, iprint, jdos_max_energy, photo_model
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
     implicit none
@@ -899,8 +898,8 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
     integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, energy, box, initial
     integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
-    real(kind=dp)    :: num_energies, temp, time0, time1
-    logical, dimension(3) :: gam
+    real(kind=dp)    :: time0, time1
+    ! logical, dimension(3) :: gam
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
     character(len=3) :: atom_s
@@ -1381,7 +1380,7 @@ contains
 
   subroutine calc_absorp_layer
     !!This subroutine calculates the absorption coefficient for a specific layer
-    use od_cell, only: atoms_pos_cart_photo
+    ! use od_cell, only: atoms_pos_cart_photo
     use od_jdos_utils, only: jdos_nbins
     use od_parameters, only: devel_flag, iprint
     use od_io, only: stdout, io_error
@@ -1586,7 +1585,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
       band_curvature, photo_spectral_func, elec_read_spec_function
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_model, photo_momentum, devel_flag, iprint, photo_work_function, photo_sf_max_vectors
+    use od_parameters, only: photo_model, photo_momentum, devel_flag, iprint, photo_sf_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout, io_time
@@ -1597,7 +1596,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_y
-    real(kind=dp), allocatable, dimension(:, :, :, :, :)::E_specfn
+    ! real(kind=dp), allocatable, dimension(:, :, :, :, :)::E_specfn
     real(kind=dp) :: tol = 1.0E-10_dp
     real(kind=dp) :: time0, time1
 
@@ -1691,7 +1690,7 @@ contains
               E_x(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))* &
                                                ((photo_spectral_func(1, gdx, n_eigen, N_spin, N_k)*1E+10)**2))*j_to_ev
               E_y(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))* &
-                                               ((photo_spectral_func(2, gdx, n_eigen, N_spin, N_k)*1E+10)**2))*j_to_ev                                 
+                                               ((photo_spectral_func(2, gdx, n_eigen, N_spin, N_k)*1E+10)**2))*j_to_ev
             end if
             if (index(photo_momentum, 'crystal') > 0) then
               E_x(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N_k)*1E+10)**2))*j_to_ev
@@ -2252,12 +2251,12 @@ contains
     ! Schmerge like Model by Saha et al.
     ! Felix Mildner, May 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands, photo_model, photo_sf_max_vectors
+    use od_parameters, only: photo_temperature, devel_flag, iprint, num_exclude_bands, &
+      exclude_bands, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -2267,10 +2266,10 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    real(kind=dp) :: x(1:2), y(1:2), step(1:3)
+    ! real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, i, qe_unit, token, inode
-    real(kind=dp) :: sub_cell_area
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode
+    ! real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2431,7 +2430,7 @@ contains
     ! Victor Chang, 7th February 2020
     ! edited by Felix Mildner, 03/2023
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature, transmit_prob, elec_read_transmit_prob, photo_spectral_func
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
@@ -2447,9 +2446,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, &
-    time0, time1, final_fd, initial_fd, excess_energy
+    time0, time1, final_fd, initial_fd
     integer :: N_k, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, gdx, qe_unit, token, inode
-    real(kind=dp) :: sub_cell_area
+    ! real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2880,7 +2879,7 @@ contains
     ! edited by Felix Mildner, after March 2022
     !===============================================================================
     use od_comms, only: my_node_id, on_root
-    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
+    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
       finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
       jdos_max_energy, photo_slab_max
@@ -3480,7 +3479,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
     use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
-    use od_parameters, only: photo_model, iprint, devel_flag, photo_sf_max_vectors
+    use od_parameters, only: photo_model, iprint, photo_sf_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
@@ -3629,7 +3628,7 @@ contains
     !===============================================================================
     use od_cell, only: cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_elec_field, photo_model, devel_flag
+    use od_parameters, only: photo_work_function, photo_elec_field, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
@@ -3694,7 +3693,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
+    use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
@@ -4124,17 +4123,17 @@ contains
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model, devel_flag
+    use od_parameters, only: photo_model
 
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: fem_mat_temp
-    real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    ! real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
     integer, intent(in)                         :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: N_k, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+    integer:: N_k, N_spin, n_eigen, token, matrix_unit, ierr, inode
 
     ! On root open file and write header
 
