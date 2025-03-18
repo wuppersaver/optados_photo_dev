@@ -3794,7 +3794,9 @@ contains
         end do
       end do
     end do
-    ! TODO
+    ! TODO - I will have to adapt the calculation to include all the
+    ! TODO - contributions for G+k. It should help to go only a number
+    ! TODO - of SDs away from the center to save iterations.
     if (index(photo_model, '3step') > 0) then
       do atom = 1, max_atoms + 1
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -3817,7 +3819,9 @@ contains
           end do
         end do
       end do
-    ! TODO
+    ! TODO - I will have to adapt the calculation to include all the
+    ! TODO - contributions for G+k. It should help to go only a number
+    ! TODO - of SDs away from the center to save iterations.
     elseif (index(photo_model, '1step') > 0) then
       do atom = 1, max_atoms + 1
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
