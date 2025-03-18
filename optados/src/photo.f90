@@ -74,6 +74,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
+  real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :, :) :: qe_tsm
   real(kind=dp) :: mean_te
   real(kind=dp) :: total_qe
@@ -3253,6 +3254,7 @@ contains
     integer :: N_k, N_spin, n_eigen, atom, ierr, i, gdx, kpt_total, inode, token, qe_unit
 
     real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, time0, time1
+    real(kind=dp) :: temp_contribution
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     ! real(kind=dp) :: volume_factor, volume_factor_bulk
@@ -3292,6 +3294,12 @@ contains
       if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of qe_osm failed')
     end if
     qe_osm = 0.0_dp
+
+    if (.not. allocated(te_osm)) then
+      allocate (te_osm(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of te_osm failed')
+    end if
+    te_osm = 0.0_dp
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -3339,16 +3347,19 @@ contains
               else
                 vacuum_gauss = 1.0_dp
               end if
+              temp_contribution = (qe_factor * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
+                                  * foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                  * (electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
+                                  * electrons_per_state * kpoint_weight(N_k) &
+                                  * (I_layer(layer(atom), current_photo_energy_index)) &
+                                  * transverse_gauss * vacuum_gauss * fermi_dirac(n_eigen, N_spin, N_k) &
+                                  * (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                  /  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                  * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
               qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom)  &
-                                                  + (qe_factor * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
-                                                  * foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
-                                                  * (electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
-                                                  * electrons_per_state * kpoint_weight(N_k) &
-                                                  * (I_layer(layer(atom), current_photo_energy_index)) &
-                                                  * transverse_gauss * vacuum_gauss * fermi_dirac(n_eigen, N_spin, N_k) &
-                                                  * (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                                  /  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
-                                                  * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                                                  + temp_contribution
+              te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
+                                                  + temp_contribution*E_transverse(gdx, n_eigen, N_spin, N_k)
             end do
             if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
@@ -3567,33 +3578,38 @@ contains
 
     elseif (index(photo_model, '1step') > 0) then
 
-      allocate (te_osm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
-      te_osm_temp = 0.0_dp
+      ! allocate (te_osm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
+      ! if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
+      ! te_osm_temp = 0.0_dp
+      ! do atom = 1, max_atoms + 1
+      !   do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+      !     do N_spin = 1, nspins                    ! Loop over spins
+      !       do n_eigen = 1, nbands
+      !         sfn_contributions = 0.0_dp
+      !         do gdx = 1, photo_sf_max_vectors
+      !           ! Earlier we had to sum up the different contributions to save memory. Now we have to weight the
+      !           ! sum by its contributions again, to recover each of the contributions. Then we can properly weigh 
+      !           ! each by the appropriate transverse energy.
+      !           if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+      !             transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+      !                                     width, (evacuum_eff - efermi))/norm_vac
+      !           else
+      !             transverse_gauss = 1.0_dp
+      !           end if
+      !           sfn_contributions = sfn_contributions + (E_transverse(gdx, n_eigen, N_spin, N_k) &
+      !                                                   * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
+      !                                                   * electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+      !                                                   * transverse_gauss)
+      !         end do
+      !         te_osm_temp(n_eigen, N_spin, N_k, atom) = sfn_contributions*qe_osm(n_eigen, N_spin, N_k, atom)
+      !       end do
+      !     end do
+      !   end do
+      !   ! Calculate the qe contribution of each atom/layer
+      !   layer_qe(atom) = sum(qe_osm(:, :, :, atom))
+      ! end do
+
       do atom = 1, max_atoms + 1
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              sfn_contributions = 0.0_dp
-              do gdx = 1, photo_sf_max_vectors
-                ! Earlier we had to sum up the different contributions to save memory. Now we have to weight the
-                ! sum by its contributions again, to recover each of the contributions. Then we can properly weigh 
-                ! each by the appropriate transverse energy.
-                if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-                  transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-                                          width, (evacuum_eff - efermi))/norm_vac
-                else
-                  transverse_gauss = 1.0_dp
-                end if
-                sfn_contributions = sfn_contributions + (E_transverse(gdx, n_eigen, N_spin, N_k) &
-                                                        * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
-                                                        * electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
-                                                        * transverse_gauss)
-              end do
-              te_osm_temp(n_eigen, N_spin, N_k, atom) = sfn_contributions*qe_osm(n_eigen, N_spin, N_k, atom)
-            end do
-          end do
-        end do
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_osm(:, :, :, atom))
       end do
@@ -3605,7 +3621,8 @@ contains
       call comms_bcast(total_qe, 1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
-      mean_te = sum(te_osm_temp)
+      ! mean_te = sum(te_osm_temp)
+      mean_te = sum(te_osm)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
 
