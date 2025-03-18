@@ -3763,6 +3763,7 @@ contains
 
     real(kind=dp) :: qe_norm, total_weighted
     integer :: N_k, N_spin, n_eigen, atom, e_scale, gdx, ierr
+    integer :: middle_idx, width_idx
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
@@ -3787,6 +3788,8 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
+          middle_idx = ceiling(efermi - band_energy(n_eigen, N_spin, N_k))
+          width_idx = 
           do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
