@@ -3749,13 +3749,14 @@ contains
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
-    use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, photo_spectral_func
+    use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit
+    use od_constants, only: inv_sqrt_two_pi, kB
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
@@ -3764,6 +3765,52 @@ contains
     real(kind=dp) :: qe_norm, total_weighted
     integer :: N_k, N_spin, n_eigen, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx
+
+    real(kind=dp) :: temp_contribution, norm_vac, qe_factor, width, argument
+    real(kind=dp), allocatable, dimension(:, :, :, :) :: fermi_dirac
+
+    qe_factor = 1.0_dp/(cell_area)
+    width = (1.0_dp/11604.45_dp)*photo_temperature
+    norm_vac = inv_sqrt_two_pi/width
+
+    if (.not. allocated(fermi_dirac)) then
+      allocate (fermi_dirac(3, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+    end if
+    fermi_dirac = 0.0_dp
+
+    do N_k = 1, num_kpoints_on_node(my_node_id)
+      do N_spin = 1, nspins
+        do n_eigen = 1, nbands
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
+          ! This is a bit of an arbitrary condition, but it turns out
+          ! that this corresponds to a an exponent value of ~1E+/-100
+          ! and this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible underflow.
+          if (argument .gt. 230.0_dp) then
+            fermi_dirac(1, n_eigen, N_spin, N_k) = 0.0_dp
+          elseif (argument .lt. -230.0_dp) then
+            fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp
+          else
+            fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
+          end if
+          ! normally called transverse_gauss
+          if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+            fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                    width, (evacuum_eff - efermi))/norm_vac
+          else
+            fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
+          end if
+          ! normally called vacuum_gauss
+          if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+            fermi_dirac(3, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
+                            scissor_op, width, evacuum_eff)/norm_vac
+          else
+            fermi_dirac(3, n_eigen, N_spin, N_k) = 1.0_dp
+          end if
+        end do
+      end do
+    end do
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
@@ -3788,9 +3835,9 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          middle_idx = ceiling(efermi - band_energy(n_eigen, N_spin, N_k))
-          width_idx = 
-          do e_scale = 1, max_energy
+          middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+          width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
+          do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
@@ -3835,9 +3882,20 @@ contains
                     theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
                   if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
                       phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
+                      temp_contribution = (qe_factor * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
+                                          * foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                          * (electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
+                                          * electrons_per_state * kpoint_weight(N_k) &
+                                          * (I_layer(layer(atom), current_photo_energy_index)) &
+                                          !           transverse_gauss                        vacuum_gauss
+                                          * fermi_dirac(2,n_eigen, N_spin, N_k) * fermi_dirac(3,n_eigen, N_spin, N_k) & 
+                                          * fermi_dirac(1,n_eigen, N_spin, N_k) &
+                                          * (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                          /  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                          * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
                     do e_scale = 1, max_energy
                       weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
-                        binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_osm(n_eigen, N_spin, N_k, atom)
+                        binding_temp(e_scale, n_eigen, N_spin, N_k)*temp_contribution
                     end do
                   end if
                 end if
