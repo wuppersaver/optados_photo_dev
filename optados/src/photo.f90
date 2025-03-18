@@ -3832,10 +3832,10 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          ! middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
-          ! width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
-          ! do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
-          do e_scale = 1, max_energy
+          middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+          width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
+          do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
+          ! do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
@@ -3898,7 +3898,10 @@ contains
                                           * (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                                           / pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                           * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
-                    do e_scale = 1, max_energy
+                    middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+                    width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
+                    do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
+                    ! do e_scale = 1, max_energy
                       weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) + &
                         binding_temp(e_scale, n_eigen, N_spin, N_k)*temp_contribution
                     end do
