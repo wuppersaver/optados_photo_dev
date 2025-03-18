@@ -3632,8 +3632,8 @@ contains
         mean_te = 0.0_dp
       end if
 
-      deallocate (te_osm_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
+      ! deallocate (te_osm_temp, stat=ierr)
+      ! if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
 
     else if (index(photo_model, 'ds_like_pe') > 0) then
 
