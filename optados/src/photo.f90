@@ -3837,7 +3837,8 @@ contains
         do n_eigen = 1, nbands
           middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
           width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
-          do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
+          ! do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
+          do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
