@@ -3766,7 +3766,7 @@ contains
     integer :: N_k, N_spin, n_eigen, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx
 
-    real(kind=dp) :: temp_contribution, norm_vac, qe_factor, width, argument
+    real(kind=dp) :: temp_contribution, norm_vac, qe_factor, width, argument, transverse_gauss
     real(kind=dp), allocatable, dimension(:, :, :, :) :: fermi_dirac
 
     qe_factor = 1.0_dp/(cell_area)
@@ -3774,7 +3774,7 @@ contains
     norm_vac = inv_sqrt_two_pi/width
 
     if (.not. allocated(fermi_dirac)) then
-      allocate (fermi_dirac(3, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      allocate (fermi_dirac(2, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
@@ -3794,23 +3794,20 @@ contains
           else
             fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
-          ! normally called transverse_gauss
-          if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-            fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-                                    width, (evacuum_eff - efermi))/norm_vac
-          else
-            fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
-          end if
           ! normally called vacuum_gauss
           if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-            fermi_dirac(3, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
+            fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
                             scissor_op, width, evacuum_eff)/norm_vac
           else
-            fermi_dirac(3, n_eigen, N_spin, N_k) = 1.0_dp
+            fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
           end if
         end do
       end do
     end do
+
+    write (*,*) 'fermi_dirac', sum(fermi_dirac(1,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)))
+    ! write (*,*) 'transverse_gauss', sum(fermi_dirac(2,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)))
+    write (*,*) 'vacuum_gauss', sum(fermi_dirac(3,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)))
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
@@ -3835,8 +3832,8 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
-          width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
+          ! middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+          ! width_idx  = ceiling((photo_bindenergy_broadening*10)/0.001)
           ! do e_scale = max(middle_idx-width_idx,1), min(middle_idx+width_idx,max_energy)
           do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
@@ -3845,6 +3842,7 @@ contains
         end do
       end do
     end do
+    ! write(*,*) my_node_id, 'sum binding_temp', sum(binding_temp)
     ! TODO - I will have to adapt the calculation to include all the
     ! TODO - contributions for G+k. It should help to go only a number
     ! TODO - of SDs away from the center to save iterations.
@@ -3883,16 +3881,22 @@ contains
                     theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
                   if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
                       phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                      temp_contribution = (qe_factor * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
+                      if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                        transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                                    width, (evacuum_eff - efermi))/norm_vac
+                      else
+                        transverse_gauss = 1.0_dp
+                      end if
+                      temp_contribution = (qe_factor  *  photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
                                           * foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
-                                          * (electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
-                                          * electrons_per_state * kpoint_weight(N_k) &
-                                          * (I_layer(layer(atom), current_photo_energy_index)) &
-                                          !           transverse_gauss                        vacuum_gauss
-                                          * fermi_dirac(2,n_eigen, N_spin, N_k) * fermi_dirac(3,n_eigen, N_spin, N_k) & 
+                                          * electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                                          * electrons_per_state  *  kpoint_weight(N_k) &
+                                          * I_layer(layer(atom), current_photo_energy_index) &
+                                          !                                  vacuum_gauss
+                                          * transverse_gauss  *  fermi_dirac(2,n_eigen, N_spin, N_k) & 
                                           * fermi_dirac(1,n_eigen, N_spin, N_k) &
                                           * (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                          /  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                          / pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                           * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
                     do e_scale = 1, max_energy
                       weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) + &
@@ -3909,6 +3913,7 @@ contains
 
     total_weighted = sum(weighted_temp(:, :, :, :, :))
     call comms_reduce(total_weighted, 1, "SUM")
+    write (*,*) 'total weighted', total_weighted
     if (total_weighted .gt. 0.0_dp) then
       qe_norm = total_qe/total_weighted
     else
