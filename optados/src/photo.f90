@@ -3751,20 +3751,22 @@ contains
     ! edited Felix Mildner, after August 2024
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
-    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, photo_spectral_func
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, photo_spectral_func, transmit_prob
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint, num_exclude_bands, &
+    & exclude_bands
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time
     use od_constants, only: inv_sqrt_two_pi, kB
     implicit none
 
+    real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp) :: qe_temp
     real(kind=dp) :: time0, time1
 
-    real(kind=dp) :: qe_norm, total_weighted
+    real(kind=dp) :: qe_norm, total_weighted, final_fd, initial_fd
     integer :: N_k, N_spin, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx
 
@@ -3839,7 +3841,6 @@ contains
                               scissor_op, width, evacuum_eff)/norm_vac
             else
               fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
-            end if
             end if
           end do
         end do
@@ -3980,20 +3981,11 @@ contains
               fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
             end if
             ! normally called vacuum_gauss
-            if (index(photo_model, '3step') > 0) then
-              if ((band_energy(n_eigen, N_spin, N_k)) .lt. evacuum_eff) then
-                fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k)) + &
-                                scissor_op, width, evacuum_eff)/norm_vac
-              else
-                fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
-              end if
-            elseif (index(photo_model, '1step') > 0)
-              if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+            if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
                 fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
                                 scissor_op, width, evacuum_eff)/norm_vac
-              else
-                fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
-              end if
+            else
+              fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
             end if
           end do
         end do
