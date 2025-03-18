@@ -3895,7 +3895,7 @@ contains
                                           /  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                           * (1.0_dp + field_emission(n_eigen, N_spin, N_k))
                     do e_scale = 1, max_energy
-                      weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
+                      weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) + &
                         binding_temp(e_scale, n_eigen, N_spin, N_k)*temp_contribution
                     end do
                   end if
