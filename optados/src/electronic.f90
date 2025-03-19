@@ -40,7 +40,7 @@ module od_electronic
   complex(kind=dp), allocatable, public, save  :: optical_mat(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: elnes_mat(:, :, :, :, :)
 
-  !Additional variables for photoemission.- V.Chang Nov-2020, 
+  !Additional variables for photoemission.- V.Chang Nov-2020,
   real(kind=dp), allocatable, public, save     :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
   ! F. Mildner April-2023
@@ -48,11 +48,10 @@ module od_electronic
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   real(kind=dp), dimension(5), public, save            :: fem_energy_info
   ! F.Mildner Feb/Mar-2025
-  real(kind=dp), allocatable, public, save     :: transmit_prob(:,:,:)
+  real(kind=dp), allocatable, public, save     :: transmit_prob(:, :, :)
   character(len=80), public, save              :: tmprob_file_header
   real(kind=dp), allocatable, public, save     :: photo_spectral_func(:, :, :, :, :)
   character(len=80), public, save              :: photo_specfn_file_header
-
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -790,8 +789,8 @@ contains
     use od_parameters, only: legacy_file_format, iprint, devel_flag
     use od_algorithms, only: algor_dist_array
     implicit none
-    
-    integer :: tmprob_unit ,i, ib, jb, is, ik, inodes, ierr
+
+    integer :: tmprob_unit, i, ib, jb, is, ik, inodes, ierr
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
     character(filename_len) :: tmcoeff_filename
@@ -845,7 +844,7 @@ contains
     end if
 
     return
-    102 call io_error('Error: Problem opening tmprob_bin file in read_transmit_probabil')
+102 call io_error('Error: Problem opening tmprob_bin file in read_transmit_probabil')
   end subroutine elec_read_transmit_prob
 
   subroutine elec_read_spec_function(max_gvec)
@@ -880,7 +879,7 @@ contains
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: photo_specfn_unit ,i, gdx, ib, is, ik, inodes, ierr
+    integer :: photo_specfn_unit, i, gdx, ib, is, ik, inodes, ierr
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
     character(filename_len) :: specfn_filename
@@ -904,23 +903,23 @@ contains
     end if
 
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate ( photo_spectral_func(3, max_gvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    allocate (photo_spectral_func(3, max_gvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating photo_spectral_func in elec_read_spec_function')
     if (on_root) then
       do inodes = 1, num_nodes - 1
         do ik = 1, num_kpoints_on_node(inodes)
           do is = 1, nspins
-            read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik),i=1, 3), gdx= 1, max_gvec),&
-                                        ib= 1, nbands)
+            read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+                                      ib=1, nbands)
           end do
         end do
-        call comms_send(photo_spectral_func(1, 1, 1, 1, 1), & 
-                        3*max_gvec*nbands*nspins*num_kpoints_on_node(inodes), inodes) 
+        call comms_send(photo_spectral_func(1, 1, 1, 1, 1), &
+                        3*max_gvec*nbands*nspins*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
-          read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik),i=1, 3), gdx= 1, max_gvec),&
-                                      ib= 1, nbands)
+          read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+                                    ib=1, nbands)
         end do
       end do
     end if
@@ -929,7 +928,7 @@ contains
       call comms_recv(photo_spectral_func(1, 1, 1, 1, 1), &
                       3*max_gvec*nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
-    
+
     if (on_root) close (unit=photo_specfn_unit)
 
     photo_spectral_func(1:2, :, :, :, :) = photo_spectral_func(1:2, :, :, :, :)/bohr2ang
@@ -937,12 +936,12 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a59,f11.3,a8)') &
-           '+ Time to read Spectral Fn Contribs                        ', time1 - time0, ' (sec) +'
+        '+ Time to read Spectral Fn Contribs                        ', time1 - time0, ' (sec) +'
     end if
 
     return
 
-    102 call io_error('Error: Problem opening specfn_bin file in read_spec_function')  
+102 call io_error('Error: Problem opening specfn_bin file in read_spec_function')
   end subroutine elec_read_spec_function
 
   !=========================================================================
@@ -1692,7 +1691,7 @@ contains
         write (stdout, *) " pdos_mwab%nspins   : ", pdos_mwab%nspins
         write (stdout, *) " pdos_mwab%norbitals: ", pdos_mwab%norbitals
         write (stdout, *) " pdos_mwab%nbands   : ", pdos_mwab%nbands
-      endif
+      end if
 
       allocate (pdos_orbital%species_no(pdos_mwab%norbitals), stat=ierr)
       if (ierr /= 0) call io_error(" Error : cannot allocate pdos_orbital")

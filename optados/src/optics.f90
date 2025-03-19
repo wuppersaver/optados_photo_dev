@@ -88,12 +88,12 @@ contains
     !
 
     use od_electronic, only: optical_mat, elec_read_optical_mat, nbands, nspins, &
-      efermi, efermi_set, elec_dealloc_optical
+                             efermi, efermi_set, elec_dealloc_optical
     use od_cell, only: cell_volume, num_kpoints_on_node, kpoint_r, real_lattice
     use od_jdos_utils, only: jdos_utils_calculate
     use od_comms, only: on_root, my_node_id
     use od_parameters, only: optics_geom, adaptive, linear, fixed, optics_intraband, &
-      optics_drude_broadening, photo_slab_min, photo_slab_max, devel_flag
+                             optics_drude_broadening, photo_slab_min, photo_slab_max, devel_flag
     use od_dos_utils, only: dos_utils_calculate_at_e, dos_utils_set_efermi
     use od_io, only: stdout
 
@@ -132,10 +132,10 @@ contains
     call elec_dealloc_optical ! don't need this large array anymore
 
     if (on_root) then
-      if (index(devel_flag,'slab_volume') > 0) then
+      if (index(devel_flag, 'slab_volume') > 0) then
         slab_volume = (cell_volume/real_lattice(3, 3))*(photo_slab_max - photo_slab_min)
         ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e,slab_volume)
+        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, slab_volume)
       else
         ! Calculate epsilon_2
         call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
@@ -152,18 +152,18 @@ contains
       end if
 
       ! Write everything out
-      if (index(devel_flag,'slab_volume') > 0) then
-        call write_epsilon(atom = 0,photo_volume = slab_volume)
+      if (index(devel_flag, 'slab_volume') > 0) then
+        call write_epsilon(atom=0, photo_volume=slab_volume)
       else
         call write_epsilon(0)
       end if
-        if (.not. index(optics_geom, 'tensor') > 0) then
+      if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
         call write_loss_fn
-        if (index(devel_flag,'slab_volume') > 0) then
-          call write_refract(atom = 0,photo_volume = slab_volume)
-          call write_absorp(atom = 0,photo_volume = slab_volume)
-          call write_reflect(atom = 0,photo_volume = slab_volume)
+        if (index(devel_flag, 'slab_volume') > 0) then
+          call write_refract(atom=0, photo_volume=slab_volume)
+          call write_absorp(atom=0, photo_volume=slab_volume)
+          call write_reflect(atom=0, photo_volume=slab_volume)
         else
           call write_refract(0)
           call write_absorp(0)
@@ -181,9 +181,9 @@ contains
     !***************************************************************
     use od_constants, only: dp
     use od_electronic, only: nbands, nspins, optical_mat, num_electrons, &
-      electrons_per_state, band_energy, efermi
+                             electrons_per_state, band_energy, efermi
     use od_cell, only: nkpoints, cell_volume, num_kpoints_on_node, cell_get_symmetry, &
-      num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
+                       num_crystal_symmetry_operations, crystal_symmetry_operations, kpoint_r
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, scissor_op, devel_flag
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id
@@ -563,7 +563,8 @@ contains
         end do
       end do
       if (present(photo_atom_volume)) then
-      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
+        write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, &
+          '------------------------+'
         intra = intra*e_charge/(photo_atom_volume*1E-10*epsilon_0)
       else
         write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
@@ -1045,7 +1046,7 @@ contains
 
     use od_cell, only: nkpoints, cell_volume
     use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format, &
-      optics_intraband, optics_lossfn_broadening
+                             optics_intraband, optics_lossfn_broadening
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: jdos_nbins, E
     use od_io, only: seedname, io_file_unit, stdout

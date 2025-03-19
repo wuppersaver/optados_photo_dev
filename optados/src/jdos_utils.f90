@@ -64,10 +64,10 @@ contains
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
     !===============================================================================
-    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo,&
-      jdos_max_energy, jdos_spacing, photo
+    use od_parameters, only: linear, fixed, adaptive, quad, iprint, dos_per_volume, photo, &
+                             jdos_max_energy, jdos_spacing, photo
     use od_electronic, only: elec_read_band_gradient, band_gradient, nspins, electrons_per_state, &
-      num_electrons, efermi_set
+                             num_electrons, efermi_set
     use od_comms, only: on_root, comms_bcast
     use od_io, only: stdout, io_error, io_time, seedname
     use od_cell, only: cell_volume
@@ -298,8 +298,9 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, kpoint_weight,&
          &recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, photo, &
-         finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
-         photo_slab_max, photo_slab_min
+                             finite_bin_correction, scissor_op, hybrid_linear_grad_tol, &
+                             hybrid_linear, exclude_bands, num_exclude_bands, &
+                             photo_slab_max, photo_slab_min
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
          & efermi, elec_pdos_read, pdos_weights, pdos_mwab, elec_dealloc_pdos
@@ -345,7 +346,7 @@ contains
       end do
       if (photo) then
         mean_height = (photo_slab_min + photo_slab_max)/(2*2)
-        sub_cell_length(3) = sqrt(recip_lattice(3,1)**2 + recip_lattice(3,2)**2 + (pi/mean_height)**2)*step(3)
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/mean_height)**2)*step(3)
       end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if

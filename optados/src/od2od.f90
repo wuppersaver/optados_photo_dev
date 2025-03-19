@@ -288,15 +288,15 @@ contains
     end do
 
     energy_count = int(fem_energy_info(1))
-    write (stdout,*) fem_energy_info
+    write (stdout, *) fem_energy_info
     if (.not. allocated(foptical_mat)) then
       write (stdout, *) " Allocating foptical_mat."
       allocate (foptical_mat(nbands, 3, energy_count, nkpoints, nspins), stat=ierr)
     end if
     ! Total number of elements of fem
-    write(stdout,*) 'nbands', nbands, 'energy_count', energy_count
+    write (stdout, *) 'nbands', nbands, 'energy_count', energy_count
     write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
-    write(stdout,*) string
+    write (stdout, *) string
 
     ! write(string,'(a)') trim(format_precision)
     ! write(0,*) nkpoints, nspins, nbands
@@ -329,11 +329,11 @@ contains
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
     integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
-    
+
     write (stdout, *) " Write a formatted .fem file. "
 
     foptical_mat = foptical_mat/(bohr2ang*H2eV)
-    write(stdout, *) fem_energy_info
+    write (stdout, *) fem_energy_info
     energy_count = int(fem_energy_info(1))
 
     open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
@@ -353,7 +353,7 @@ contains
     do ik = 1, nkpoints
       do is = 1, nspins
         write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), &
-        jb=1, energy_count)
+                                                  jb=1, energy_count)
       end do
     end do
 
@@ -385,7 +385,7 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb,energy_count, fem_unit = 6
+    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
 
     write (stdout, *) " Write a binary fem file."
 
@@ -405,7 +405,7 @@ contains
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands),i=1, 3), jb=1, energy_count)
+        write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
       end do
     end do
 
@@ -413,7 +413,7 @@ contains
   end subroutine write_fem_bin
 
   !=========================================================================
-  ! B A N D   T R A N S M I S S I O N   C O E F F I C I E N T S 
+  ! B A N D   T R A N S M I S S I O N   C O E F F I C I E N T S
   !=========================================================================
 
   !=========================================================================
@@ -477,7 +477,7 @@ contains
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
     integer :: ik, is, ib, i, jb, tmcoeff_unit = 6
-    
+
     write (stdout, *) " Write a formatted .tmprob file. "
 
     open (unit=tmcoeff_unit, form='formatted', file=trim(outseedname)//".tmprob_fmt")
@@ -525,7 +525,7 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb,energy_count, tmcoeff_unit = 6
+    integer :: ik, is, ib, i, jb, energy_count, tmcoeff_unit = 6
 
     write (stdout, *) " Write a binary tmprob file."
 
@@ -547,7 +547,7 @@ contains
   end subroutine write_tmprob_bin
 
   !=========================================================================
-  ! P H O T O    S P E C T R A L    F U N C T I O N 
+  ! P H O T O    S P E C T R A L    F U N C T I O N
   !=========================================================================
 
   !=========================================================================
@@ -575,7 +575,7 @@ contains
     read (str_gvec, *) max_gvec
     if (.not. allocated(photo_spectral_func)) then
       write (stdout, *) " Allocating spectral function."
-      allocate (photo_spectral_func(3,max_gvec,nbands, nspins, nkpoints), stat=ierr)
+      allocate (photo_spectral_func(3, max_gvec, nbands, nspins, nkpoints), stat=ierr)
     end if
     ! ! Total number of elements of tmprob
     ! write(stdout,*) 'nbands', nbands
@@ -587,8 +587,8 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik),i=1, 3),gdx=1, max_gvec), &
-                                                                                             ib=1, nbands)
+        read (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+                                                    ib=1, nbands)
       end do
     end do
 
@@ -612,7 +612,7 @@ contains
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
     integer :: ik, is, ib, i, gdx, jb, specfn_unit = 6
-    
+
     write (stdout, *) " Write a formatted .specfn file. "
 
     open (unit=specfn_unit, form='formatted', file=trim(outseedname)//".specfn_fmt")
@@ -628,8 +628,8 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik),i=1,3 ), &
-                                                      gdx = 1, max_gvec), ib=1, nbands)
+        write (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), &
+                                                      gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
 
@@ -661,10 +661,10 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, jb,energy_count, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, jb, energy_count, specfn_unit = 6
 
     write (stdout, *) " Write a binary specfn file."
-    
+
     open (unit=specfn_unit, form='unformatted', file=trim(outseedname)//".specfn_bin")
 
     write (stdout, *) "-> specfn file_version ", file_version
@@ -675,7 +675,7 @@ contains
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik),i=1, 3),gdx=1, max_gvec),ib=1, nbands)
+        write (specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
 
@@ -1458,82 +1458,82 @@ program od2od
 
   ! Main case to decide what file format to read in.
   read_input:select case(trim(infile))
-case ("ome_fmt")
+  case ("ome_fmt")
   ome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_ome_fmt()
-case ("ome_bin")
+  case ("ome_bin")
   ome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_ome_bin()
-case ("fem_fmt")
+  case ("fem_fmt")
   fem_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_fem_fmt()
-case ("fem_bin")
+  case ("fem_bin")
   fem_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_fem_bin()
-case ("tmprob_fmt")
+  case ("tmprob_fmt")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_tmprob_fmt()
-case ("tmprob_bin")
+  case ("tmprob_bin")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_tmprob_bin()
-case ("specfn_fmt")
+  case ("specfn_fmt")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_specfn_fmt()
-case ("specfn_bin")
+  case ("specfn_bin")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_specfn_bin()
-case ("dome_fmt")
+  case ("dome_fmt")
   dome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_dome_fmt()
-case ("dome_bin")
+  case ("dome_bin")
   dome_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_dome_bin()
-case ("pdos_fmt")
+  case ("pdos_fmt")
   pdos_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_pdos_fmt()
-case ("pdos_bin")
+  case ("pdos_bin")
   pdos_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_pdos_bin()
-case ("elnes_fmt")
+  case ("elnes_fmt")
   elnes_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_elnes_fmt()
-case ("elnes_bin")
+  case ("elnes_bin")
   elnes_conv = .true.
   call get_band_energy()
   call write_read_file()
   call read_elnes_bin()
-case ("dummy")
+  case ("dummy")
   dummy_conv = .true.
   call get_band_energy()
   call write_read_file()
   write (stdout, *) " Not reading any input file."
-case default
+  case default
   call io_error('Unknown Input File format speccified')
   end select read_input
   write (stdout, *) "+----------------------------------------------------------------------------+"
@@ -1541,63 +1541,63 @@ case default
   write (stdout, *) "+------------------------------- Write File ---------------------------------+"
   ! Main case to decide what file format to write.
   write_output:select case(trim(outfile))
-case ("ome_fmt")
+  case ("ome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_fmt()
-case ("ome_bin")
+  case ("ome_bin")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   if (dome_conv) call pad_an_ome()
   call write_ome_bin()
-case ("fem_fmt")
+  case ("fem_fmt")
   if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   call write_fem_fmt()
-case ("fem_bin")
+  case ("fem_bin")
   if (.not. (fem_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format '&
        &//trim(outfile))
   call write_fem_bin()
-case ("tmprob_fmt")
+  case ("tmprob_fmt")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
   call write_tmprob_fmt
-case ("tmprob_bin")
+  case ("tmprob_bin")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
   call write_tmprob_bin
-case ("specfn_fmt")
+  case ("specfn_fmt")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
   call write_specfn_fmt
-case ("specfn_bin")
+  case ("specfn_bin")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
   call write_specfn_bin
-case ("dome_fmt")
+  case ("dome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))
   if (ome_conv) call slice_an_ome()
   call write_dome_fmt()
-case ("dome_bin")
+  case ("dome_bin")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))
   if (ome_conv) call slice_an_ome()
   call write_dome_bin()
-case ("pdos_fmt")
+  case ("pdos_fmt")
   if (.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_pdos_fmt()
-case ("pdos_bin")
+  case ("pdos_bin")
   if (.not. pdos_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_pdos_bin()
-case ("elnes_fmt")
+  case ("elnes_fmt")
   if (.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_elnes_fmt()
-case ("elnes_bin")
+  case ("elnes_bin")
   if (.not. elnes_conv) call io_error(' Input format '//trim(infile)//' not compatible with output format '//trim(outfile))
   call write_elnes_bin()
-case ("dummy")
+  case ("dummy")
   write (stdout, *) " Not writing any output file."
   if (dummy_conv) then
     write (stdout, *)
@@ -1606,7 +1606,7 @@ case ("dummy")
     write (stdout, *)
     write (stdout, *) "                No point in taking up disk space unnecessarily, eh ?"
   end if
-case default
+  case default
   call io_error('Unknown Output File format speccified')
   end select write_output
 
