@@ -291,11 +291,11 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: devel_flag, photo_imfp_value, photo_slab_max, photo_slab_min, iprint
+    use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, iprint
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
-    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, devel_volume
+    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp
     real(kind=dp)                            :: diff_temp, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     integer, dimension(2)                    :: indices_top_bottom
     real(kind=dp), dimension(2)              :: mean_heights = 0.0_dp
