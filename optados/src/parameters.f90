@@ -450,20 +450,7 @@ contains
     call param_get_keyword('lai_lorentzian_offset', found, r_value=LAI_lorentzian_offset)
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
-    ! Photoemission parameters - V.Chang Nov-2020
-    photo_momentum = 'crystal'
-    call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
-    if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
-       .and. index(photo_momentum, 'specfn') == 0) &
-      call io_error('Error: value of momentum not recognised in param_read')
-
-    photo_output = 'off'
-    call param_get_keyword('photo_output', found, c_value=photo_output)
-    if (index(photo_output, 'qe_matrix') == 0 .and. index(photo_output, 'e_bind') == 0 .and. &
-      & index(photo_output, 'off') == 0) then
-      call io_error('Error: value of photo_output output not recognised in param_read')
-    end if
-
+    ! Photoemission parameters - V.Chang Nov-2020, F.Mildner Nov-2022/Mar-2025
     photo_model = '1step'
     call param_get_keyword('photo_model', found, c_value=photo_model)
     if (index(photo_model, '3step') > 0 .and. index(photo_model, '1step') > 0 .or. &
@@ -472,48 +459,30 @@ contains
       call io_error('Error: value of photoemission model not recognised in param_read')
     end if
 
-    call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
-    if (photo .and. .not. found) &
-      call io_error('Error: please set workfunction for photoemission calculation')
+    photo_momentum = 'crystal'
+    call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
+    if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
+       .and. index(photo_momentum, 'specfn') == 0) &
+      call io_error('Error: value of momentum not recognised in param_read')
 
-    photo_theta_min = 0.0_dp
-    call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
-    photo_theta_max = 90.0_dp
-    call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
-    photo_phi_min = 0.0_dp
-    call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
-    photo_phi_max = 90.0_dp
-    call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
-    photo_bindenergy_broadening = 0.0259
-    call param_get_keyword('photo_bindenergy_broadening',found, r_value=photo_bindenergy_broadening)
+    call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
+    if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
+    if (photo .and. .not. found .and. .not. photo_photon_sweep) &
+      call io_error('Error: please set photon energy for photoemission calculation')
+    
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = 2.0_dp
     call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
     if (photo_photon_min .gt. photo_photon_max .and. photo_photon_sweep) &
       call io_error('Error: max photon value is lower than min photon value or they have not been set')
-    call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
-    if (photo .and. .not. found .and. .not. photo_photon_sweep) &
-      call io_error('Error: please set photon energy for photoemission calculation')
-    photo_bulk_cutoff = 10.0_dp
-    call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
-    if (found) photo_bulk_cutoff = -1*log(photo_bulk_cutoff)
-    photo_temperature = 298.0_dp
-    call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
-
-    ! call param_get_keyword('photo_surface_area', found, r_value=photo_surface_area)
-    ! if (photo .and. .not. found) &
-    ! call io_error('Error: please set surface area for photoemission calculation')
-
-    ! call param_get_keyword('photo_slab_volume', found, r_value=photo_slab_volume)
-    ! if (photo .and. .not. found) &
-    !   call io_error('Error: please set volume of the slab for photoemission calculation')
+    
+    call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
+    if (photo .and. .not. found) &
+      call io_error('Error: please set workfunction for photoemission calculation')
 
     photo_slab_min = 0.0_dp
     call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
-    ! if(photo .and. .not. found) &
-    !     call io_error('Error: please set volume of the slab for photoemission calculation')
     photo_slab_max = 0.0_dp
     call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
 
@@ -523,9 +492,6 @@ contains
     if (photo_slab_max .lt. photo_slab_min) then
       call io_error('Error: the supplied slab_max value is less than the slab_min value!')
     end if
-
-    photo_remove_box_states = .False.
-    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
     photo_layer_choice = 'optados'
     call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
@@ -537,6 +503,9 @@ contains
 
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
+
+    photo_remove_box_states = .False.
+    call param_get_keyword('photo_remove_box_states', found, l_value=photo_remove_box_states)
 
     photo_imfp_choice = 'const'
     call param_get_keyword('photo_imfp_choice', found, c_value=photo_imfp_choice)
@@ -563,6 +532,32 @@ contains
       call param_get_keyword_vector('photo_imfp_value', found, i_temp, r_value=photo_imfp_value)
       photo_imfp_value = 0.0_dp
     end if
+
+    photo_bulk_cutoff = 10.0_dp
+    call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
+    if (found) photo_bulk_cutoff = -1*log(photo_bulk_cutoff)
+
+    photo_temperature = 298.0_dp
+    call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
+
+    photo_output = 'off'
+    call param_get_keyword('photo_output', found, c_value=photo_output)
+    if (index(photo_output, 'qe_matrix') == 0 .and. index(photo_output, 'e_bind') == 0 .and. &
+      & index(photo_output, 'off') == 0) then
+      call io_error('Error: value of photo_output output not recognised in param_read')
+    end if
+
+    photo_theta_min = 0.0_dp
+    call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
+    photo_theta_max = 90.0_dp
+    call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
+    photo_phi_min = 0.0_dp
+    call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
+    photo_phi_max = 90.0_dp
+    call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
+    
+    photo_bindenergy_broadening = 0.0259
+    call param_get_keyword('photo_bindenergy_broadening',found, r_value=photo_bindenergy_broadening)
 
     photo_sf_max_vectors = 1
     call param_get_keyword('photo_sf_max_vectors', found, i_value = photo_sf_max_vectors)
@@ -1806,6 +1801,7 @@ contains
     call comms_bcast(photo_theta_max, 1)
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
+    call comms_bcast(photo_bindenergy_broadening, 1)
     call comms_bcast(photo_sf_max_vectors, 1)
 
     call comms_bcast(num_exclude_bands, 1)
