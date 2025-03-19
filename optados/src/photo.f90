@@ -48,7 +48,6 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: absorp
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
-  ! real(kind=dp), dimension(:), allocatable :: volume_layer
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp)                            :: box_height
   real(kind=dp)                            :: box_volume
@@ -60,7 +59,6 @@ module od_photo
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   real(kind=dp), dimension(:, :, :), allocatable :: band_imfp
-  ! real(kind=dp), dimension(:), allocatable :: box_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
@@ -69,7 +67,6 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
-  ! real(kind=dp), allocatable, dimension(:, :, :, :) :: bulk_prob
   real(kind=dp), allocatable, dimension(:) :: t_energy
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
@@ -97,8 +94,6 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  ! integer, allocatable, dimension(:, :, :) :: lgcl_box_states
-  ! real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
   ! The Free Electron Matrix (FEM) elements are calculated for a specific E_fermi offset, workfct and photon
   ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters
   ! used for the OptaDOS run.
@@ -296,8 +291,7 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_value, photo_slab_max, &
-                             photo_slab_min, iprint
+    use od_parameters, only: devel_flag, photo_imfp_value, photo_slab_max, photo_slab_min, iprint
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
@@ -322,7 +316,7 @@ contains
       atom_order(i) = i
     end do
 
-    ! TODO: Check that we have a cuboid cell as that is currently assumed for a lot of calculations!! - WIP
+    ! Check that we have gamma = 90 deg as that is currently assumed for a lot of calculations!!
     if (real_lattice(3, 1) .gt. 0.000001_dp .and. real_lattice(3, 2) .gt. 0.000001_dp) then
       call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
     end if
@@ -420,7 +414,7 @@ contains
     slab_middle_ref = sum(mean_heights)/2
     box_volume = box_height*cell_area
     ! determine the number of boxes we need until we have reached the top of the slab
-    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height)
+    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height) + 1
     if (num_boxes .eq. 0) num_boxes = 1
     ! set up box top points as middle_reference + n(1...)*box_height
     if (.not. allocated(boxes_top_z_coord)) then
@@ -447,7 +441,7 @@ contains
       end do
       atoms_per_box(i) = counter
     end do
-    max_atoms = sum(atoms_per_box)
+    max_atoms = sum(atoms_per_box) - atoms_per_box(num_boxes)
 
     if (on_root) then
       if (iprint .gt. 1) then
@@ -487,9 +481,6 @@ contains
 
     !CALCULATE THE MAX LAYER (HALF SLAB)
     max_layer = ((layer(num_atoms) + 1)/2)
-    if (index(photo_layer_choice, 'user') > 0) then
-      max_layer = photo_max_layer
-    end if
 
     !CALCULATE THE MAX ATOM (HALF SLAB)
     max_atoms = 0
@@ -502,10 +493,6 @@ contains
     if (on_root) then
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '   Max  number of layers:', max_layer, '   |'
 226   format(1x, a23, I12, 1x, a25, 1x, I12, a4)
-
-      if (index(devel_flag, 'layer_user') > 0) then
-        write (stdout, '(1x,a78)') '|     *** ATTENTION *** : The max_layer value was supplied by the user!      |'
-      end if
 
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -617,12 +604,6 @@ contains
 225     format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E14.6E3, 3x, F11.4, 3x, F11.4, a5)
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    end if
-
-    if (index(devel_flag, 'atom_vol') .gt. 0) then
-      i = len_trim(devel_flag)
-      read (devel_flag(i - 10:i), *) devel_volume
-      volume_atom = devel_volume
     end if
 
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
@@ -985,10 +966,6 @@ contains
                     if (band_energy(n_eigen, N_spin, N_k) > efermi .and. n_eigen /= n_eigen_final) cycle
                     if (band_energy(n_eigen_final, N_spin, N_k) < efermi .and. n_eigen /= n_eigen_final) cycle
                     if (pdos_weights_k_band(n_eigen, N_spin, N_k) .eq. 0.0_dp) then
-                      ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N_k, N_spin, n_eigen
-                      ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)),&
-                      ! pdos_weights_k_band(n_eigen, N_spin, N_k)
-                      ! call FLUSH()
                       cycle
                     end if
                     projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2) = &
@@ -1411,6 +1388,11 @@ contains
           end do
         end do
       end if
+      ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
+      ! layer by layer emission probability array (does not contain light intensity), we have to set the
+      ! intensity value artifically to 1.0 to have it not influence the final value.
+      ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
+      I_layer(layer(max_atoms + 1), 1:number_energies) = 1.0_dp
     else
       allocate (I_layer(num_boxes + 1, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
@@ -1436,13 +1418,14 @@ contains
           end do
         end do
       end if
+      ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
+      ! layer by layer emission probability array (does not contain light intensity), we have to set the
+      ! intensity value artifically to 1.0 to have it not influence the final value.
+      ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
+      I_layer(box_atom(max_atoms + 1), 1:number_energies) = 1.0_dp
     end if
 
-    ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
-    ! layer by layer emission probability array (does not contain light intensity), we have to set the
-    ! intensity value artifically to 1.0 to have it not influence the final value.
-    ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
-    I_layer(layer(max_atoms + 1), 1:number_energies) = 1.0_dp
+    
 
     if (allocated(reflect_photo)) then
       deallocate (reflect_photo, stat=ierr)
@@ -1581,7 +1564,7 @@ contains
     !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
     ! Theta: angle between the photoemitted electron and the surface normal
-    ! Phi: angle between the x and y components parallel to the surface
+    ! Phi: angle between the photoemission direction and the x axis
     ! orig. Victor Chang, 7th February 2020
     ! parts rewritten Felix Mildner, after Mar 2023
     !===============================================================================
@@ -1600,7 +1583,6 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_y
-    ! real(kind=dp), allocatable, dimension(:, :, :, :, :)::E_specfn
     real(kind=dp) :: tol = 1.0E-10_dp
     real(kind=dp) :: time0, time1
 
@@ -1645,9 +1627,6 @@ contains
     allocate (E_y(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_y failed')
     E_y = 0.0_dp
-
-    ! allocate (E_specfn(3, 100, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_specfn failed')
 
     if (index(photo_momentum, 'kp') > 0) then
       call elec_read_band_gradient
@@ -1831,7 +1810,7 @@ contains
     real(kind=dp) :: tolerance
     real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
 
-    tolerance = 0.00000000001_dp
+    tolerance = 0.1E-11_dp
     time0 = io_time()
     allocate (new_atom_coordinates(3, max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atom_coordinates failed')
@@ -1985,16 +1964,10 @@ contains
     use od_io, only: io_error, io_time, stdout
     implicit none
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
-    ! real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
     integer :: N_k, N_spin, n_eigen, i, num_layers, ierr, gdx
     real(kind=dp) :: exponent, time0, time1, band_imfp_max
 
     time0 = io_time()
-    ! if (.not. allocated(bulk_prob)) then
-    !   allocate (bulk_prob(photo_sf_max_vectors,nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    !   if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
-    ! end if
-    ! bulk_prob = 0.0_dp
 
 235 format(1x, a1, 5x, a8, I3, 5x, a10, E13.6E2, 2x, a8, E13.6E2, 9x, a1)
     if (.not. new_geom_choice) then
@@ -2013,10 +1986,6 @@ contains
       allocate (bulk_light_tmp(num_layers), stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
       bulk_light_tmp = 0.0_dp
-
-      ! allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
-      ! bulk_prob_tmp = 0.0_dp
 
       bulk_light_tmp(1) = I_layer(layer(max_atoms), current_photo_energy_index)* &
                           exp(-(absorp_photo(max_atoms, current_photo_energy_index)*thickness_atom(max_atoms)*1E-10))
@@ -2039,7 +2008,6 @@ contains
                     if (exponent .gt. -575.0_dp) then
                       electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
                         electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
-                      ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2061,7 +2029,6 @@ contains
                     if (exponent .gt. -575.0_dp) then
                       electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
                         electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
-                      ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2132,10 +2099,6 @@ contains
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
       bulk_light_tmp = 0.0_dp
 
-      ! allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
-      ! bulk_prob_tmp = 0.0_dp
-
       bulk_light_tmp(1) = I_layer(box_atom(max_atoms), current_photo_energy_index)* &
                           exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_height*1E-10))
       do i = 2, num_layers
@@ -2157,7 +2120,6 @@ contains
                     if (exponent .gt. -575.0_dp) then
                       electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
                         electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
-                      ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2179,7 +2141,6 @@ contains
                     if (exponent .gt. -575.0_dp) then
                       electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
                         electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
-                      ! bulk_prob(gdx, n_eigen, N_spin, N_k) = bulk_prob(gdx, n_eigen, N_spin, N_k) + exp(exponent)*bulk_light_tmp(i)
                     end if
                   end if
                 end do
@@ -2232,14 +2193,8 @@ contains
       end if ! If statement extra printing of slab data
     end if ! If statement for geometry choice
 
-    ! deallocate (atom_imfp, stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate atom_imfp')
-
     deallocate (bulk_light_tmp, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_light_tmp')
-
-    ! deallocate (bulk_prob_tmp, stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
 
     deallocate (new_atom_coordinates, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atom_coordinates')
@@ -2273,10 +2228,8 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    ! real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
     integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode
-    ! real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2429,7 +2382,6 @@ contains
 
   end subroutine calc_ds_like_model
 
-  ! TODO: Introduce the 1-occ_fermi_dirac term
   !===============================================================================
   subroutine calc_three_step_model
     !*===============================================================================
@@ -2455,7 +2407,6 @@ contains
     real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, &
                      time0, time1, final_fd, initial_fd, temp_contribution
     integer :: N_k, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, gdx, qe_unit, token, inode
-    ! real(kind=dp) :: sub_cell_area
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -3064,7 +3015,7 @@ contains
     energy_max = energy_min + energy_step*(energy_count - 1)
     ! Check the inputs are compatible
     ! Are the jdos_step and energy_step compatible?
-    ! WIP - Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
+    ! Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
     ! reached using the input step
     if (jdos_spacing .lt. energy_step) then
       if (on_root) then
@@ -3113,7 +3064,6 @@ contains
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
     if (on_root .and. enable_debug_output) write (stdout, *) 'energy_index:', energy_index
 
-    ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
       allocate (foptical_matrix_weights(nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
@@ -3274,7 +3224,6 @@ contains
     real(kind=dp) :: temp_contribution
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    ! real(kind=dp) :: volume_factor, volume_factor_bulk
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
@@ -3391,36 +3340,6 @@ contains
         end do
       end do
     end do
-    ! atom = max_atoms + 1
-    ! do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-    !   do N_spin = 1, nspins                    ! Loop over spins
-    !     do n_eigen = 1, nbands
-    !       do gdx = 1, photo_sf_max_vectors
-    !         if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-    !           transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-    !                                   width, (evacuum_eff - efermi))/norm_vac
-    !         else
-    !           transverse_gauss = 1.0_dp
-    !         end if
-    !         if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-    !           vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
-    !                           scissor_op, width, evacuum_eff)/norm_vac
-    !         else
-    !           vacuum_gauss = 1.0_dp
-    !         end if
-    !         qe_osm(gdx, n_eigen, N_spin, N_k, atom) = qe_factor*&
-    !                                                   photo_spectral_func(3,gdx, n_eigen, N_spin, N_k)* &
-    !                                                   (foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
-    !                                                   bulk_prob(gdx, n_eigen, N_spin, N_k)* &
-    !                                                   electrons_per_state*kpoint_weight(N_k)* &
-    !                                                   transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
-    !                                                   (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
-    !                                                   pdos_weights_k_band(n_eigen, N_spin, N_k)))* &
-    !                                                   (1.0_dp + field_emission(n_eigen, N_spin, N_k))
-    !       end do
-    !     end do
-    !   end do
-    ! end do
 
     if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -3684,8 +3603,6 @@ contains
 
   subroutine binding_energy_broadening
     !===============================================================================
-    ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
-    ! matrix? Would it make sense to apply the photo_temperature value in eV?
     !* This subroutine applies a Gaussian broadening to the binding energy
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
@@ -3756,9 +3673,6 @@ contains
         end do
       end do
     end do
-    ! TODO - I will have to adapt the calculation to include all the
-    ! TODO - contributions for G+k. It should help to go only a number
-    ! TODO - of SDs away from the center to save iterations.
     if (index(photo_model, '3step') > 0) then
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
@@ -3907,9 +3821,6 @@ contains
         if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
       end if
 
-      ! TODO - I will have to adapt the calculation to include all the
-      ! TODO - contributions for G+k. It should help to go only a number
-      ! TODO - of SDs away from the center to save iterations.
     elseif (index(photo_model, '1step') > 0) then
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins

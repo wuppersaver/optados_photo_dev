@@ -123,10 +123,6 @@ module od_parameters
   character(len=20), public, save :: photo_model
   character(len=20), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
-  character(len=20), public, save :: photo_layer_choice
-  integer, public, save           :: photo_max_layer
-  !logical,           public, save :: angle_resolution
-  !character(len=20), public, save :: resolution_type
   real(kind=dp), public, save :: photo_phi_min
   real(kind=dp), public, save :: photo_phi_max
   real(kind=dp), public, save :: photo_theta_min
@@ -492,14 +488,6 @@ contains
     if (photo_slab_max .lt. photo_slab_min) then
       call io_error('Error: the supplied slab_max value is less than the slab_min value!')
     end if
-
-    photo_layer_choice = 'optados'
-    call param_get_keyword('photo_layer_choice', found, c_value=photo_layer_choice)
-
-    photo_max_layer = -1
-    call param_get_keyword('photo_max_layer', found, i_value=photo_max_layer)
-    if (photo .and. index(photo_layer_choice, 'user') .gt. 0 .and. .not. found) &
-      call io_error('Error: max # of layers was set to be supplied by user, but does not exist in input')
 
     photo_elec_field = 0.00_dp
     call param_get_keyword('photo_elec_field', found, r_value=photo_elec_field)
@@ -1005,9 +993,6 @@ contains
       ! write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Volume                (Ang**3)       :', photo_slab_volume, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Max Z-Coord.          (Ang)          :', photo_slab_max, '|'
       write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Slab Min Z-Coord.          (Ang)          :', photo_slab_min, '|'
-      if (index(photo_layer_choice, 'user') > 0) then
-        write (stdout, '(1x,a46,2x,I4,25x,a1)') '|  User set maximal # of layers for calc.    :', photo_max_layer, '|'
-      end if
       if (index(photo_imfp_choice,'const') > 0) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  IMFP Constant              (Ang)          :', photo_imfp_value(1), '|'
       else if (index(photo_imfp_choice,'layers') > 0) then
@@ -1783,8 +1768,6 @@ contains
     call comms_bcast(photo_work_function, 1)
     call comms_bcast(photo_slab_max, 1)
     call comms_bcast(photo_slab_min, 1)
-    call comms_bcast(photo_layer_choice, len(photo_layer_choice))
-    call comms_bcast(photo_max_layer, 1)
     call comms_bcast(photo_elec_field, 1)
     call comms_bcast(photo_remove_box_states,1)
     call comms_bcast(photo_len_imfp_value, 1)
