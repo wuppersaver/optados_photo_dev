@@ -39,7 +39,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :) :: pdos_weights_k_band
   real(kind=dp), allocatable, public, save :: E(:)
   real(kind=dp), allocatable, dimension(:, :, :) :: imfp_val
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: electron_esc
+  real(kind=dp), allocatable, dimension(:, :, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
   real(kind=dp), allocatable, dimension(:, :) :: reflect_photo
   real(kind=dp), allocatable, dimension(:, :) :: absorp_photo
@@ -48,7 +48,6 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: absorp
   real(kind=dp), dimension(:), allocatable :: thickness_atom
   real(kind=dp), dimension(:), allocatable :: thickness_layer
-  real(kind=dp), dimension(:), allocatable :: volume_layer
   real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp)                            :: box_height
   real(kind=dp)                            :: box_volume
@@ -59,20 +58,22 @@ module od_photo
   real(kind=dp)                            :: slab_middle_ref
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
+  real(kind=dp), dimension(:, :, :), allocatable :: band_imfp
   integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
-  real(kind=dp), dimension(:), allocatable :: box_imfp
-  real(kind=dp), dimension(:, :), allocatable :: new_atoms_coordinates
-  real(kind=dp), allocatable, dimension(:, :, :) :: phi_arpes
-  real(kind=dp), allocatable, dimension(:, :, :) :: theta_arpes
-  real(kind=dp), allocatable, dimension(:, :, :) :: E_kinetic
-  real(kind=dp), allocatable, dimension(:, :, :) :: E_transverse
-  real(kind=dp), allocatable, dimension(:, :, :) :: bulk_prob
+  real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_arpes
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes_internal
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: t_energy
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
+  real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm
   real(kind=dp) :: mean_te
   real(kind=dp) :: total_qe
   real(kind=dp), allocatable, dimension(:) :: layer_qe
@@ -93,10 +94,8 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  integer, allocatable, dimension(:, :, :) :: lgcl_box_states
-  real(kind=dp), allocatable, dimension(:, :, :) :: ref_band_energies
   ! The Free Electron Matrix (FEM) elements are calculated for a specific E_fermi offset, workfct and photon
-  ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters 
+  ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters
   ! used for the OptaDOS run.
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   integer                             :: energy_count
@@ -109,11 +108,11 @@ contains
   subroutine photo_calculate
     !! Main subroutine calling all the other subroutine steps.
     use od_electronic, only: elec_dealloc_optical, elec_pdos_read, elec_read_optical_mat, &
-      efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
+                             efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, write_photo_output, photo_photon_sweep, &
-      photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
+    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, photo_output, photo_photon_sweep, &
+                             photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -193,18 +192,18 @@ contains
 
         !Calculate the QE
         !Three-step-model
-        if (index(photo_model, '3step') > 0) then 
+        if (index(photo_model, '3step') > 0) then
           call calc_three_step_model
-        !One-step-model
-        elseif (index(photo_model, '1step') > 0) then 
+          !One-step-model
+        elseif (index(photo_model, '1step') > 0) then
           !Read the one-step matrix elements
-          if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat 
+          if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat
           !Calculate the one-step optical matrix
-          call make_foptical_weights 
+          call make_foptical_weights
           !Calculate QE
           call calc_one_step_model
-        ! Simplified DS like model 
-        elseif (index(photo_model, 'ds_like_pe') > 0) then 
+          ! Simplified DS like model
+        elseif (index(photo_model, 'ds_like_pe') > 0) then
           call calc_ds_like_model
         end if
 
@@ -214,9 +213,9 @@ contains
 
         call write_qe_data
         ! Only call the binding energy gaussian broadening and file printing if necessary
-        if (.not. index(write_photo_output, 'off') > 0) then
+        if (.not. index(photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(write_photo_output, 'e_bind') > 0) then 
+          if (index(photo_output, 'e_bind') > 0) then
             call binding_energy_broadening
           end if
           ! Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
@@ -243,19 +242,19 @@ contains
       end if
 
       !Calculate the QE
-        !Three-step-model
-      if (index(photo_model, '3step') > 0) then 
+      !Three-step-model
+      if (index(photo_model, '3step') > 0) then
         call calc_three_step_model
-      !One-step-model
-      elseif (index(photo_model, '1step') > 0) then 
+        !One-step-model
+      elseif (index(photo_model, '1step') > 0) then
         !Read the one-step matrix elements
-        if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat 
+        if (.not. allocated(foptical_matrix_weights)) call elec_read_foptical_mat
         !Calculate the one-step optical matrix
-        call make_foptical_weights 
+        call make_foptical_weights
         !Calculate QE
         call calc_one_step_model
-      ! Simplified DS like model 
-      elseif (index(photo_model, 'ds_like_pe') > 0) then 
+        ! Simplified DS like model
+      elseif (index(photo_model, 'ds_like_pe') > 0) then
         call calc_ds_like_model
       end if
 
@@ -265,9 +264,9 @@ contains
       call write_qe_data
 
       ! Only call the binding energy gaussian broadening and file printing if necessary
-      if (.not. index(write_photo_output, 'off') > 0) then
+      if (.not. index(photo_output, 'off') > 0) then
         !Broaden ouputs using a gaussian function
-        if (index(write_photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then 
+        if (index(photo_output, 'e_bind') > 0 .and. temp_photon_energy .ge. (photo_work_function - 0.1)) then
           call binding_energy_broadening
         end if
         !Write either a binding energy output with after Gaussian broadening
@@ -282,7 +281,6 @@ contains
 
   end subroutine photo_calculate
 
-
   subroutine analyse_geometry
     !* This subroutine identifies and defines a set of layers
     ! and finds the layer that each of the atoms belongs to
@@ -290,15 +288,14 @@ contains
     ! at the middle of the slab. The choice between the two is
     ! hardcoded in the variable "new_geom_choice" (True -> Boxes)
     use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
-    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, num_species, cell_volume, real_lattice
+    use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: devel_flag, photo_max_layer, photo_layer_choice, photo_imfp_const, photo_slab_max, &
-      photo_slab_min, iprint
+    use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, iprint
     implicit none
     integer :: atom_1, atom_2, i, atom_index, temp, first, ierr, atom, ic, counter
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
-    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp, devel_volume
+    real(kind=dp)                            :: z_temp, z_zero = 0.0_dp
     real(kind=dp)                            :: diff_temp, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     integer, dimension(2)                    :: indices_top_bottom
     real(kind=dp), dimension(2)              :: mean_heights = 0.0_dp
@@ -319,7 +316,7 @@ contains
       atom_order(i) = i
     end do
 
-    ! TODO: Check that we have a cuboid cell as that is currently assumed for a lot of calculations!! - WIP
+    ! Check that we have gamma = 90 deg as that is currently assumed for a lot of calculations!!
     if (real_lattice(3, 1) .gt. 0.000001_dp .and. real_lattice(3, 2) .gt. 0.000001_dp) then
       call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
     end if
@@ -377,9 +374,9 @@ contains
     do atom = 1, num_atoms
       diff_temp = atoms_pos_cart_photo(3, atom_order(atom)) - slab_middle_ref
       ! write(*,*) 'diff_temp(',atom,')',diff_temp
-      if (abs(diff_temp) .lt. 0.1) then 
+      if (abs(diff_temp) .lt. 0.1) then
         indices_top_bottom(1) = atom_order(atom)
-        indices_top_bottom(2) = atom_order(atom+1)
+        indices_top_bottom(2) = atom_order(atom + 1)
         slab_middle_ref = atoms_pos_cart_photo(3, atom_order(atom)) - 1
         exit
       end if
@@ -417,7 +414,7 @@ contains
     slab_middle_ref = sum(mean_heights)/2
     box_volume = box_height*cell_area
     ! determine the number of boxes we need until we have reached the top of the slab
-    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height)
+    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height) + 1
     if (num_boxes .eq. 0) num_boxes = 1
     ! set up box top points as middle_reference + n(1...)*box_height
     if (.not. allocated(boxes_top_z_coord)) then
@@ -444,7 +441,7 @@ contains
       end do
       atoms_per_box(i) = counter
     end do
-    max_atoms = sum(atoms_per_box)
+    max_atoms = sum(atoms_per_box) - atoms_per_box(num_boxes)
 
     if (on_root) then
       if (iprint .gt. 1) then
@@ -460,9 +457,9 @@ contains
 
       do atom = 1, num_atoms
         if (box_atom(atom) .gt. 0) then
-          write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))),& 
+          write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), &
             atom_order(atom), box_atom(atom), atoms_pos_cart_photo(3, atom_order(atom)), "|"
-        end if 
+        end if
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
@@ -484,9 +481,6 @@ contains
 
     !CALCULATE THE MAX LAYER (HALF SLAB)
     max_layer = ((layer(num_atoms) + 1)/2)
-    if (index(photo_layer_choice, 'user') > 0) then
-      max_layer = photo_max_layer
-    end if
 
     !CALCULATE THE MAX ATOM (HALF SLAB)
     max_atoms = 0
@@ -499,10 +493,6 @@ contains
     if (on_root) then
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '   Max  number of layers:', max_layer, '   |'
 226   format(1x, a23, I12, 1x, a25, 1x, I12, a4)
-
-      if (index(devel_flag, 'layer_user') > 0) then
-        write (stdout, '(1x,a78)') '|     *** ATTENTION *** : The max_layer value was supplied by the user!      |'
-      end if
 
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
@@ -616,14 +606,8 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 
-    if (index(devel_flag, 'atom_vol') .gt. 0) then
-      i = len_trim(devel_flag)
-      read (devel_flag(i - 10:i), *) devel_volume
-      volume_atom = devel_volume
-    end if
-
     !TEST IF THE SUPPLIED IMFP LIST IS LONG ENOUGH
-    if (allocated(photo_imfp_const) .and. size(photo_imfp_const, 1) .gt. 1 .and. size(photo_imfp_const, 1) .lt. max_layer) then
+    if (allocated(photo_imfp_value) .and. size(photo_imfp_value, 1) .gt. 1 .and. size(photo_imfp_value, 1) .lt. max_layer) then
       call io_error('The supplied list of layer dependent imfp values is less than the calculated max_layer. Check input!')
     end if
 
@@ -719,7 +703,7 @@ contains
 
   subroutine make_pdos_weights_atoms
     !!This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
-    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins, nbands
+    use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
     use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout, seedname, io_date
@@ -770,7 +754,7 @@ contains
               pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) = 0.0_dp
             end if
             pdos_weights_k_band(n_eigen, N_spin, N_k) = pdos_weights_k_band(n_eigen, N_spin, N_k) + &
-                                                      pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))
+                                                        pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))
           end do
         end do
       end do
@@ -876,19 +860,17 @@ contains
     end if
   end subroutine make_pdos_weights_atoms
 
-
   subroutine calc_photo_optics
-    !! This subroutine calculates the projected optical characteristics for each layer. 
+    !! This subroutine calculates the projected optical characteristics for each layer.
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
-      epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
+                         epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
     use od_io, only: stdout, io_error, io_time, seedname, io_date
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
-      nbands, nspins, band_energy
+                             nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
-    use od_parameters, only: optics_intraband, jdos_spacing, photo_model, photo_photon_energy, photo_photon_sweep, &
-      photo_photon_min, photo_photon_max, devel_flag, iprint, jdos_max_energy
+    use od_parameters, only: optics_intraband, jdos_spacing, devel_flag, iprint, jdos_max_energy, photo_model
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
     implicit none
@@ -897,8 +879,8 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
     integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, energy, box, initial
     integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, ome_unit = 32
-    real(kind=dp)    :: num_energies, temp, time0, time1
-    logical, dimension(3) :: gam
+    real(kind=dp)    :: time0, time1
+    ! logical, dimension(3) :: gam
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
     character(len=3) :: atom_s
@@ -959,7 +941,8 @@ contains
       write (stdout, 126) shape(matrix_weights)
       write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
       write (stdout, '(9999(es15.8))') (((((matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom), &
-                          N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, nbands)
+                                           N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
+                                         n_eigen_final=1, nbands), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -983,10 +966,6 @@ contains
                     if (band_energy(n_eigen, N_spin, N_k) > efermi .and. n_eigen /= n_eigen_final) cycle
                     if (band_energy(n_eigen_final, N_spin, N_k) < efermi .and. n_eigen /= n_eigen_final) cycle
                     if (pdos_weights_k_band(n_eigen, N_spin, N_k) .eq. 0.0_dp) then
-                      ! write (stdout,'(I2,1x,I4,1x,I1,1x,I3)') atom, N_k, N_spin, n_eigen
-                      ! write (stdout,'(99(ES19.12))') pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)),&
-                      ! pdos_weights_k_band(n_eigen, N_spin, N_k)
-                      ! call FLUSH()
                       cycle
                     end if
                     projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2) = &
@@ -1000,36 +979,36 @@ contains
 
           if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
             write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, &
-            '-------------------------------------+'
+              '-------------------------------------+'
             write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
             write (stdout, 126) shape(projected_matrix_weights)
             write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-            write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom),&
-                                                N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
-                                              n_eigen_final=1, nbands), n_eigen=1, nbands)
+            write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), &
+                                                  N2=1, N_geom), N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
+                                               n_eigen_final=1, nbands), n_eigen=1, nbands)
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
           end if
 
           ! Send matrix element to jDOS routine and get weighted jDOS back
           call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
-        if (on_root .and. iprint .gt. 2) then
-          N_geom = size(matrix_weights, 5)
-          write (atom_s, '(I3)') box + 100
-          open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
-          write (wjdos_unit, '(1x,a28)') '############################'
-          write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
-          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
-          write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
-          write (wjdos_unit, '(1x,a28)') '############################'
-          do is = 1, nspins
-            write (wjdos_unit, *) 'Spin Channel :', is
-            do idos = 1, jdos_nbins
-              write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+          if (on_root .and. iprint .gt. 2) then
+            N_geom = size(matrix_weights, 5)
+            write (atom_s, '(I3)') box + 100
+            open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
+            write (wjdos_unit, '(1x,a28)') '############################'
+            write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
+            write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# maximum JDOS energy :', jdos_max_energy, '[eV]'
+            write (wjdos_unit, '(1x,a23,1x,F10.4,1x,a4)') '# JDOS step size      :', jdos_spacing, '[eV]'
+            write (wjdos_unit, '(1x,a28)') '############################'
+            do is = 1, nspins
+              write (wjdos_unit, *) 'Spin Channel :', is
+              do idos = 1, jdos_nbins
+                write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+              end do
             end do
-          end do
-          close (unit=wjdos_unit)
-        end if
+            close (unit=wjdos_unit)
+          end if
 
           if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
             write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
@@ -1061,7 +1040,7 @@ contains
           if (on_root) then
             if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. optics_intraband) then
               write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, &
-              '---------------------------------+'
+                '---------------------------------+'
               write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
               write (stdout, 125) shape(dos_matrix_weights)
               write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
@@ -1105,11 +1084,11 @@ contains
               write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
               write (stdout, 125) shape(epsilon)
               if (.not. optics_intraband) then
-                write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2),  &
-                N2=1, N_geom)
+                write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2), &
+                                                   N2=1, N_geom)
               else
                 write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2), &
-                N2=1, N_geom), i=1, 3)
+                                                    N2=1, N_geom), i=1, 3)
               end if
               write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1305,8 +1284,8 @@ contains
             if (.not. optics_intraband) then
               write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2), N2=1, N_geom)
             else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2),&
-               N2=1, N_geom), i=1, 3)
+              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2), &
+                                                  N2=1, N_geom), i=1, 3)
             end if
             write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
 
@@ -1376,10 +1355,9 @@ contains
 
   end subroutine calc_photo_optics
 
-
   subroutine calc_absorp_layer
     !!This subroutine calculates the absorption coefficient for a specific layer
-    use od_cell, only: atoms_pos_cart_photo
+    ! use od_cell, only: atoms_pos_cart_photo
     use od_jdos_utils, only: jdos_nbins
     use od_parameters, only: devel_flag, iprint
     use od_io, only: stdout, io_error
@@ -1389,7 +1367,7 @@ contains
     integer :: atom, box, i, ierr, num_layer
 
     if (.not. new_geom_choice) then
-      allocate (I_layer(max_layer, number_energies), stat=ierr)
+      allocate (I_layer(max_layer + 1, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
       I_layer = 0.0_dp
       I_0 = 1.0_dp
@@ -1410,8 +1388,13 @@ contains
           end do
         end do
       end if
+      ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
+      ! layer by layer emission probability array (does not contain light intensity), we have to set the
+      ! intensity value artifically to 1.0 to have it not influence the final value.
+      ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
+      I_layer(layer(max_atoms + 1), 1:number_energies) = 1.0_dp
     else
-      allocate (I_layer(num_boxes, number_energies), stat=ierr)
+      allocate (I_layer(num_boxes + 1, number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
       I_layer = 0.0_dp
 
@@ -1435,6 +1418,11 @@ contains
           end do
         end do
       end if
+      ! Since we later combine the bulk slab emission probability (contains already light intensity) into the
+      ! layer by layer emission probability array (does not contain light intensity), we have to set the
+      ! intensity value artifically to 1.0 to have it not influence the final value.
+      ! We are only ever accessing I_layer to max_atoms, so this has no effect on the rest.
+      I_layer(box_atom(max_atoms + 1), 1:number_energies) = 1.0_dp
     end if
 
     if (allocated(reflect_photo)) then
@@ -1460,9 +1448,8 @@ contains
 
   end subroutine calc_absorp_layer
 
-
   subroutine effect_wf
-  
+
     !photo_elec_field given in eV/A
 
     use od_parameters, only: photo_work_function, photo_elec_field
@@ -1475,7 +1462,6 @@ contains
     evacuum_eff = work_function_eff + efermi
 
   end subroutine effect_wf
-
 
   subroutine calc_field_emission
     !!*This subroutine calculates the Schottky effect
@@ -1532,8 +1518,8 @@ contains
             fermi_dirac = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
 
-          if ((photo_elec_field/(4.0_dp*pi*epsilon_zero*1E-4_dp)*photo_elec_field) .lt. (field_energy(n_eigen, N_spin, N_k)**2))&
-           then
+          if ((photo_elec_field/(4.0_dp*pi*epsilon_zero*1E-4_dp)*photo_elec_field) .lt. (field_energy(n_eigen, N_spin, N_k)**2)) &
+            then
             if (barrier_height .le. 0.0_dp) then
               field_emission(n_eigen, N_spin, N_k) = 1.0_dp
             else
@@ -1575,60 +1561,68 @@ contains
   subroutine calc_angle
     !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
-    ! Theta: angle between the photoemitted electron and the perpendicular
-    !        of the surface
-    ! Phi: angle between the x and y components parallel to the surface
+    ! Theta: angle between the photoemitted electron and the surface normal
+    ! Phi: angle between the photoemission direction and the x axis
     ! orig. Victor Chang, 7th February 2020
     ! parts rewritten Felix Mildner, after Mar 2023
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, elec_read_band_curvature, &
-      band_curvature
+                             band_curvature, photo_spectral_func, elec_read_spec_function
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_momentum, devel_flag, iprint
+    use od_parameters, only: photo_model, photo_momentum, devel_flag, iprint, photo_sf_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout, io_time
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: hbar, ev_to_j, j_to_ev, e_mass, rad_to_deg
     implicit none
-    integer :: N_k, N_spin, n_eigen, ierr
+    integer :: N_k, N_spin, n_eigen, ierr, sf_maxvec, gdx
 
-    real(kind=dp), allocatable, dimension(:, :, :):: E_x
-    real(kind=dp), allocatable, dimension(:, :, :):: E_y
+    real(kind=dp), allocatable, dimension(:, :, :, :):: E_x
+    real(kind=dp), allocatable, dimension(:, :, :, :):: E_y
     real(kind=dp) :: tol = 1.0E-10_dp
     real(kind=dp) :: time0, time1
 
     time0 = io_time()
+    sf_maxvec = photo_sf_max_vectors
 
     if (.not. allocated(E_transverse)) then
-      allocate (E_transverse(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      allocate (E_transverse(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_transverse failed')
     end if
     E_transverse = 0.0_dp
 
     if (.not. allocated(theta_arpes)) then
-      allocate (theta_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      allocate (theta_arpes(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes failed')
     end if
-    theta_arpes = 0.0_dp
+    ! Impossible value as default that is equal to no emission
+    theta_arpes = 91.0_dp
+
+    if (.not. allocated(theta_arpes_internal)) then
+      allocate (theta_arpes_internal(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes_internal failed')
+    end if
+    ! Impossible value as default that is equal to no emission
+    theta_arpes_internal = 91.0_dp
 
     if (.not. allocated(phi_arpes)) then
-      allocate (phi_arpes(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      allocate (phi_arpes(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_arpes failed')
     end if
     phi_arpes = 0.0_dp
     if (.not. allocated(E_kinetic)) then
-      allocate (E_kinetic(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      allocate (E_kinetic(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_kinetic failed')
     end if
     E_kinetic = 0.0_dp
 
-    allocate (E_x(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    allocate (E_x(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_x failed')
     E_x = 0.0_dp
 
-    allocate (E_y(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    allocate (E_y(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_y failed')
     E_y = 0.0_dp
 
@@ -1642,8 +1636,18 @@ contains
 
     if (index(photo_momentum, 'crystal') > 0) call cell_calc_kpoint_r_cart
 
-    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. (index(devel_flag, 'print_qe_matrix_full') > 0 .and. &
-                                                on_root) .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
+    if (index(photo_momentum, 'specfn') > 0) then
+      call elec_read_spec_function(sf_maxvec)
+    else
+      if (.not. allocated(photo_spectral_func)) then
+        allocate (photo_spectral_func(3, 1, nbands, nspins, num_kpoints_on_node(my_node_id)))
+        photo_spectral_func = 1.0_dp
+      end if
+    end if
+
+    if ((index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) .or. &
+        (index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) &
+        .or. (index(devel_flag, 'print_qe_matrix_reduced') > 0 .and. on_root)) then
       call cell_calc_kpoint_r_cart
       write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
       do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -1655,27 +1659,35 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if (index(photo_momentum, 'kp') > 0) then
-            E_x(n_eigen, N_spin, N_k) = abs &
-                                      (0.5_dp*(1/(band_curvature(n_eigen, 1, 1, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
-                                       (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N_spin, N_k) = abs &
-                                      (0.5_dp*(1/(band_curvature(n_eigen, 2, 2, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
-                                       (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-          end if
-          if (index(photo_momentum, 'crystal') > 0) then
-            E_x(n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N_k)*1E+10)**2))*j_to_ev
-            E_y(n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N_k)*1E+10)**2))*j_to_ev
-          end if
-          if (index(photo_momentum, 'operator') > 0) then
-            E_x(n_eigen, N_spin, N_k) = abs &
-                                      (0.5_dp*e_mass* &
-                                       (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-            E_y(n_eigen, N_spin, N_k) = abs &
-                                      (0.5_dp*e_mass* &
-                                       (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
-          end if
-          E_transverse(n_eigen, N_spin, N_k) = E_x(n_eigen, N_spin, N_k) + E_y(n_eigen, N_spin, N_k)
+          do gdx = 1, photo_sf_max_vectors
+            if (index(photo_momentum, 'kp') > 0) then
+              E_x(gdx, n_eigen, N_spin, N_k) = abs &
+                                               (0.5_dp*(1/(band_curvature(n_eigen, 1, 1, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
+                                                (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+              E_y(gdx, n_eigen, N_spin, N_k) = abs &
+                                               (0.5_dp*(1/(band_curvature(n_eigen, 2, 2, N_k, N_spin)*ev_to_j*1E-20/(hbar**2)))* &
+                                                (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+            end if
+            if (index(photo_momentum, 'specfn') > 0) then
+              E_x(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))* &
+                                                ((photo_spectral_func(1, gdx, n_eigen, N_spin, N_k)*1E+10)**2))*j_to_ev
+              E_y(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))* &
+                                                ((photo_spectral_func(2, gdx, n_eigen, N_spin, N_k)*1E+10)**2))*j_to_ev
+            end if
+            if (index(photo_momentum, 'crystal') > 0) then
+              E_x(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N_k)*1E+10)**2))*j_to_ev
+              E_y(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(2, N_k)*1E+10)**2))*j_to_ev
+            end if
+            if (index(photo_momentum, 'operator') > 0) then
+              E_x(gdx, n_eigen, N_spin, N_k) = abs &
+                                               (0.5_dp*e_mass* &
+                                                (band_gradient(n_eigen, 1, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+              E_y(gdx, n_eigen, N_spin, N_k) = abs &
+                                               (0.5_dp*e_mass* &
+                                                (band_gradient(n_eigen, 2, N_k, N_spin)*(ev_to_j*1E-10/hbar))**2)*j_to_ev
+            end if
+            E_transverse(gdx, n_eigen, N_spin, N_k) = E_x(gdx, n_eigen, N_spin, N_k) + E_y(gdx, n_eigen, N_spin, N_k)
+          end do
         end do
       end do
     end do
@@ -1683,39 +1695,75 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
-          if ((abs(E_x(n_eigen, N_spin, N_k)) .lt. tol) .and. (abs(E_y(n_eigen, N_spin, N_k)) .lt. tol)) then
-            phi_arpes(n_eigen, N_spin, N_k) = 0.0_dp
-          elseif ((abs(E_y(n_eigen, N_spin, N_k)) .lt. tol)) then
-            phi_arpes(n_eigen, N_spin, N_k) = 90.0_dp
-          else
-            phi_arpes(n_eigen, N_spin, N_k) = atan(E_x(n_eigen, N_spin, N_k)/E_y(n_eigen, N_spin, N_k))*rad_to_deg
-          end if
+          do gdx = 1, photo_sf_max_vectors
+            if ((abs(E_x(gdx, n_eigen, N_spin, N_k)) .lt. tol) .and. (abs(E_y(gdx, n_eigen, N_spin, N_k)) .lt. tol)) then
+              phi_arpes(gdx, n_eigen, N_spin, N_k) = 0.0_dp
+            elseif ((abs(E_y(gdx, n_eigen, N_spin, N_k)) .lt. tol)) then
+              phi_arpes(gdx, n_eigen, N_spin, N_k) = 90.0_dp
+            else
+              phi_arpes(gdx, n_eigen, N_spin, N_k) = atan(E_x(gdx, n_eigen, N_spin, N_k)/E_y(gdx, n_eigen, N_spin, N_k))*rad_to_deg
+            end if
+          end do
         end do
       end do
     end do
-
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-
-          E_kinetic(n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff)
-
-          ! E_kinetic is the final kinetic energy of the electron after emissions
-          ! if the E_kin is less than 0, there is no emission and the theta angle stays < 0 deg
-          if (E_kinetic(n_eigen, N_spin, N_k) .lt. tol) cycle
-          
-          theta_arpes(n_eigen, N_spin, N_k) = (acos((E_kinetic(n_eigen, N_spin, N_k) - E_transverse(n_eigen, N_spin, N_k))/ &
-                                                    E_kinetic(n_eigen, N_spin, N_k)))*rad_to_deg
+    ! theta is the angle between emitted electron and the surface normal
+    ! 3 Step Model - calculating the final energy of the electrons as the FINAL STATE ENERGY
+    if (index(photo_model, '3step') > 0) then
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            ! total kinetic energy after emission from the excited band
+            E_kinetic(1:photo_sf_max_vectors, n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) - evacuum_eff)
+            do gdx = 1, photo_sf_max_vectors
+              if (E_kinetic(gdx, n_eigen, N_spin, N_k) .lt. E_transverse(gdx, n_eigen, N_spin, N_k)) cycle
+              ! Angle of electron outside material, after passing the surface and loosing E(work_function)
+              ! acos(E_ortho/E_kinetic)
+              theta_arpes(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) - &
+                                                              E_transverse(gdx, n_eigen, N_spin, N_k))/ &
+                                                             E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
+              ! angle of electron within material, before passing the surface
+              theta_arpes_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+                                                                       - E_transverse(gdx, n_eigen, N_spin, N_k))/ &
+                                                                      (E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff))) &
+                                                                *rad_to_deg
+            end do
+          end do
         end do
       end do
-    end do
+      ! 1 Step Model - calculating the final energy as E_band + E_photon
+    else if (index(photo_model, '1step') > 0) then
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            do gdx = 1, photo_sf_max_vectors
+              ! total kinetic energy after emission and passing through work function potential step
+              E_kinetic(gdx, n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff)
+
+              ! E_kinetic is the final kinetic energy of the electron after emission
+              if (E_kinetic(gdx, n_eigen, N_spin, N_k) .lt. E_transverse(gdx, n_eigen, N_spin, N_k)) cycle
+              ! Angle of electron outside material, after passing the surface and loosing E(work_function)
+              ! acos(E_ortho/E_kinetic)
+              theta_arpes(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) - &
+                                                              E_transverse(gdx, n_eigen, N_spin, N_k))/ &
+                                                             E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
+              ! Angle of electron within material, before passing the surface
+              theta_arpes_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+                                                                       - E_transverse(gdx, n_eigen, N_spin, N_k)) &
+                                                                      /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
+                                                                        work_function_eff)))*rad_to_deg
+            end do
+          end do
+        end do
+      end do
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+------------------------ Printing Transverse Energy ------------------------+'
       write (stdout, '(3(1x,I4))') shape(E_transverse)
       write (stdout, '(3(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins
-      write (stdout, '(9999(es15.8))') (((E_transverse(n_eigen, N_spin, N_k), N_spin=1, nspins), N_k=1, &
-                                         num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
+      write (stdout, '(9999(es15.8))') ((((E_transverse(gdx, n_eigen, N_spin, N_k), gdx=1, photo_sf_max_vectors), &
+                                          N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1747,32 +1795,33 @@ contains
 
   end subroutine calc_angle
 
-
   subroutine calc_electron_esc
     !! This subroutine calculates the electron escape probability for each of the layers
-    use od_constants, only: dp, deg_to_rad
-    use od_electronic, only: nbands, nspins
+    use od_constants, only: dp, deg_to_rad, bohr2ang, H2eV, pi
+    use od_electronic, only: nbands, nspins, band_energy
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, devel_flag, iprint
+    use od_parameters, only: photo_imfp_value, photo_imfp_choice, devel_flag, iprint, photo_sf_max_vectors
     implicit none
-    integer :: atom, N_k, N_spin, n_eigen, ierr, i
-    real(kind=dp) :: exponent, time0, time1
+    integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
+    real(kind=dp) :: tolerance
+    real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
 
+    tolerance = 0.1E-11_dp
     time0 = io_time()
-    allocate (new_atoms_coordinates(3, max_atoms), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atoms_coordinates failed')
+    allocate (new_atom_coordinates(3, max_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atom_coordinates failed')
 
     !Redefine new z coordinates where the first layer is at z=0
-    new_atoms_coordinates = atoms_pos_cart_photo
+    new_atom_coordinates = atoms_pos_cart_photo
     do atom = 1, max_atoms
-      new_atoms_coordinates(3, atom_order(atom)) = atoms_pos_cart_photo(3, atom_order(atom)) - &
-                                                   (atoms_pos_cart_photo(3, atom_order(1)))
+      new_atom_coordinates(3, atom_order(atom)) = atoms_pos_cart_photo(3, atom_order(atom)) - &
+                                                  (atoms_pos_cart_photo(3, atom_order(1)))
     end do
 
     if (.not. allocated(electron_esc)) then
-      allocate (electron_esc(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms), stat=ierr)
+      allocate (electron_esc(photo_sf_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of electron_esc failed')
     end if
     electron_esc = 0.0_dp
@@ -1782,8 +1831,8 @@ contains
       if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of atom_imfp failed')
     end if
     atom_imfp = 0.0_dp
-
-    if (size(photo_imfp_const, 1) .gt. 1) then
+    ! TODO: Must rename this to agree with box thicknesses
+    if (index(photo_imfp_choice, 'layers') > 0) then
       ! Calculate the mean thickness of the atoms in a layer
       do atom = 1, max_atoms
         thickness_layer(layer(atom)) = thickness_layer(layer(atom)) + thickness_atom(atom)
@@ -1799,45 +1848,101 @@ contains
       ! Calculate the layer dependent imfp constant as a list for each layer
       do atom = 1, max_atoms
         do i = 1, layer(atom)
-          atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_const(i)
+          atom_imfp(atom) = atom_imfp(atom) + thickness_layer(i)*photo_imfp_value(i)
         end do
         atom_imfp(atom) = atom_imfp(atom)/sum(thickness_layer(1:i - 1))
         if (on_root) then
           write (stdout, 225) "|", trim(atoms_label_tmp(atom_order(atom))), atom_order(atom), &
-            layer(atom), thickness_layer(layer(atom)), photo_imfp_const(layer(atom)), atom_imfp(atom), "    |"
+            layer(atom), thickness_layer(layer(atom)), photo_imfp_value(layer(atom)), atom_imfp(atom), "    |"
 225       format(1x, a1, a4, 6x, I3, 8x, I3, 6x, E14.6E3, 3x, F11.4, 3x, F11.4, a5)
         end if
       end do
       if (on_root) write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-    else
-      atom_imfp = photo_imfp_const(1)
-    end if
-
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-          do atom = 1, max_atoms
-            if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-              exponent = (new_atoms_coordinates(3, atom_order(atom))/ &
-                          cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
-              if (exponent .gt. -575.0_dp) then
-                electron_esc(n_eigen, N_spin, N_k, atom) = exp(exponent)
-              else
-                electron_esc(n_eigen, N_spin, N_k, atom) = 0.0_dp
-              end if
+    else if (index(photo_imfp_choice, 'const') > 0) then
+      atom_imfp = photo_imfp_value(1)
+    else if (index(photo_imfp_choice, 'curve') > 0) then
+      if (.not. allocated(band_imfp)) then
+        allocate (band_imfp(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_electron_esc_list - allocation of atom_imfp failed')
+      end if
+      band_imfp = 0.0_dp
+      scale_factor = 6.9_dp
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          do n_eigen = 1, nbands
+            scaled_x = (band_energy(n_eigen, N_spin, N_k)/scale_factor) + 1
+            if ((1.0_dp - scaled_x) > 1E-10_dp) cycle
+            g1 = LOG(scaled_x - 1.0_dp) + ((8.0_dp/3.0_dp) - 2.0_dp*LOG(2.0_dp))
+            if (scaled_x < 2.0_dp) then
+              g2 = g2 + (2.0_dp/3.0_dp)*(SQRT(2.0_dp - scaled_x)**(3.0_dp))
+              g2 = g2 + (2.0_dp*SQRT(2.0_dp - scaled_x))
+              g2 = g2 + LOG(ABS((SQRT(2.0_dp - scaled_x) - 1.0_dp)/(SQRT(2.0_dp - scaled_x) + 1.0_dp)))
+            else
+              g2 = 0.0_dp
             end if
+            band_imfp(n_eigen, N_spin, N_k) = bohr2ang*(4.0_dp*pi/3.0_dp)*(scaled_x/(g1 - g2))*(SQRT(2.0_dp*scale_factor/H2eV))
+            ! write (stdout, *) "scaled_x", scaled_x, "g1", g1, "g2", g2, band_imfp(n_eigen, N_spin, N_k)
           end do
         end do
       end do
-    end do
+      write (stdout, '(1x,a78)') '+------------------ IMFP Values from Energy Dependent Curve -----------------+'
+      write (stdout, *) 'min', minval(band_imfp), 'max', maxval(band_imfp)
+    end if
+
+    if ((index(photo_imfp_choice, 'const') > 0) .or. (index(photo_imfp_choice, 'layers') > 0)) then
+      do atom = 1, max_atoms
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              do gdx = 1, photo_sf_max_vectors
+                ! is the emission possible?
+                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
+                  ! The electron's kinetic energy inside the material is higher, than after the emission
+                  ! through the surface. Thus follows an angle closer to normal direction and one needs
+                  ! the internal theta angle.
+                  exponent = (new_atom_coordinates(3, atom_order(atom))/ &
+                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
+                  if (exponent .gt. -575.0_dp) then
+                    electron_esc(gdx, n_eigen, N_spin, N_k, atom) = exp(exponent)
+                  else
+                    electron_esc(gdx, n_eigen, N_spin, N_k, atom) = 0.0_dp
+                  end if
+                end if
+              end do
+            end do
+          end do
+        end do
+      end do
+    else if ((index(photo_imfp_choice, 'curve') > 0)) then
+      do atom = 1, max_atoms
+        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen = 1, nbands
+              do gdx = 1, photo_sf_max_vectors
+                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
+                  exponent = (new_atom_coordinates(3, atom_order(atom))/ &
+                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
+                  if ((exponent .gt. -575.0_dp) .and. (exponent .lt. 575.0_dp)) then
+                    electron_esc(gdx, n_eigen, N_spin, N_k, atom) = exp(exponent)
+                  else if (exponent .gt. -575.0_dp) then
+                    electron_esc(gdx, n_eigen, N_spin, N_k, atom) = 1.0_dp
+                  end if
+                end if
+              end do
+            end do
+          end do
+        end do
+      end do
+    end if
 
     if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing P(Escape) per Layer -----------------------+'
       write (stdout, 125) shape(electron_esc)
       write (stdout, 125) nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms
 125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((electron_esc(n_eigen, N_spin, N_k, atom), atom=1, max_atoms), N_k=1, &
-                                          num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, nbands)
+      write (stdout, '(9999(es15.8))') (((((electron_esc(gdx, n_eigen, N_spin, N_k, atom), gdx=1, photo_sf_max_vectors), &
+                                           atom=1, max_atoms), N_k=1, num_kpoints_on_node(my_node_id)), &
+                                         N_spin=1, nspins), n_eigen=1, nbands)
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -1845,7 +1950,6 @@ contains
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate Photoemission Escape', time1 - time0, ' (sec) +'
     end if
-
   end subroutine calc_electron_esc
 
   subroutine bulk_emission
@@ -1853,74 +1957,33 @@ contains
     use od_constants, only: dp, deg_to_rad
     use od_electronic, only: nbands, nspins
     use od_cell, only: num_kpoints_on_node
-    use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_const, photo_bulk_cutoff, iprint
+    use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
+    use od_parameters, only: photo_imfp_value, photo_imfp_choice, photo_bulk_cutoff, iprint, photo_sf_max_vectors
     use od_io, only: io_error, io_time, stdout
     implicit none
     real(kind=dp), dimension(:), allocatable :: bulk_light_tmp
-    real(kind=dp), dimension(:, :, :, :), allocatable :: bulk_prob_tmp
-    integer :: N_k, N_spin, n_eigen, i, num_layers, ierr
-    real(kind=dp) :: exponent, time0, time1
+    integer :: N_k, N_spin, n_eigen, i, num_layers, ierr, gdx
+    real(kind=dp) :: exponent, time0, time1, band_imfp_max
 
     time0 = io_time()
-    if (.not. allocated(bulk_prob)) then
-      allocate (bulk_prob(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob failed')
-    end if
-    if (size(photo_imfp_const, 1) .gt. 1) then
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
-    elseif (size(photo_imfp_const, 1) .eq. 1) then
-      num_layers = int((photo_imfp_const(1)*photo_bulk_cutoff)/thickness_atom(max_atoms))
-    end if
-    bulk_prob = 0.0_dp
 
 235 format(1x, a1, 5x, a8, I3, 5x, a10, E13.6E2, 2x, a8, E13.6E2, 9x, a1)
     if (.not. new_geom_choice) then
 
-      if (size(photo_imfp_const, 1) .gt. 1) then
+      if (index(photo_imfp_choice, 'layers') > 0) then
         num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/thickness_atom(max_atoms))
-      elseif (size(photo_imfp_const, 1) .eq. 1) then
-        num_layers = int((photo_imfp_const(1)*photo_bulk_cutoff)/thickness_atom(max_atoms))
+      else if (index(photo_imfp_choice, 'const') > 0) then
+        num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/thickness_atom(max_atoms))
+      else if (index(photo_imfp_choice, 'curve') > 0) then
+        band_imfp_max = maxval(band_imfp)
+        call comms_reduce(band_imfp_max, 1, 'MAX')
+        call comms_bcast(band_imfp_max, 1)
+        num_layers = min(5000, int((band_imfp_max*photo_bulk_cutoff)/thickness_atom(max_atoms)))
       end if
 
       allocate (bulk_light_tmp(num_layers), stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
       bulk_light_tmp = 0.0_dp
-
-      allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
-      bulk_prob_tmp = 0.0_dp
-
-      if (size(photo_imfp_const, 1) .gt. 1) then
-        do i = 1, num_layers
-          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-            do N_spin = 1, nspins                    ! Loop over spins
-              do n_eigen = 1, nbands
-                if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
-                              cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
-                  ! This makes sure, that exp(exponent) does not underflow the dp fp value.
-                  ! As exp(-575) is ~1E-250, this should be more than enough precision.
-                  if (exponent .gt. -575.0_dp) then
-                    bulk_prob_tmp(n_eigen, N_spin, N_k, i) = exp(exponent)
-                  end if
-                end if
-              end do
-            end do
-          end do
-        end do
-      else
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              do i = 1, num_layers
-                bulk_prob_tmp(n_eigen, N_spin, N_k, i) = bulk_prob_tmp(n_eigen, N_spin, N_k, i)*bulk_light_tmp(i)
-              end do
-              bulk_prob(n_eigen, N_spin, N_k) = sum(bulk_prob_tmp(n_eigen, N_spin, N_k, 1:num_layers))
-            end do
-          end do
-        end do
-      end if ! If statement
 
       bulk_light_tmp(1) = I_layer(layer(max_atoms), current_photo_energy_index)* &
                           exp(-(absorp_photo(max_atoms, current_photo_energy_index)*thickness_atom(max_atoms)*1E-10))
@@ -1928,6 +1991,50 @@ contains
         bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
                             exp(-(absorp_photo(max_atoms, current_photo_energy_index)*i*thickness_atom(max_atoms)*1E-10))
       end do
+
+      if ((index(photo_imfp_choice, 'layers') > 0) .or. (index(photo_imfp_choice, 'const') > 0)) then
+        do i = 1, num_layers
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                do gdx = 1, photo_sf_max_vectors
+                  if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                    exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
+                                cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
+                    ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                    ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                    if (exponent .gt. -575.0_dp) then
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    end if
+                  end if
+                end do
+              end do
+            end do
+          end do
+        end do
+      else if (index(photo_imfp_choice, 'curve') > 0) then
+        do i = 1, num_layers
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                do gdx = 1, photo_sf_max_vectors
+                  if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                    exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms)/ &
+                                cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
+                    ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                    ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                    if (exponent .gt. -575.0_dp) then
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    end if
+                  end if
+                end do
+              end do
+            end do
+          end do
+        end do
+      end if ! If statement
 
       if (iprint .gt. 1 .and. on_root) then
         ! write out the bulk properties
@@ -1943,7 +2050,7 @@ contains
         ! write out bulk_light_tmp
         if (num_layers .lt. 6) then
           do i = 1, num_layers
-            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
+            exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
             ! This makes sure, that exp(exponent) does not underflow the dp fp value.
             ! As exp(-575) is ~1E-250, this should be more than enough precision.
             if (exponent .gt. -575.0_dp) then
@@ -1955,7 +2062,7 @@ contains
           end do
         else
           do i = 1, num_layers
-            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
+            exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*thickness_atom(max_atoms))/atom_imfp(max_atoms)
             ! This makes sure, that exp(exponent) does not underflow the dp fp value.
             ! As exp(-575) is ~1E-250, this should be more than enough precision.
             if (exponent .gt. -575.0_dp) then
@@ -1974,33 +2081,21 @@ contains
       end if
 
     else ! choice of the new geometry definition (hardcoded)
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/box_height)
+
+      if (index(photo_imfp_choice, 'layers') > 0) then
+        num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/box_height)
+      else if (index(photo_imfp_choice, 'const') > 0) then
+        num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/box_height)
+      else if (index(photo_imfp_choice, 'curve') > 0) then
+        band_imfp_max = maxval(band_imfp)
+        call comms_reduce(band_imfp_max, 1, 'MAX')
+        call comms_bcast(band_imfp_max, 1)
+        num_layers = min(5000, int((band_imfp_max*photo_bulk_cutoff)/box_height))
+      end if
 
       allocate (bulk_light_tmp(num_layers), stat=ierr)
       if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
       bulk_light_tmp = 0.0_dp
-
-      allocate (bulk_prob_tmp(nbands, nspins, num_kpoints_on_node(my_node_id), num_layers), stat=ierr)
-      if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_prob_tmp failed')
-      bulk_prob_tmp = 0.0_dp
-
-      do i = 1, num_layers
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              if (cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                            cos(theta_arpes(n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
-                ! This makes sure, that exp(exponent) does not underflow the dp fp value.
-                ! As exp(-575) is ~1E-250, this should be more than enough precision.
-                if (exponent .gt. -575.0_dp) then
-                  bulk_prob_tmp(n_eigen, N_spin, N_k, i) = exp(exponent)
-                end if
-              end if
-            end do
-          end do
-        end do
-      end do
 
       bulk_light_tmp(1) = I_layer(box_atom(max_atoms), current_photo_energy_index)* &
                           exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_height*1E-10))
@@ -2008,16 +2103,50 @@ contains
         bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
                             exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*i*box_height*1E-10))
       end do
-      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen = 1, nbands
-            do i = 1, num_layers
-              bulk_prob_tmp(n_eigen, N_spin, N_k, i) = bulk_prob_tmp(n_eigen, N_spin, N_k, i)*bulk_light_tmp(i)
+
+      if ((index(photo_imfp_choice, 'layers') > 0) .or. (index(photo_imfp_choice, 'const') > 0)) then
+        do i = 1, num_layers
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                do gdx = 1, photo_sf_max_vectors
+                  if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                    exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
+                                cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
+                    ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                    ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                    if (exponent .gt. -575.0_dp) then
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    end if
+                  end if
+                end do
+              end do
             end do
-            bulk_prob(n_eigen, N_spin, N_k) = sum(bulk_prob_tmp(n_eigen, N_spin, N_k, 1:num_layers))
           end do
         end do
-      end do
+      else if (index(photo_imfp_choice, 'curve') > 0) then
+        do i = 1, num_layers
+          do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen = 1, nbands
+                do gdx = 1, photo_sf_max_vectors
+                  if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                    exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
+                                cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
+                    ! This makes sure, that exp(exponent) does not underflow the dp fp value.
+                    ! As exp(-575) is ~1E-250, this should be more than enough precision.
+                    if (exponent .gt. -575.0_dp) then
+                      electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        electron_esc(gdx, n_eigen, N_spin, N_k, max_atoms + 1) + exp(exponent)*bulk_light_tmp(i)
+                    end if
+                  end if
+                end do
+              end do
+            end do
+          end do
+        end do
+      end if ! If statement
 
       if (iprint .gt. 1 .and. on_root) then
         ! write out the bulk properties
@@ -2031,7 +2160,7 @@ contains
         ! write out bulk_light_tmp
         if (num_layers .lt. 6) then
           do i = 1, num_layers
-            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
+            exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
             ! This makes sure, that exp(exponent) does not underflow the dp fp value.
             ! As exp(-575) is ~1E-250, this should be more than enough precision.
             if (exponent .gt. -575.0_dp) then
@@ -2043,7 +2172,7 @@ contains
           end do
         else
           do i = 1, num_layers
-            exponent = (new_atoms_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
+            exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height)/atom_imfp(max_atoms)
             ! This makes sure, that exp(exponent) does not underflow the dp fp value.
             ! As exp(-575) is ~1E-250, this should be more than enough precision.
             if (exponent .gt. -575.0_dp) then
@@ -2062,17 +2191,11 @@ contains
       end if ! If statement extra printing of slab data
     end if ! If statement for geometry choice
 
-    ! deallocate (atom_imfp, stat=ierr)
-    ! if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate atom_imfp')
-
     deallocate (bulk_light_tmp, stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_light_tmp')
 
-    deallocate (bulk_prob_tmp, stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate bulk_prob_tmp')
-
-    deallocate (new_atoms_coordinates, stat=ierr)
-    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atoms_coordinates')
+    deallocate (new_atom_coordinates, stat=ierr)
+    if (ierr /= 0) call io_error('Error: bulk_emission - failed to deallocate new_atom_coordinates')
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
@@ -2088,12 +2211,12 @@ contains
     ! Schmerge like Model by Saha et al.
     ! Felix Mildner, May 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-      elec_read_band_curvature
+                             elec_read_band_curvature
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands, photo_model
+    use od_parameters, only: photo_temperature, devel_flag, iprint, num_exclude_bands, &
+                             exclude_bands, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -2103,10 +2226,8 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, atom, ierr, i, qe_unit, token, inode
-    real(kind=dp) :: sub_cell_area
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2158,9 +2279,6 @@ contains
     call setup_energy_scale(E)
     i = 0
     if (on_root) write (stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
-    step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)
-    x(:) = recip_lattice(1:2, 1)*step(1)
-    y(:) = recip_lattice(1:2, 2)*step(2)
 
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
@@ -2177,16 +2295,16 @@ contains
             initial_fd = fermi_dirac(n_eigen, N_spin, N_k)
             ! Calculating the QE denominator
             qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 1) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                      electrons_per_state*kpoint_weight(N_k)* &
-                                                      final_fd*initial_fd
+                                                             electrons_per_state*kpoint_weight(N_k)* &
+                                                             final_fd*initial_fd
             ! Calculating the QE numerator and MTE denominator
             qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 2) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                      electrons_per_state*kpoint_weight(N_k)* &
-                                                      final_fd*initial_fd*excess_energy
+                                                             electrons_per_state*kpoint_weight(N_k)* &
+                                                             final_fd*initial_fd*excess_energy
             ! Calculating the MTE numerator
             qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 3) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                      electrons_per_state*kpoint_weight(N_k)* &
-                                                      final_fd*initial_fd*excess_energy**2
+                                                             electrons_per_state*kpoint_weight(N_k)* &
+                                                             final_fd*initial_fd*excess_energy**2
           end do
         end do
       end do
@@ -2262,7 +2380,6 @@ contains
 
   end subroutine calc_ds_like_model
 
-  ! TODO: Introduce the 1-occ_fermi_dirac term
   !===============================================================================
   subroutine calc_three_step_model
     !*===============================================================================
@@ -2270,12 +2387,12 @@ contains
     ! Victor Chang, 7th February 2020
     ! edited by Felix Mildner, 03/2023
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, recip_lattice, kpoint_grid_dim
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-      elec_read_band_curvature
+                             elec_read_band_curvature, transmit_prob, elec_read_transmit_prob, photo_spectral_func
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-      exclude_bands, photo_model
+                             exclude_bands, photo_model, photo_sf_max_vectors, photo_output
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -2285,11 +2402,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    real(kind=dp) :: x(1:2), y(1:2), step(1:3)
     real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, &
-    time0, time1, final_fd, initial_fd, excess_energy
-    integer :: N_k, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, qe_unit, token, inode
-    real(kind=dp) :: sub_cell_area
+                     time0, time1, final_fd, initial_fd, temp_contribution
+    integer :: N_k, N2, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, gdx, qe_unit, token, inode
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
     character(len=9)                            :: ctime             ! Temp. time string
@@ -2313,11 +2428,27 @@ contains
     end if
     qe_tsm = 0.0_dp
 
+    if (.not. allocated(te_tsm)) then
+      allocate (te_tsm(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of te_tsm failed')
+    end if
+    te_tsm = 0.0_dp
+
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
+
+    if (index(devel_flag, 'no_transmit') > 0) then
+      if (.not. allocated(transmit_prob)) then
+        allocate (transmit_prob(nbands, nspins, num_kpoints_on_node(my_node_id)))
+        if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+      end if
+      transmit_prob = 1.0_dp
+    else
+      call elec_read_transmit_prob()
+    end if
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
@@ -2347,17 +2478,18 @@ contains
       do N_spin = 1, nspins
         do N_k = 1, num_kpoints_on_node(my_node_id)
           write (stdout, '(99999(es15.8))') ((delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), &
-          n_eigen_final=1, nbands), n_eigen_init=1, nbands)
+                                              n_eigen_final=1, nbands), n_eigen_init=1, nbands)
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) &
-    then
-      i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+      then
+      i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-      write (stdout, '(13(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'matrix_weights', &
+      write (stdout, '(14(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'spectral_func', &
+        'matrix_weights', &
         'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
         'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
@@ -2398,71 +2530,87 @@ contains
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
               initial_fd = fermi_dirac(n_eigen_init, N_spin, N_k)
-
-              if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-                transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)), &
-                                        width, (evacuum_eff - efermi))/norm_vac
-              else
-                transverse_gauss = 1.0_dp
-              end if
-              if ((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-                vacuum_gauss = gaussian((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) + &
-                                 scissor_op, width, evacuum_eff)/norm_vac
-              else
-                vacuum_gauss = 1.0_dp
-              end if
-
-              !! this could be checked if it has an impact on the final value
-              ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
-              if (enable_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
-                if (index(devel_flag, 'projected_pe') > 0) then
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                                                               matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)*&
-                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                               electrons_per_state*kpoint_weight(N_k)* &
-                                                               (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
-                                                                pdos_weights_k_band(n_eigen_init, N_spin, N_k))
+              do gdx = 1, photo_sf_max_vectors
+                ! evacuum_eff = efermi + photo_work_function
+                ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
+                ! Is the final kinetic energy > 0?
+                if ((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                  transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)), &
+                                              width, (evacuum_eff - efermi))/norm_vac
                 else
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                                                               matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)*&
-                                                               delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                               electrons_per_state*kpoint_weight(N_k)
+                  transverse_gauss = 1.0_dp
                 end if
-              else
-                if (.not. new_geom_choice) then
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
-                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                                electron_esc(n_eigen_init, N_spin, N_k, atom)* &
-                                                                electrons_per_state*kpoint_weight(N_k)* &
-                                                                (I_layer(layer(atom), current_photo_energy_index))* &
-                                                                transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
-                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+                if (band_energy(n_eigen_final, N_spin, N_k) .lt. evacuum_eff) then
+                  vacuum_gauss = gaussian(band_energy(n_eigen_final, N_spin, N_k) + &
+                                          scissor_op, width, evacuum_eff)/norm_vac
                 else
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_factor* &
-                                                               (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
-                                                                delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                                electron_esc(n_eigen_init, N_spin, N_k, atom)* &
-                                                                electrons_per_state*kpoint_weight(N_k)* &
-                                                                (I_layer(box_atom(atom), current_photo_energy_index))* &
-                                                                transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
-                                                                (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
-                                                                 pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
-                                                               (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+                  vacuum_gauss = 1.0_dp
                 end if
-              end if
-              if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-                write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
-                write (stdout, '(13(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
-                  band_energy(n_eigen_init, N_spin, N_k), &
-                  band_energy(n_eigen_final, N_spin, N_k), matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
-                  delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(n_eigen_init, N_spin, N_k, atom), &
-                  kpoint_weight(N_k), I_layer(layer(atom), current_photo_energy_index), &
-                  transverse_gauss, vacuum_gauss, initial_fd, final_fd,&
-                  pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
-              end if
+
+                !! this could be checked if it has an impact on the final value
+                ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
+                if (enable_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
+                  if (index(devel_flag, 'projected_pe') > 0) then
+                    qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                      matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                      delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                      electrons_per_state*kpoint_weight(N_k)* &
+                      (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
+                       pdos_weights_k_band(n_eigen_init, N_spin, N_k))
+                  else
+                    qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                      matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                      delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                      electrons_per_state*kpoint_weight(N_k)
+                  end if
+                else
+                  if (.not. new_geom_choice) then
+                    temp_contribution = &
+                      qe_factor*photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
+                      *matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
+                      *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                      *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                      *transmit_prob(n_eigen_final, N_spin, N_k) &
+                      *electrons_per_state*kpoint_weight(N_k) &
+                      *I_layer(layer(atom), current_photo_energy_index) &
+                      *transverse_gauss*vacuum_gauss*initial_fd*final_fd &
+                      *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
+                        /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                      *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+                  else
+                    temp_contribution = &
+                      qe_factor*photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
+                      *matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
+                      *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                      *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                      *transmit_prob(n_eigen_final, N_spin, N_k) &
+                      *electrons_per_state*kpoint_weight(N_k) &
+                      *(I_layer(box_atom(atom), current_photo_energy_index)) &
+                      *transverse_gauss*vacuum_gauss*initial_fd*final_fd &
+                      *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
+                        /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                      *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+                  end if
+                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                    qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
+                    + temp_contribution
+                  te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
+                                                            + temp_contribution*E_transverse(gdx, n_eigen_init, N_spin, N_k)
+                end if
+                if (temp_contribution .gt. 0.0_dp) then
+                if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                  write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
+                  write (stdout, '(18(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
+                    band_energy(n_eigen_init, N_spin, N_k), &
+                    band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k), &
+                    matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
+                    delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
+                    transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), &
+                    I_layer(layer(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, initial_fd, final_fd, &
+                    pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
+                end if
+                end if
+              end do
             end do
           end do
         end do
@@ -2477,28 +2625,36 @@ contains
           final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
           do n_eigen_init = 1, n_eigen_final - 1
             initial_fd = fermi_dirac(n_eigen_init, N_spin, N_k)
-            if ((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-              transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen_init, N_spin, N_k)), &
-                                      width, (evacuum_eff - efermi))/norm_vac
-            else
-              transverse_gauss = 1.0_dp
-            end if
-            if ((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-              vacuum_gauss = gaussian((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) + &
-                               scissor_op, width, evacuum_eff)/norm_vac
-            else
-              vacuum_gauss = 1.0_dp
-            end if
-            qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1) = qe_factor* &
-                                                                  (matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
-                                                                   delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                                                                   bulk_prob(n_eigen_init, N_spin, N_k)* &
-                                                                   electrons_per_state*kpoint_weight(N_k)* &
-                                                                   transverse_gauss*vacuum_gauss*initial_fd*final_fd* &
-                                                                   (pdos_weights_atoms(n_eigen_init, N_spin, N_k, &
-                                                                   atom_order(max_atoms))/&
-                                                                    pdos_weights_k_band(n_eigen_init, N_spin, N_k)))* &
-                                                                  (1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+            do gdx = 1, photo_sf_max_vectors
+              if ((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)), &
+                                            width, (evacuum_eff - efermi))/norm_vac
+              else
+                transverse_gauss = 1.0_dp
+              end if
+              if ((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+                vacuum_gauss = gaussian((band_energy(n_eigen_init, N_spin, N_k) + temp_photon_energy) + &
+                                        scissor_op, width, evacuum_eff)/norm_vac
+              else
+                vacuum_gauss = 1.0_dp
+              end if
+              temp_contribution = &
+                (qe_factor*photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
+                 *matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
+                 *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                 *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                 *transmit_prob(n_eigen_final, N_spin, N_k) &
+                 *electrons_per_state*kpoint_weight(N_k) &
+                 *transverse_gauss*vacuum_gauss*initial_fd*final_fd &
+                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
+              qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
+                + temp_contribution
+              te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
+                                                        + temp_contribution*E_transverse(gdx, n_eigen_init, N_spin, N_k)
+            end do
           end do
         end do
       end do
@@ -2518,10 +2674,15 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate fermi_dirac')
     end if
 
+    if (allocated(transmit_prob) .and. index(photo_output, 'e_bind') .eq. 0) then
+      deallocate (transmit_prob, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
+    end if
+
     if (enable_debug_output .and. index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------- Printing Full 3step QE Matrix ----------------------+'
-      write (stdout, '(5(1x,I4))') shape(qe_tsm)
-      write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
+      write (stdout, '(6(1x,I4))') shape(qe_tsm)
+      write (stdout, '(6(1x,I4))') photo_sf_max_vectors, nbands, nbands, num_kpoints_on_node(my_node_id), nspins, max_atoms + 1
       do atom = 1, max_atoms + 1
         do N_spin = 1, nspins
           do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -2691,10 +2852,10 @@ contains
     ! edited by Felix Mildner, after March 2022
     !===============================================================================
     use od_comms, only: my_node_id, on_root
-    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice, cell_volume, real_lattice
-    use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
-      finite_bin_correction, scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, num_exclude_bands, &
-      jdos_max_energy, photo_slab_max
+    use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
+    use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
+                             scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
+                             num_exclude_bands, jdos_max_energy, photo_slab_max
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, efermi
     use od_jdos_utils, only: jdos_nbins
@@ -2852,7 +3013,7 @@ contains
     energy_max = energy_min + energy_step*(energy_count - 1)
     ! Check the inputs are compatible
     ! Are the jdos_step and energy_step compatible?
-    ! WIP - Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
+    ! Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
     ! reached using the input step
     if (jdos_spacing .lt. energy_step) then
       if (on_root) then
@@ -2899,9 +3060,8 @@ contains
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if(on_root .and. enable_debug_output) write(stdout,*) 'energy_index:', energy_index
+    if (on_root .and. enable_debug_output) write (stdout, *) 'energy_index:', energy_index
 
-    ! Can I also allocate this to fome(nbands+1, num_kpts, nspins, N_geom)?
     if (.not. allocated(foptical_matrix_weights)) then
       allocate (foptical_matrix_weights(nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
@@ -3045,10 +3205,10 @@ contains
 
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
-    & elec_read_band_curvature
+    & elec_read_band_curvature, photo_spectral_func
     use od_comms, only: my_node_id, num_nodes
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
-      iprint, photo_model
+                             iprint, photo_model, photo_sf_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root, comms_recv, comms_send
@@ -3056,18 +3216,18 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
-    integer :: N_k, N_spin, n_eigen, atom, ierr, i, kpt_total, inode, token, qe_unit
+    integer :: N_k, N_spin, n_eigen, atom, ierr, i, gdx, kpt_total, inode, token, qe_unit
 
     real(kind=dp) :: width, norm_vac, vacuum_gauss, transverse_gauss, qe_factor, argument, time0, time1
+    real(kind=dp) :: temp_contribution
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    ! real(kind=dp) :: volume_factor, volume_factor_bulk
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
-    if (index(devel_flag,'write_fem_matrix') > 0) then
+    if (index(devel_flag, 'write_fem_matrix') > 0) then
       kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
       call write_distributed_fem_data(kpt_total)
     end if
@@ -3099,6 +3259,12 @@ contains
     end if
     qe_osm = 0.0_dp
 
+    if (.not. allocated(te_osm)) then
+      allocate (te_osm(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of te_osm failed')
+    end if
+    te_osm = 0.0_dp
+
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
@@ -3125,68 +3291,50 @@ contains
       & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
     end if
-    do atom = 1, max_atoms
-      if (iprint > 2 .and. on_root) then
+    do atom = 1, max_atoms + 1
+      if (iprint > 2 .and. on_root .and. (atom .le. max_atoms)) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
       end if
       do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-              transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)), &
-                                      width, (evacuum_eff - efermi))/norm_vac
-            else
-              transverse_gauss = 1.0_dp
-            end if
-            if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-              vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
-                               scissor_op, width, evacuum_eff)/norm_vac
-            else
-              vacuum_gauss = 1.0_dp
-            end if
-            qe_osm(n_eigen, N_spin, N_k, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
-                                                          (electron_esc(n_eigen, N_spin, N_k, atom))* &
-                                                          electrons_per_state*kpoint_weight(N_k)* &
-                                                          (I_layer(layer(atom), current_photo_energy_index))* &
-                                                          transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
-                                                          (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom))/ &
-                                                           pdos_weights_k_band(n_eigen, N_spin, N_k)))* &
-                                               (1.0_dp + field_emission(n_eigen, N_spin, N_k))
+            do gdx = 1, photo_sf_max_vectors
+              if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                            width, (evacuum_eff - efermi))/norm_vac
+              else
+                transverse_gauss = 1.0_dp
+              end if
+              if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+                vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
+                                        scissor_op, width, evacuum_eff)/norm_vac
+              else
+                vacuum_gauss = 1.0_dp
+              end if
+              temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+                                   *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                   *(electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
+                                   *electrons_per_state*kpoint_weight(N_k) &
+                                   *(I_layer(layer(atom), current_photo_energy_index)) &
+                                   *transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k) &
+                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                  *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+              qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom) &
+                                                   + temp_contribution
+              te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
+                                                   + temp_contribution*E_transverse(gdx, n_eigen, N_spin, N_k)
+            end do
             if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
               write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
               write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
                 foptical_matrix_weights(n_eigen, N_k, N_spin, 1), &
-                electron_esc(n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), I_layer(layer(atom), current_photo_energy_index), &
-                transverse_gauss, vacuum_gauss, fermi_dirac(n_eigen, N_spin, N_k), &
+                electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+                I_layer(layer(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
+                fermi_dirac(n_eigen, N_spin, N_k), &
                 pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
             end if
           end do
-        end do
-      end do
-    end do
-    atom = max_atoms + 1
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen = 1, nbands
-          if ((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-            transverse_gauss = gaussian((temp_photon_energy - E_transverse(n_eigen, N_spin, N_k)), &
-                                    width, (evacuum_eff - efermi))/norm_vac
-          else
-            transverse_gauss = 1.0_dp
-          end if
-          if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
-            vacuum_gauss = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
-                             scissor_op, width, evacuum_eff)/norm_vac
-          else
-            vacuum_gauss = 1.0_dp
-          end if
-          qe_osm(n_eigen, N_spin, N_k, atom) = qe_factor*(foptical_matrix_weights(n_eigen, N_k, N_spin, 1)* &
-                                                        bulk_prob(n_eigen, N_spin, N_k)* &
-                                                        electrons_per_state*kpoint_weight(N_k)* &
-                                                        transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k)* &
-                                                        (pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms))/ &
-                                                         pdos_weights_k_band(n_eigen, N_spin, N_k)))* &!+&
-                                             (1.0_dp + field_emission(n_eigen, N_spin, N_k))
         end do
       end do
     end do
@@ -3278,20 +3426,19 @@ contains
     ! orig. Victor Chang, 7 February 2020
     ! edited by Felix Mildner, after June 2023
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
-    use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature!, band_energy, efermi
-    use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
-    use od_parameters, only: photo_model, iprint, devel_flag
+    use od_cell, only: cell_calc_kpoint_r_cart
+    use od_electronic, only: elec_read_band_gradient, elec_read_band_curvature
+    use od_comms, only: on_root, comms_reduce, comms_bcast
+    use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
     use od_jdos_utils, only: jdos_utils_calculate
+    use od_constants, only: inv_sqrt_two_pi
     implicit none
-    real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
-    real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp), allocatable, dimension(:) :: layer_e_transverse
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
-    integer :: N_k, N_spin, n_eigen, atom, ierr
+    integer                                  :: atom, ierr
 
     time0 = io_time()
 
@@ -3312,24 +3459,10 @@ contains
     layer_e_transverse = 0.0_dp
 
     if (index(photo_model, '3step') > 0) then
-      allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
-      te_tsm_temp = 0.0_dp
-
-      ! Try : move the atom do loop to the outermost, then sum up the qe_tsm contributions from
-      ! all unoccupied final states and multiply that sum by E_transverse to put into the te...
       do atom = 1, max_atoms + 1
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, min_index_unocc(N_spin, N_k) - 1
-              te_tsm_temp(n_eigen, N_spin, N_k, atom) = E_transverse(n_eigen, N_spin, N_k) &
-                                                      *sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom))
-            end do
-          end do
-        end do
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
-        layer_e_transverse(atom) = sum(te_tsm_temp(:, :, :, atom))
+        layer_e_transverse(atom) = sum(te_tsm(:, :, :, atom))
       end do
 
       call comms_reduce(layer_e_transverse(1), max_atoms + 1, 'SUM')
@@ -3338,7 +3471,7 @@ contains
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
       total_qe = sum(layer_qe(1:(max_atoms + 1)))
-      mean_te = sum(te_tsm_temp(:, :, :, :))
+      mean_te = sum(te_tsm(:, :, :, :))
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
       call comms_bcast(total_qe, 1)
@@ -3349,26 +3482,14 @@ contains
         mean_te = 0.0_dp
       end if
 
-      deallocate (te_tsm_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm_temp')
+      deallocate (te_tsm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm')
 
       deallocate (layer_e_transverse, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_e_transverse')
 
     elseif (index(photo_model, '1step') > 0) then
-
-      allocate (te_osm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
-      te_osm_temp = 0.0_dp
       do atom = 1, max_atoms + 1
-        do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              te_osm_temp(n_eigen, N_spin, N_k, atom) = &
-                E_transverse(n_eigen, N_spin, N_k)*qe_osm(n_eigen, N_spin, N_k, atom)
-            end do
-          end do
-        end do
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_osm(:, :, :, atom))
       end do
@@ -3380,7 +3501,7 @@ contains
       call comms_bcast(total_qe, 1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
-      mean_te = sum(te_osm_temp)
+      mean_te = sum(te_osm)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
 
@@ -3390,8 +3511,8 @@ contains
         mean_te = 0.0_dp
       end if
 
-      deallocate (te_osm_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm_temp')
+      deallocate (te_osm, stat=ierr)
+      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_osm')
 
     else if (index(photo_model, 'ds_like_pe') > 0) then
 
@@ -3423,7 +3544,7 @@ contains
     !===============================================================================
     use od_cell, only: cell_calc_kpoint_r_cart, atoms_label_tmp
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_elec_field, photo_model, devel_flag
+    use od_parameters, only: photo_work_function, photo_elec_field, photo_model
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout
@@ -3480,26 +3601,42 @@ contains
 
   subroutine binding_energy_broadening
     !===============================================================================
-    ! Why do we take the fixed smearing and why do we have to apply a gaussian broadening to the qe
-    ! matrix? Would it make sense to apply the photo_temperature value in eV?
     !* This subroutine applies a Gaussian broadening to the binding energy
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
-    use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_work_function, fixed_smearing, photo_model, photo_theta_min, photo_theta_max, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, photo_spectral_func, transmit_prob
+    use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint, num_exclude_bands, &
+    & exclude_bands
     use od_algorithms, only: gaussian
-    use od_comms, only: my_node_id, comms_reduce, comms_bcast
-    use od_io, only: io_error, io_file_unit
+    use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
+    use od_io, only: io_error, io_file_unit, stdout, io_time
+    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg
     implicit none
 
+    real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
-    real(kind=dp) :: qe_temp
+    real(kind=dp) :: time0, time1
 
-    real(kind=dp) :: qe_norm, total_weighted
-    integer :: N_k, N_spin, n_eigen, atom, e_scale, ierr
+    real(kind=dp) :: final_fd, initial_fd
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
+    integer :: middle_idx, width_idx
+
+    real(kind=dp) :: temp_contribution, norm_vac, qe_factor, width, argument, transverse_gauss
+    real(kind=dp), allocatable, dimension(:, :, :, :) :: fermi_dirac
+
+    time0 = io_time()
+    qe_factor = 1.0_dp/(cell_area)
+    width = (1.0_dp/11604.45_dp)*photo_temperature
+    norm_vac = inv_sqrt_two_pi/width
+
+    if (.not. allocated(fermi_dirac)) then
+      allocate (fermi_dirac(2, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
+    end if
+    fermi_dirac = 0.0_dp
 
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
@@ -3524,6 +3661,9 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen = 1, nbands
+          middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+          width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+          ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
           do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
@@ -3531,63 +3671,232 @@ contains
         end do
       end do
     end do
-
     if (index(photo_model, '3step') > 0) then
-      do atom = 1, max_atoms + 1
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          do n_eigen = 1, nbands
+            argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
+            ! This is a bit of an arbitrary condition, but it turns out
+            ! that this corresponds to a an exponent value of ~1E+/-100
+            ! and this cutoff condition saves us from running into arithmetic
+            ! issues when computing fermi_dirac due to possible underflow.
+            if (argument .gt. 230.0_dp) then
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 0.0_dp
+            elseif (argument .lt. -230.0_dp) then
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp
+            else
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
+            end if
+            ! normally called vacuum_gauss
+            if ((band_energy(n_eigen, N_spin, N_k)) .lt. evacuum_eff) then
+              fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k)) + &
+                                                              scissor_op, width, evacuum_eff)/norm_vac
+            else
+              fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
+            end if
+          end do
+        end do
+      end do
+
+      call photo_calculate_delta(delta_temp, .false.)
+
+      do atom = 1, max_atoms
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
-            do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N_spin, N_k) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                  qe_temp = sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom))
-                  do e_scale = 1, max_energy
-                    weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
-                      binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_temp
-                  end do
+            do n_eigen_final = 2, nbands
+              if (num_exclude_bands .gt. 1) then
+                if (any(exclude_bands == n_eigen_final)) then
+                  cycle
                 end if
               end if
+              final_fd = 1 - fermi_dirac(1, n_eigen_final, N_spin, N_k)
+              do n_eigen = 1, n_eigen_final - 1
+                initial_fd = fermi_dirac(1, n_eigen, N_spin, N_k)
+                middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+                width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+                do gdx = 1, photo_sf_max_vectors
+                  if (theta_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_theta_min .and. &
+                      theta_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_theta_max) then
+                    if (phi_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_phi_min .and. &
+                        phi_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_phi_max) then
+                      ! evacuum_eff = efermi + photo_work_function
+                      ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
+                      ! Is the final kinetic energy > 0?
+                      if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                        transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                                    width, (evacuum_eff - efermi))/norm_vac
+                      else
+                        transverse_gauss = 1.0_dp
+                      end if
+                      temp_contribution = &
+                        qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+                        *matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
+                        *delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
+                        *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                        *transmit_prob(n_eigen_final, N_spin, N_k) &
+                        *electrons_per_state*kpoint_weight(N_k) &
+                        *(I_layer(box_atom(atom), current_photo_energy_index)) &
+                        !                             vacuum_gauss
+                        *transverse_gauss*fermi_dirac(2, n_eigen_final, N_spin, N_k) &
+                        *initial_fd*final_fd &
+                        *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                          /pdos_weights_k_band(n_eigen, N_spin, N_k)) &
+                        *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                      ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                      do e_scale = 1, max_energy
+                        weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) + &
+                                                                             binding_temp(e_scale, n_eigen, N_spin, N_k) &
+                                                                             *temp_contribution
+                      end do
+                    end if
+                  end if
+                end do
+              end do
             end do
           end do
         end do
       end do
+
+      call photo_calculate_delta(delta_temp, .true.)
+
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen_final = 2, nbands
+            if (num_exclude_bands .gt. 1) then
+              if (any(exclude_bands == n_eigen_final)) then
+                cycle
+              end if
+            end if
+            final_fd = 1 - fermi_dirac(1, n_eigen_final, N_spin, N_k)
+            do n_eigen = 1, n_eigen_final - 1
+              middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+              width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+              initial_fd = fermi_dirac(1, n_eigen, N_spin, N_k)
+              do gdx = 1, photo_sf_max_vectors
+                if (theta_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_theta_min .and. &
+                    theta_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_theta_max) then
+                  if (phi_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_phi_min .and. &
+                      phi_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_phi_max) then
+                    ! evacuum_eff = efermi + photo_work_function
+                    ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
+                    ! Is the final kinetic energy > 0?
+                    if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                      transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                                  width, (evacuum_eff - efermi))/norm_vac
+                    else
+                      transverse_gauss = 1.0_dp
+                    end if
+
+                    temp_contribution = &
+                      (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+                       *matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
+                       *delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
+                       *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                       *transmit_prob(n_eigen_final, N_spin, N_k) &
+                       *electrons_per_state*kpoint_weight(N_k) &
+                       !                             vacuum_gauss
+                       *transverse_gauss*fermi_dirac(2, n_eigen_final, N_spin, N_k) &
+                       *initial_fd*final_fd &
+                       *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms)) &
+                         /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                      *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                    ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                    do e_scale = 1, max_energy
+                      weighted_temp(e_scale, n_eigen, N_spin, N_k, max_atoms + 1) = &
+                        weighted_temp(e_scale, n_eigen, N_spin, N_k, max_atoms + 1) + &
+                        binding_temp(e_scale, n_eigen, N_spin, N_k)*temp_contribution
+                    end do
+                  end if
+                end if
+              end do
+            end do
+          end do
+        end do
+      end do
+
+      if (allocated(transmit_prob)) then
+        deallocate (transmit_prob, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
+      end if
 
     elseif (index(photo_model, '1step') > 0) then
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          do n_eigen = 1, nbands
+            argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
+            ! This is a bit of an arbitrary condition, but it turns out
+            ! that this corresponds to a an exponent value of ~1E+/-100
+            ! and this cutoff condition saves us from running into arithmetic
+            ! issues when computing fermi_dirac due to possible underflow.
+            if (argument .gt. 230.0_dp) then
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 0.0_dp
+            elseif (argument .lt. -230.0_dp) then
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp
+            else
+              fermi_dirac(1, n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
+            end if
+            ! normally called vacuum_gauss
+            if ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) .lt. evacuum_eff) then
+              fermi_dirac(2, n_eigen, N_spin, N_k) = gaussian((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy) + &
+                                                              scissor_op, width, evacuum_eff)/norm_vac
+            else
+              fermi_dirac(2, n_eigen, N_spin, N_k) = 1.0_dp
+            end if
+          end do
+        end do
+      end do
+
       do atom = 1, max_atoms + 1
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              if (theta_arpes(n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
-                  theta_arpes(n_eigen, N_spin, N_k) .le. photo_theta_max) then
-                if (phi_arpes(n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                    phi_arpes(n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                  do e_scale = 1, max_energy
-                    weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
-                      binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_osm(n_eigen, N_spin, N_k, atom)
-                  end do
+              middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
+              width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+              do gdx = 1, photo_sf_max_vectors
+                if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
+                    theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
+                  if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
+                      phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
+                    if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
+                      transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
+                                                  width, (evacuum_eff - efermi))/norm_vac
+                    else
+                      transverse_gauss = 1.0_dp
+                    end if
+                    temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+                                         *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                         *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                                         *electrons_per_state*kpoint_weight(N_k) &
+                                         *I_layer(layer(atom), current_photo_energy_index) &
+                                         !                                  vacuum_gauss
+                                         *transverse_gauss*fermi_dirac(2, n_eigen, N_spin, N_k) &
+                                         *fermi_dirac(1, n_eigen, N_spin, N_k) &
+                                         *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                           /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                        *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                    do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                      weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) + &
+                                                                           binding_temp(e_scale, n_eigen, N_spin, N_k) &
+                                                                           *temp_contribution
+                    end do
+                  end if
                 end if
-              end if
+              end do
             end do
           end do
         end do
       end do
     end if
-
-    total_weighted = sum(weighted_temp(:, :, :, :, :))
-    call comms_reduce(total_weighted, 1, "SUM")
-    if (total_weighted .gt. 0.0_dp) then
-      qe_norm = total_qe/total_weighted
-    else
-      qe_norm = 1.0_dp
-    end if
-    call comms_bcast(qe_norm, 1)
-    weighted_temp = weighted_temp*qe_norm
 
     deallocate (binding_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
-  end subroutine binding_energy_broadening
 
+    time1 = io_time()
+    if (on_root .and. iprint > 1) then
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a46,13x,f11.3,a8)') '+ Time to calculate broadened binding energies', time1 - time0, ' (sec) +'
+    end if
+  end subroutine binding_energy_broadening
 
   subroutine write_qe_output_files
     !*===============================================================================
@@ -3598,22 +3907,23 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: write_photo_output, photo_model, photo_work_function, iprint, devel_flag
+    use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, &
+                             photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
-    real(kind=dp) :: time0, time1
+    real(kind=dp) :: time0, time1, total_weighted, qe_norm
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
-    if (index(write_photo_output, 'qe_matrix') > 0) then
+    if (index(photo_output, 'qe_matrix') > 0) then
       call cell_calc_kpoint_r_cart
       kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
       if (num_nodes .gt. 1) then
@@ -3645,12 +3955,13 @@ contains
             read (devel_flag(n_eigen - 2:n_eigen), *) band_num
             write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                & ')'
+                                                      & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (qe_tsm(n_eigen, band_num, N_spin, N_k, atom), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') &
+                    (qe_tsm(n_eigen, band_num, N_spin, N_k, atom), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3658,12 +3969,13 @@ contains
             write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
             write (matrix_unit, *) '## at a certain k-point, spin, and atom'
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                & ')'
+                                                      & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') &
+                    (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3671,12 +3983,13 @@ contains
             write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
             write (matrix_unit, *) '## at a certain k-point, spin, and atom'
             write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                & ')'
+                                                      & ')'
             do atom = 1, max_atoms + 1
               if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
               do N_k = 1, num_kpoints_on_node(my_node_id)
                 do N_spin = 1, nspins
-                  write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
+                  write (matrix_unit, '(9999(ES16.8E3))') &
+                    (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
                 end do
               end do
             end do
@@ -3685,7 +3998,7 @@ contains
           write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
           write (matrix_unit, *) '## at a certain k-point, spin, and atom'
           write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                 & ')'
+                                    & ')'
           do atom = 1, max_atoms + 1
             if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
             do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -3699,22 +4012,29 @@ contains
       end if
     end if
 
-    if (index(write_photo_output, 'e_bind') > 0 .and. max_energy .gt. 0) then
+    if (index(photo_output, 'e_bind') > 0 .and. max_energy .gt. 0) then
 
-      allocate (qe_atom(max_energy, max_atoms + 1), stat=ierr)
+      allocate (qe_atom(max_atoms + 1, max_energy), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_output_files - allocation of qe_atom failed')
       qe_atom = 0.0_dp
-
-      do atom = 1, max_atoms + 1
-        do e_scale = 1, max_energy !loop over binding energy
-          qe_atom(e_scale, atom) = &
+      do e_scale = 1, max_energy !loop over binding energy
+        do atom = 1, max_atoms + 1
+          qe_atom(atom, e_scale) = &
             sum(weighted_temp(e_scale, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom))
         end do
       end do
 
-      if (num_nodes .gt. 1) then
-        call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
+      call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
+
+      total_weighted = sum(qe_atom(:, :))
+      call comms_reduce(total_weighted, 1, "SUM")
+      if (total_weighted .gt. 0.0_dp) then
+        qe_norm = total_qe/total_weighted
+      else
+        qe_norm = 1.0_dp
       end if
+
+      qe_atom = qe_atom*qe_norm
 
       if (on_root) then
         binding_unit = io_file_unit()
@@ -3727,14 +4047,18 @@ contains
         & cdate, ' at ', ctime
         write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(seedname)
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
-        write (binding_unit, '(1x,a18,f7.3)') '## Photon Energy: ', temp_photon_energy
-        write (binding_unit, '(1x,a29,f9.5)') '## Fermi Energy Ekin offset: ', (temp_photon_energy - photo_work_function)
-        write (binding_unit, '(1x,a70,a51)') '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE ',&
-        &'| Contributions from: atom1 | atom2 | ... | bulk | '
+        write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
+        write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
+          photo_theta_min, photo_theta_max
+        write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
+          photo_phi_min, photo_phi_max
+        write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - photo_work_function)
+        write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
+        &'| Contributions from: atom1 | atom2 | ... | bulk |'
 
         do e_scale = 1, max_energy
           write (binding_unit, '(1x,ES13.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))') t_energy(e_scale), &
-            sum(qe_atom(e_scale, 1:max_atoms + 1)), qe_atom(e_scale, 1:max_atoms + 1)
+            sum(qe_atom(1:max_atoms + 1, e_scale)), qe_atom(1:max_atoms + 1, e_scale)
         end do
 
         close (unit=binding_unit)
@@ -3778,6 +4102,7 @@ contains
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: qe_mat_temp
     real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    real(kind=dp), dimension(:, :, :, :), allocatable :: osm_reduced
     integer, intent(in)                         :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
@@ -3805,7 +4130,8 @@ contains
       write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
       write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms+1, ')'
+      write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, &
+        max_atoms + 1, ')'
       allocate (qe_mat_temp(nbands, nspins, num_kpoints_on_node(0)), stat=ierr)
       if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate qe_mat_temp on root')
       token = -1
@@ -3821,6 +4147,10 @@ contains
         else
           tsm_reduced = sum(qe_tsm, dim=2)
         end if
+      else if (index(photo_model, '1step') > 0) then
+        allocate (osm_reduced(nbands, nspins, num_kpoints_on_node(0), max_atoms + 1), stat=ierr)
+        if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate tsm_reduced')
+        osm_reduced = qe_osm
       end if
     end if
     ! For each atom until max_atoms+1
@@ -3833,7 +4163,7 @@ contains
         if (index(photo_model, '3step') > 0) then
           call comms_send(tsm_reduced(1, 1, 1, atom), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
         elseif (index(photo_model, '1step') > 0) then
-          call comms_send(qe_osm(1, 1, 1, atom), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+          call comms_send(osm_reduced(1, 1, 1, atom), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
         end if
         ! - send token back to root node
         call comms_send(token, 1, 0)
@@ -3858,20 +4188,23 @@ contains
           if (index(devel_flag, 'final') > 0) then
             do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
+                write (matrix_unit, '(9999(ES16.8E3))') &
+                  (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
               end do
             end do
           else
             do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
-                write (matrix_unit, '(9999(ES16.8E3))') (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
+                write (matrix_unit, '(9999(ES16.8E3))') &
+                  (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
               end do
             end do
           end if
         elseif (index(photo_model, '1step') > 0) then
           do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
-              write (matrix_unit, '(9999(ES16.8E3))') (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
+              write (matrix_unit, '(9999(ES16.8E3))') &
+                (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
             end do
           end do
         end if
@@ -3902,17 +4235,17 @@ contains
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model, devel_flag
+    use od_parameters, only: photo_model
 
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: fem_mat_temp
-    real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
+    ! real(kind=dp), dimension(:, :, :, :), allocatable :: tsm_reduced
     integer, intent(in)                         :: kpt_total
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    integer:: N_k, N_spin, n_eigen, atom, token, matrix_unit, ierr, inode
+    integer:: N_k, N_spin, n_eigen, token, matrix_unit, ierr, inode
 
     ! On root open file and write header
 
@@ -3990,6 +4323,11 @@ contains
     if (allocated(theta_arpes)) then
       deallocate (theta_arpes, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
+    end if
+
+    if (allocated(theta_arpes_internal)) then
+      deallocate (theta_arpes_internal, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes_internal')
     end if
 
     if (allocated(refract)) then
@@ -4092,10 +4430,10 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate field_emission')
     end if
 
-    if (allocated(bulk_prob)) then
-      deallocate (bulk_prob, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate bulk_prob')
-    end if
+    ! if (allocated(bulk_prob)) then
+    !   deallocate (bulk_prob, stat=ierr)
+    !   if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate bulk_prob')
+    ! end if
 
     if (allocated(qe_tsm)) then
       deallocate (qe_tsm, stat=ierr)

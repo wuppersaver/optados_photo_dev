@@ -14,4 +14,4 @@ module od_build
     character(len=20) :: compile_time = '16:49 BST'
   end type build_info_type
   type(build_info_type), public, save :: build_info
-endmodule od_build
+end module od_build
