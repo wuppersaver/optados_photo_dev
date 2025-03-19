@@ -4199,14 +4199,18 @@ contains
         & cdate, ' at ', ctime
         write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(seedname)
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
-        write (binding_unit, '(1x,a18,f7.3)') '## Photon Energy: ', temp_photon_energy
-        write (binding_unit, '(1x,a29,f9.5)') '## Fermi Energy Ekin offset: ', (temp_photon_energy - photo_work_function)
-        write (binding_unit, '(1x,a70,a51)') '## Transverse Energy (TE) [eV] | Total QE from sum(atoms + bulk) @ TE ',&
-        &'| Contributions from: atom1 | atom2 | ... | bulk | '
+        write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
+        write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
+                                                    photo_theta_min, photo_theta_max
+        write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
+                                                    photo_theta_min, photo_theta_max
+        write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - photo_work_function)
+        write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
+        &'| Contributions from: atom1 | atom2 | ... | bulk |'
 
         do e_scale = 1, max_energy
           write (binding_unit, '(1x,ES13.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))') t_energy(e_scale), &
-            sum(qe_atom(1:max_atoms + 1,e_scale)), qe_atom(1:max_atoms + 1, e_scale)
+            sum(qe_atom(1:max_atoms + 1, e_scale)), qe_atom(1:max_atoms + 1, e_scale)
         end do
 
         close (unit=binding_unit)
