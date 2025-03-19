@@ -3768,7 +3768,7 @@ contains
     real(kind=dp) :: qe_temp
     real(kind=dp) :: time0, time1
 
-    real(kind=dp) :: qe_norm, total_weighted, final_fd, initial_fd
+    real(kind=dp) :: final_fd, initial_fd
     integer :: N_k, N_spin, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx
 
@@ -4040,16 +4040,6 @@ contains
       end do
     end if
 
-    total_weighted = sum(weighted_temp(:, :, :, :, :))
-    call comms_reduce(total_weighted, 1, "SUM")
-    if (total_weighted .gt. 0.0_dp) then
-      qe_norm = total_qe/total_weighted
-    else
-      qe_norm = 1.0_dp
-    end if
-    call comms_bcast(qe_norm, 1)
-    weighted_temp = weighted_temp*qe_norm
-
     deallocate (binding_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
 
@@ -4070,7 +4060,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
     use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, photo_sf_max_vectors
     implicit none
@@ -4078,7 +4068,7 @@ contains
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
-    real(kind=dp) :: time0, time1
+    real(kind=dp) :: time0, time1, total_weighted, qe_norm
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
@@ -4186,9 +4176,17 @@ contains
         end do
       end do
 
-      if (num_nodes .gt. 1) then
-        call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
+      call comms_reduce(qe_atom(1, 1), max_energy*(max_atoms + 1), "SUM")
+      
+      total_weighted = sum(qe_atom(:,:))
+      call comms_reduce(total_weighted, 1, "SUM")
+      if (total_weighted .gt. 0.0_dp) then
+        qe_norm = total_qe/total_weighted
+      else
+        qe_norm = 1.0_dp
       end if
+
+      qe_atom = qe_atom*qe_norm
 
       if (on_root) then
         binding_unit = io_file_unit()
