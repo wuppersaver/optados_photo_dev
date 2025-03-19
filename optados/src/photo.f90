@@ -414,7 +414,7 @@ contains
     slab_middle_ref = sum(mean_heights)/2
     box_volume = box_height*cell_area
     ! determine the number of boxes we need until we have reached the top of the slab
-    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height) + 1
+    num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/box_height)
     if (num_boxes .eq. 0) num_boxes = 1
     ! set up box top points as middle_reference + n(1...)*box_height
     if (.not. allocated(boxes_top_z_coord)) then
@@ -441,8 +441,7 @@ contains
       end do
       atoms_per_box(i) = counter
     end do
-    max_atoms = sum(atoms_per_box) - atoms_per_box(num_boxes)
-
+    max_atoms = sum(atoms_per_box)
     if (on_root) then
       if (iprint .gt. 1) then
         write (stdout, 420) '+', 'box height [Ang] = ', box_height, ',', '# of boxes = ', num_boxes, '+'
