@@ -441,10 +441,10 @@ contains
       end do
       atoms_per_box(i) = counter
     end do
-    ! We only want to calculate the number of atoms in explicit layers, but num_boxes
-    ! has to be one bigger than the number of explicit layers. This is because all the arrays
-    ! allocated to size of num_boxes need have an entry for the bulk slab approximation, too.
-    max_atoms = sum(atoms_per_box) ! - atoms_per_box(num_boxes)
+    max_atoms = sum(atoms_per_box)
+    ! We want to artifically set the box of the bulk slab to num_boxes + 1
+    ! since we later use this to access I_layer in the QE calculation
+    box_atom(max_atoms + 1) = num_boxes + 1
 
     if (on_root) then
       if (iprint .gt. 1) then
