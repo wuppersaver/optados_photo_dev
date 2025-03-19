@@ -293,7 +293,7 @@ contains
     use od_comms, only: on_root
     use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, iprint
     implicit none
-    integer :: ierr, atom, counter, i !, atom_1, atom_2,  atom_index, temp, first,  ic, 
+    integer :: ierr, atom, counter, i, ic !, atom_1, atom_2,  atom_index, temp, first
     real(kind=dp), allocatable, dimension(:) :: vdw_radii
     ! real(kind=dp)                            :: z_temp, z_zero = 0.0_dp
     real(kind=dp)                            :: diff_temp, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
@@ -339,12 +339,12 @@ contains
     !   end do
     ! end do
 
-    ! ! Capitalise the first letter of the atomic label for later
-    ! do atom = 1, num_atoms
-    !   ic = ichar(atoms_label_tmp(atom_order(atom)) (1:1))
-    !   if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-    !     atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    ! end do
+    ! Capitalise the first letter of the atomic label for later
+    do atom = 1, num_atoms
+      ic = ichar(atoms_label_tmp(atom_order(atom)) (1:1))
+      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+        atoms_label_tmp(atom_order(atom)) (1:1) = char(ic + ichar('Z') - ichar('z'))
+    end do
 
     ! ! DEFINE THE LAYER FOR EACH ATOM
     ! ! Assume that a new layer starts if the atom type changes or
@@ -459,7 +459,7 @@ contains
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Box     |         Atom Z-Coordinate (Ang)          |'
 
       do atom = 1, num_atoms
-        if (box_atom(atom) .gt. 0) then
+        if (box_atom(atom) .gt. 0 .and. (box_atom(atom) .ne. num_boxes + 1)) then
           write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), &
             atom_order(atom), box_atom(atom), atoms_pos_cart_photo(3, atom_order(atom)), "|"
         end if
