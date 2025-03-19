@@ -3510,27 +3510,21 @@ contains
     ! orig. Victor Chang, 7 February 2020
     ! edited by Felix Mildner, after June 2023
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
-    use od_electronic, only: nbands, nspins, elec_read_band_gradient, elec_read_band_curvature, efermi, photo_spectral_func
-    use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
-    use od_parameters, only: photo_model, iprint, photo_sf_max_vectors, photo_temperature
+    use od_cell, only: cell_calc_kpoint_r_cart
+    use od_electronic, only: elec_read_band_gradient, elec_read_band_curvature
+    use od_comms, only: on_root, comms_reduce, comms_bcast
+    use od_parameters, only: photo_model, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: inv_sqrt_two_pi
     implicit none
-    real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm_temp
-    real(kind=dp), allocatable, dimension(:, :, :, :) :: te_osm_temp
     real(kind=dp), allocatable, dimension(:) :: layer_e_transverse
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
-    real(kind=dp)                            :: sfn_contributions, transverse_gauss, width, norm_vac
-    integer :: N_k, N_spin, n_eigen, gdx, atom, ierr
+    integer                                  :: atom, ierr
 
     time0 = io_time()
-
-    width = (1.0_dp/11604.45_dp)*photo_temperature
-    norm_vac = inv_sqrt_two_pi/width
 
     if (iprint > 1 .and. on_root) then
       write (stdout, '(1x,a78)') '+----------------------------- Calculating MTE ------------------------------+'
@@ -3549,28 +3543,6 @@ contains
     layer_e_transverse = 0.0_dp
 
     if (index(photo_model, '3step') > 0) then
-      ! allocate (te_tsm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_tsm_temp failed')
-      ! te_tsm_temp = 0.0_dp
-
-      ! do atom = 1, max_atoms + 1
-      !   do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      !     do N_spin = 1, nspins                    ! Loop over spins
-      !       do n_eigen = 1, min_index_unocc(N_spin, N_k) - 1
-      !         sfn_contributions = 0.0_dp
-      !         do gdx = 1, photo_sf_max_vectors
-      !           sfn_contributions = sfn_contributions + E_transverse(gdx, n_eigen, N_spin, N_k) &
-      !                                                   *sum(qe_tsm(gdx,n_eigen, 1:nbands, N_spin, N_k, atom))
-      !         end do
-      !         te_tsm_temp(n_eigen, N_spin, N_k, atom) = sfn_contributions
-      !       end do
-      !     end do
-      !   end do
-      !   ! Calculate the qe contribution of each atom/layer
-      !   layer_qe(atom) = sum(qe_tsm(:, :, :, :, :, atom))
-      !   layer_e_transverse(atom) = sum(te_tsm_temp(:, :, :, atom))
-      ! end do
-
       do atom = 1, max_atoms + 1
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_tsm( :, :, :, :, atom))
@@ -3601,38 +3573,6 @@ contains
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_e_transverse')
 
     elseif (index(photo_model, '1step') > 0) then
-
-      ! allocate (te_osm_temp(nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-      ! if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of te_osm_temp failed')
-      ! te_osm_temp = 0.0_dp
-      ! do atom = 1, max_atoms + 1
-      !   do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      !     do N_spin = 1, nspins                    ! Loop over spins
-      !       do n_eigen = 1, nbands
-      !         sfn_contributions = 0.0_dp
-      !         do gdx = 1, photo_sf_max_vectors
-      !           ! Earlier we had to sum up the different contributions to save memory. Now we have to weight the
-      !           ! sum by its contributions again, to recover each of the contributions. Then we can properly weigh 
-      !           ! each by the appropriate transverse energy.
-      !           if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-      !             transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-      !                                     width, (evacuum_eff - efermi))/norm_vac
-      !           else
-      !             transverse_gauss = 1.0_dp
-      !           end if
-      !           sfn_contributions = sfn_contributions + (E_transverse(gdx, n_eigen, N_spin, N_k) &
-      !                                                   * photo_spectral_func(3,gdx, n_eigen, N_spin, N_k) &
-      !                                                   * electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
-      !                                                   * transverse_gauss)
-      !         end do
-      !         te_osm_temp(n_eigen, N_spin, N_k, atom) = sfn_contributions*qe_osm(n_eigen, N_spin, N_k, atom)
-      !       end do
-      !     end do
-      !   end do
-      !   ! Calculate the qe contribution of each atom/layer
-      !   layer_qe(atom) = sum(qe_osm(:, :, :, atom))
-      ! end do
-
       do atom = 1, max_atoms + 1
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_osm(:, :, :, atom))
@@ -3645,7 +3585,6 @@ contains
       call comms_bcast(total_qe, 1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
-      ! mean_te = sum(te_osm_temp)
       mean_te = sum(te_osm)
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(mean_te, 1, 'SUM')
@@ -3765,7 +3704,6 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
-    real(kind=dp) :: qe_temp
     real(kind=dp) :: time0, time1
 
     real(kind=dp) :: final_fd, initial_fd
@@ -4062,7 +4000,8 @@ contains
     use od_electronic, only: nbands, nspins
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, photo_sf_max_vectors
+    use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, &
+    photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
@@ -4203,7 +4142,7 @@ contains
         write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
                                                     photo_theta_min, photo_theta_max
         write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-                                                    photo_theta_min, photo_theta_max
+                                                    photo_phi_min, photo_phi_max
         write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - photo_work_function)
         write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
         &'| Contributions from: atom1 | atom2 | ... | bulk |'
@@ -4249,7 +4188,7 @@ contains
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model, devel_flag, photo_sf_max_vectors
+    use od_parameters, only: photo_model, devel_flag
 
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: qe_mat_temp
