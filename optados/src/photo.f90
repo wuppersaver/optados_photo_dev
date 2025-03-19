@@ -1425,8 +1425,6 @@ contains
       I_layer(box_atom(max_atoms + 1), 1:number_energies) = 1.0_dp
     end if
 
-    
-
     if (allocated(reflect_photo)) then
       deallocate (reflect_photo, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate reflect_photo')
