@@ -678,7 +678,7 @@ contains
     !     end do
     !   end do
     ! end do
-    write (stdout,*) sum(foptical_mat)
+    ! write (stdout,*) sum(foptical_mat)
     ! Convert all free electron matrix elements to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
@@ -922,9 +922,6 @@ contains
           read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik),i=1, 3), gdx= 1, max_gvec),&
                                       ib= 1, nbands)
         end do
-      end do
-      do i = 1, 20
-        write (stdout,*) photo_spectral_func(1:3,i,1,1,1)
       end do
     end if
 
