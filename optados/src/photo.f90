@@ -2494,7 +2494,7 @@ contains
 
     if (index(devel_flag, 'no_transmit') > 0) then 
       if (.not. allocated(transmit_prob)) then
-        allocate (transmit_prob(nbands, num_kpoints_on_node(my_node_id), nspins))
+        allocate (transmit_prob(nbands, nspins, num_kpoints_on_node(my_node_id)))
         if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
       end if
       transmit_prob = 1.0_dp
@@ -2622,7 +2622,7 @@ contains
                                     * matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
                                     * delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                                     * electron_esc(gdx,n_eigen_final, N_spin, N_k, atom) &
-                                    * transmit_prob(n_eigen_final,N_k, N_spin) &
+                                    * transmit_prob(n_eigen_final, N_spin, N_k) &
                                     * electrons_per_state  *  kpoint_weight(N_k) &
                                     * I_layer(layer(atom), current_photo_energy_index) &
                                     * transverse_gauss  *  vacuum_gauss  *  initial_fd  *  final_fd &
@@ -2635,7 +2635,7 @@ contains
                                     * matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
                                     * delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                                     * electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                                    * transmit_prob(n_eigen_final,N_k, N_spin) &
+                                    * transmit_prob(n_eigen_final, N_spin, N_k) &
                                     * electrons_per_state  *  kpoint_weight(N_k) &
                                     * (I_layer(box_atom(atom), current_photo_energy_index)) &
                                     * transverse_gauss  *  vacuum_gauss  *  initial_fd  *  final_fd &
@@ -2657,7 +2657,7 @@ contains
                     band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k),&
                     matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
                     delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
-                    transmit_prob(n_eigen_final, N_k, N_spin), kpoint_weight(N_k), I_layer(layer(atom), &
+                    transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), I_layer(layer(atom), &
                     current_photo_energy_index),transverse_gauss, vacuum_gauss, initial_fd, final_fd,&
                     pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
                 end if
@@ -2695,7 +2695,7 @@ contains
                                   * matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
                                   * delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                                   * electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
-                                  * transmit_prob(n_eigen_final,N_k, N_spin)&
+                                  * transmit_prob(n_eigen_final, N_spin, N_k)&
                                   * electrons_per_state  *  kpoint_weight(N_k) &
                                   * transverse_gauss  *  vacuum_gauss  *  initial_fd  *  final_fd &
                                   * (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms))&
@@ -3884,7 +3884,7 @@ contains
                                     * matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
                                     * delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
                                     * electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                                    * transmit_prob(n_eigen_final,N_k, N_spin) &
+                                    * transmit_prob(n_eigen_final, N_spin, N_k) &
                                     * electrons_per_state  *  kpoint_weight(N_k) &
                                     * (I_layer(box_atom(atom), current_photo_energy_index)) &
                                     !                             vacuum_gauss
@@ -3898,7 +3898,6 @@ contains
                         weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) +&
                                                                   binding_temp(e_scale, n_eigen, N_spin, N_k)*temp_contribution
                       end do
-
                     end if 
                   end if
                 end do
@@ -3943,7 +3942,7 @@ contains
                                   * matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
                                   * delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
                                   * electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
-                                  * transmit_prob(n_eigen_final,N_k, N_spin) &
+                                  * transmit_prob(n_eigen_final, N_spin, N_k) &
                                   * electrons_per_state  *  kpoint_weight(N_k) &
                                   !                             vacuum_gauss
                                   * transverse_gauss  *  fermi_dirac(2, n_eigen_final, N_spin, N_k)  &
