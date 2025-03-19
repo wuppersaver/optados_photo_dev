@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>od2od &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>od2od      <small>Program</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title="48.0% of total for programs.">177 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/od2od.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/od2od.f90.html'>od2od.f90</a></li>
+          <li class="active">od2od</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#vars-0">Variables</a>
+        </h3>
+      </div>
+      <div id="vars-0" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../program/od2od.html#variable-cdate">cdate</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-ctime">ctime</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-dome_conv">dome_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-dummy_conv">dummy_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-elnes_conv">elnes_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-fem_conv">fem_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-file_found">file_found</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-ome_conv">ome_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-pdos_conv">pdos_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-pos">pos</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-stat">stat</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-time0">time0</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-time1">time1</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../program/od2od.html#src">od2od</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_conv.html'>od_conv</a></li>
+                <li><a href='../module/od_io.html'>od_io</a></li>
+                <li><a href='../module/od_constants.html'>od_constants</a></li>
+                <li><a href='../module/od_comms.html'>od_comms</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: program~~od2od~~UsesGraph Pages: 1 -->
+<svg id="programod2odUsesGraph" width="629pt" height="261pt"
+ viewBox="0.00 0.00 629.00 261.08" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="program~~od2od~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 257.08)">
+<title>program~~od2od~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-257.08 625,-257.08 625,4 -4,4"/>
+<!-- program~od2od -->
+<g id="program~~od2od~~UsesGraph_node1" class="node">
+<title>program~od2od</title>
+<polygon fill="none" stroke="black" points="621,-82.27 567,-82.27 567,-58.27 621,-58.27 621,-82.27"/>
+<text text-anchor="middle" x="594" y="-67.87" font-family="Helvetica,sans-Serif" font-size="10.50">od2od</text>
+</g>
+<!-- module~od_conv -->
+<g id="program~~od2od~~UsesGraph_node2" class="node">
+<title>module~od_conv</title>
+<g id="a_program~~od2od~~UsesGraph_node2"><a xlink:href=".././module/od_conv.html" xlink:title="od_conv">
+<polygon fill="#337ab7" stroke="#337ab7" points="531,-121.27 474,-121.27 474,-97.27 531,-97.27 531,-121.27"/>
+<text text-anchor="middle" x="502.5" y="-106.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_conv</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;module~od_conv -->
+<g id="program~~od2od~~UsesGraph_edge1" class="edge">
+<title>program~od2od&#45;&gt;module~od_conv</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M566.63,-81.76C558.45,-85.32 549.28,-89.32 540.52,-93.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="539.01,-89.98 531.24,-97.18 541.8,-96.39 539.01,-89.98"/>
+</g>
+<!-- module~od_comms -->
+<g id="program~~od2od~~UsesGraph_node3" class="node">
+<title>module~od_comms</title>
+<g id="a_program~~od2od~~UsesGraph_node3"><a xlink:href=".././module/od_comms.html" xlink:title="od_comms">
+<polygon fill="#337ab7" stroke="#337ab7" points="308,-61.27 238,-61.27 238,-37.27 308,-37.27 308,-61.27"/>
+<text text-anchor="middle" x="273" y="-46.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_comms</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;module~od_comms -->
+<g id="program~~od2od~~UsesGraph_edge2" class="edge">
+<title>program~od2od&#45;&gt;module~od_comms</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M390,-50.27C366.29,-50.17 339.85,-49.95 318.21,-49.74"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="318.04,-46.24 308.01,-49.64 317.97,-53.24 318.04,-46.24"/>
+</g>
+<!-- module~od_io -->
+<g id="program~~od2od~~UsesGraph_node4" class="node">
+<title>module~od_io</title>
+<g id="a_program~~od2od~~UsesGraph_node4"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="187,-141.27 133,-141.27 133,-117.27 187,-117.27 187,-141.27"/>
+<text text-anchor="middle" x="160" y="-126.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;module~od_io -->
+<g id="program~~od2od~~UsesGraph_edge3" class="edge">
+<title>program~od2od&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M390,-50.27C335.61,-50.04 327.62,-80.13 274,-89.27"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M272,-89.27C245.56,-93.77 217.12,-104.13 195.66,-113.18"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="194.1,-110.04 186.31,-117.22 196.88,-116.46 194.1,-110.04"/>
+</g>
+<!-- module~od_constants -->
+<g id="program~~od2od~~UsesGraph_node5" class="node">
+<title>module~od_constants</title>
+<g id="a_program~~od2od~~UsesGraph_node5"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-181.27 0,-181.27 0,-157.27 82,-157.27 82,-181.27"/>
+<text text-anchor="middle" x="41" y="-166.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge4" class="edge">
+<title>program~od2od&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M566.74,-66.05C528.44,-60.26 454.95,-50.53 392,-50.27"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M390,-50.27C352.29,-48.92 345.02,-35.59 308,-28.27 243.38,-15.48 222.22,15.05 161,-9.27"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-9.27C97.74,-32.25 62.94,-109.34 49.09,-147.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.71,-146.56 45.73,-157.15 52.32,-148.86 45.71,-146.56"/>
+</g>
+<!-- module~od_conv&#45;&gt;module~od_io -->
+<g id="program~~od2od~~UsesGraph_edge6" class="edge">
+<title>module~od_conv&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M473.65,-102.26C430.58,-92.45 345.33,-77.12 274,-89.27"/>
+</g>
+<!-- module~od_conv&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge8" class="edge">
+<title>module~od_conv&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M272,-249.27C203.28,-255.01 181.53,-257.09 118,-230.27 95.64,-220.83 74.48,-202.81 60.19,-188.8"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="62.51,-186.17 53,-181.51 57.53,-191.08 62.51,-186.17"/>
+</g>
+<!-- module~od_electronic -->
+<g id="program~~od2od~~UsesGraph_node6" class="node">
+<title>module~od_electronic</title>
+<g id="a_program~~od2od~~UsesGraph_node6"><a xlink:href=".././module/od_electronic.html" xlink:title="od_electronic">
+<polygon fill="#337ab7" stroke="#337ab7" points="202,-221.27 118,-221.27 118,-197.27 202,-197.27 202,-221.27"/>
+<text text-anchor="middle" x="160" y="-206.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_electronic</text>
+</a>
+</g>
+</g>
+<!-- module~od_conv&#45;&gt;module~od_electronic -->
+<g id="program~~od2od~~UsesGraph_edge5" class="edge">
+<title>module~od_conv&#45;&gt;module~od_electronic</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M491.92,-121.52C462.82,-157.17 371.48,-257.83 274,-249.27"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M272,-249.27C242.17,-251.76 210.23,-238.37 188.31,-226.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="189.98,-223.35 179.56,-221.44 186.52,-229.43 189.98,-223.35"/>
+</g>
+<!-- module~od_parameters -->
+<g id="program~~od2od~~UsesGraph_node7" class="node">
+<title>module~od_parameters</title>
+<g id="a_program~~od2od~~UsesGraph_node7"><a xlink:href=".././module/od_parameters.html" xlink:title="od_parameters">
+<polygon fill="#337ab7" stroke="#337ab7" points="438,-141.27 344,-141.27 344,-117.27 438,-117.27 438,-141.27"/>
+<text text-anchor="middle" x="391" y="-126.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_parameters</text>
+</a>
+</g>
+</g>
+<!-- module~od_conv&#45;&gt;module~od_parameters -->
+<g id="program~~od2od~~UsesGraph_edge7" class="edge">
+<title>module~od_conv&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M473.87,-114.31C466.04,-115.74 457.23,-117.35 448.36,-118.97"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="447.58,-115.56 438.37,-120.8 448.83,-122.44 447.58,-115.56"/>
+</g>
+<!-- module~od_comms&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge9" class="edge">
+<title>module~od_comms&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#7fff00" stroke-dasharray="5,2" d="M257.52,-37.19C236.22,-20.96 195.27,4.34 161,-9.27"/>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge10" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M132.74,-138.24C119.37,-142.82 102.72,-148.51 87.35,-153.76"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="85.82,-150.59 77.49,-157.13 88.08,-157.21 85.82,-150.59"/>
+</g>
+<!-- module~od_electronic&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge11" class="edge">
+<title>module~od_electronic&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M123.9,-197.27C112.32,-193.31 99.28,-188.85 87.06,-184.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="88.08,-181.32 77.48,-181.4 85.81,-187.94 88.08,-181.32"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_io -->
+<g id="program~~od2od~~UsesGraph_edge13" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M364.3,-117.16C335.82,-104.32 291.59,-86.27 274,-89.27"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge14" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M347.24,-141.27C334.67,-144.51 320.84,-147.8 308,-150.27 243.3,-162.68 226.62,-163.5 161,-169.27"/>
+</g>
+<!-- module~od_cell -->
+<g id="program~~od2od~~UsesGraph_node8" class="node">
+<title>module~od_cell</title>
+<g id="a_program~~od2od~~UsesGraph_node8"><a xlink:href=".././module/od_cell.html" xlink:title="od_cell">
+<polygon fill="#337ab7" stroke="#337ab7" points="300,-141.27 246,-141.27 246,-117.27 300,-117.27 300,-141.27"/>
+<text text-anchor="middle" x="273" y="-126.87" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_cell</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_cell -->
+<g id="program~~od2od~~UsesGraph_edge12" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#00ffff" stroke-dasharray="5,2" d="M343.82,-129.27C332.73,-129.27 321.04,-129.27 310.47,-129.27"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="310.32,-125.77 300.32,-129.27 310.32,-132.77 310.32,-125.77"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_io -->
+<g id="program~~od2od~~UsesGraph_edge15" class="edge">
+<title>module~od_cell&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M245.98,-129.27C231.47,-129.27 213.17,-129.27 197.28,-129.27"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="197.25,-125.77 187.25,-129.27 197.25,-132.77 197.25,-125.77"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_constants -->
+<g id="program~~od2od~~UsesGraph_edge16" class="edge">
+<title>module~od_cell&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M249.41,-141.32C227.53,-152.05 193.04,-166.45 161,-169.27"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159,-169.27C137.19,-171.18 113,-171.48 92.31,-171.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="92.21,-167.69 82.15,-171 92.08,-174.69 92.21,-167.69"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+    <p>Program to convert checkpoint files from formatted to unformmated
+and vice versa - useful for switching between computers.</p>
+<p>Plan is to use to convert outputs of other DFT programs to ones that
+OptaDOS can read.</p>
+<p>AJM 2019</p>
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: program~~od2od~~CallsGraph Pages: 1 -->
+<svg id="programod2odCallsGraph" width="641pt" height="886pt"
+ viewBox="0.00 0.00 641.00 885.76" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="program~~od2od~~CallsGraph" class="graph" transform="scale(0.7 0.7) rotate(0) translate(4 1259)">
+<title>program~~od2od~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1259 910,-1259 910,4 -4,4"/>
+<!-- program~od2od -->
+<g id="program~~od2od~~CallsGraph_node1" class="node">
+<title>program~od2od</title>
+<polygon fill="none" stroke="black" points="54,-648 0,-648 0,-624 54,-624 54,-648"/>
+<text text-anchor="middle" x="27" y="-633.6" font-family="Helvetica,sans-Serif" font-size="10.50">od2od</text>
+</g>
+<!-- proc~write_fem_bin -->
+<g id="program~~od2od~~CallsGraph_node2" class="node">
+<title>proc~write_fem_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node2"><a xlink:href=".././proc/write_fem_bin.html" xlink:title="write_fem_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="194.5,-1255 107.5,-1255 107.5,-1231 194.5,-1231 194.5,-1255"/>
+<text text-anchor="middle" x="151" y="-1240.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fem_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_fem_bin -->
+<g id="program~~od2od~~CallsGraph_edge12" class="edge">
+<title>program~od2od&#45;&gt;proc~write_fem_bin</title>
+<path fill="none" stroke="#ff0000" d="M28.52,-648.21C31.99,-728.17 53.01,-1175.28 90,-1222 92.4,-1225.03 95.27,-1227.63 98.44,-1229.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="96.95,-1233.03 107.38,-1234.9 100.39,-1226.94 96.95,-1233.03"/>
+</g>
+<!-- proc~write_read_file -->
+<g id="program~~od2od~~CallsGraph_node3" class="node">
+<title>proc~write_read_file</title>
+<g id="a_program~~od2od~~CallsGraph_node3"><a xlink:href=".././proc/write_read_file.html" xlink:title="write_read_file">
+<polygon fill="#d9534f" stroke="#d9534f" points="196,-1213 106,-1213 106,-1189 196,-1189 196,-1213"/>
+<text text-anchor="middle" x="151" y="-1198.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_read_file</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_read_file -->
+<g id="program~~od2od~~CallsGraph_edge15" class="edge">
+<title>program~od2od&#45;&gt;proc~write_read_file</title>
+<path fill="none" stroke="#ff0000" d="M27.8,-648.38C26.85,-720.66 25.33,-1087.81 90,-1175 92.3,-1178.1 95.05,-1180.84 98.08,-1183.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="96.4,-1186.33 106.68,-1188.91 100.25,-1180.49 96.4,-1186.33"/>
+</g>
+<!-- proc~write_elnes_bin -->
+<g id="program~~od2od~~CallsGraph_node4" class="node">
+<title>proc~write_elnes_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node4"><a xlink:href=".././proc/write_elnes_bin.html" xlink:title="write_elnes_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="547.5,-1139 453.5,-1139 453.5,-1115 547.5,-1115 547.5,-1139"/>
+<text text-anchor="middle" x="500.5" y="-1124.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_elnes_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_elnes_bin -->
+<g id="program~~od2od~~CallsGraph_edge1" class="edge">
+<title>program~od2od&#45;&gt;proc~write_elnes_bin</title>
+<path fill="none" stroke="#ff0000" d="M27.73,-648.43C26.57,-714.86 24.69,-1027.51 90,-1091 138.87,-1138.51 342.75,-1135.17 443.14,-1130.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="443.59,-1133.89 453.4,-1129.9 443.24,-1126.9 443.59,-1133.89"/>
+</g>
+<!-- proc~read_dome_fmt -->
+<g id="program~~od2od~~CallsGraph_node5" class="node">
+<title>proc~read_dome_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node5"><a xlink:href=".././proc/read_dome_fmt.html" xlink:title="read_dome_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="199,-528 103,-528 103,-504 199,-504 199,-528"/>
+<text text-anchor="middle" x="151" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_dome_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_dome_fmt -->
+<g id="program~~od2od~~CallsGraph_edge2" class="edge">
+<title>program~od2od&#45;&gt;proc~read_dome_fmt</title>
+<path fill="none" stroke="#ff0000" d="M33.27,-623.69C42.26,-603.99 62.3,-565.25 90,-542 94.18,-538.49 98.92,-535.38 103.84,-532.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="105.48,-535.74 112.84,-528.12 102.33,-529.48 105.48,-535.74"/>
+</g>
+<!-- proc~read_elnes_bin -->
+<g id="program~~od2od~~CallsGraph_node6" class="node">
+<title>proc~read_elnes_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node6"><a xlink:href=".././proc/read_elnes_bin.html" xlink:title="read_elnes_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="367.5,-679 275.5,-679 275.5,-655 367.5,-655 367.5,-679"/>
+<text text-anchor="middle" x="321.5" y="-664.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_elnes_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_elnes_bin -->
+<g id="program~~od2od~~CallsGraph_edge5" class="edge">
+<title>program~od2od&#45;&gt;proc~read_elnes_bin</title>
+<path fill="none" stroke="#ff0000" d="M37.88,-648.27C48.99,-661 68.35,-680.12 90,-688 151.87,-710.51 228.96,-695.6 276.45,-681.96"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="277.53,-685.29 286.12,-679.08 275.53,-678.58 277.53,-685.29"/>
+</g>
+<!-- proc~read_fem_bin -->
+<g id="program~~od2od~~CallsGraph_node7" class="node">
+<title>proc~read_fem_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node7"><a xlink:href=".././proc/read_fem_bin.html" xlink:title="read_fem_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="364,-611 279,-611 279,-587 364,-587 364,-611"/>
+<text text-anchor="middle" x="321.5" y="-596.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_fem_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_fem_bin -->
+<g id="program~~od2od~~CallsGraph_edge4" class="edge">
+<title>program~od2od&#45;&gt;proc~read_fem_bin</title>
+<path fill="none" stroke="#ff0000" d="M54.03,-643.23C65.03,-645.93 78.05,-648.67 90,-650 143.89,-656.01 159.08,-661.82 212,-650 241.02,-643.52 271.44,-628.39 292.66,-616.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="294.58,-619.21 301.44,-611.14 291.04,-613.17 294.58,-619.21"/>
+</g>
+<!-- proc~read_elnes_fmt -->
+<g id="program~~od2od~~CallsGraph_node8" class="node">
+<title>proc~read_elnes_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node8"><a xlink:href=".././proc/read_elnes_fmt.html" xlink:title="read_elnes_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="547.5,-941 453.5,-941 453.5,-917 547.5,-917 547.5,-941"/>
+<text text-anchor="middle" x="500.5" y="-926.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_elnes_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_elnes_fmt -->
+<g id="program~~od2od~~CallsGraph_edge3" class="edge">
+<title>program~od2od&#45;&gt;proc~read_elnes_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.98,-648.25C33.07,-695.82 50.4,-867.33 90,-901 141.71,-944.97 343.24,-939 442.96,-933.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="443.39,-936.55 453.16,-932.45 442.96,-929.57 443.39,-936.55"/>
+</g>
+<!-- proc~read_pdos_fmt -->
+<g id="program~~od2od~~CallsGraph_node9" class="node">
+<title>proc~read_pdos_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node9"><a xlink:href=".././proc/read_pdos_fmt.html" xlink:title="read_pdos_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="546,-1097 455,-1097 455,-1073 546,-1073 546,-1097"/>
+<text text-anchor="middle" x="500.5" y="-1082.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_pdos_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_pdos_fmt -->
+<g id="program~~od2od~~CallsGraph_edge6" class="edge">
+<title>program~od2od&#45;&gt;proc~read_pdos_fmt</title>
+<path fill="none" stroke="#ff0000" d="M27.81,-648.08C27.12,-711.32 27.35,-1003.54 90,-1061 140.31,-1107.14 344.93,-1097.63 444.52,-1089.95"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="445,-1093.42 454.69,-1089.14 444.44,-1086.44 445,-1093.42"/>
+</g>
+<!-- proc~io_time -->
+<g id="program~~od2od~~CallsGraph_node10" class="node">
+<title>proc~io_time</title>
+<g id="a_program~~od2od~~CallsGraph_node10"><a xlink:href=".././proc/io_time.html" xlink:title="io_time">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="730.5,-482 676.5,-482 676.5,-458 730.5,-458 730.5,-482"/>
+<text text-anchor="middle" x="703.5" y="-467.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_time</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge7" class="edge">
+<title>program~od2od&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff0000" d="M37.23,-623.95C48.34,-610.23 68.24,-588.03 90,-575 138.72,-545.82 170.98,-576.27 212,-537 246.12,-504.33 211.05,-466.42 248,-437 360.22,-347.65 436.7,-362 570,-415 590.45,-423.13 586.54,-438.73 606,-449 624.55,-458.79 647.41,-464.02 666.22,-466.81"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="665.84,-470.29 676.21,-468.12 666.75,-463.35 665.84,-470.29"/>
+</g>
+<!-- proc~comms_setup -->
+<g id="program~~od2od~~CallsGraph_node11" class="node">
+<title>proc~comms_setup</title>
+<g id="a_program~~od2od~~CallsGraph_node11"><a xlink:href=".././proc/comms_setup.html" xlink:title="comms_setup">
+<polygon fill="#d9534f" stroke="#d9534f" points="194,-486 108,-486 108,-462 194,-462 194,-486"/>
+<text text-anchor="middle" x="151" y="-471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_setup</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~comms_setup -->
+<g id="program~~od2od~~CallsGraph_edge8" class="edge">
+<title>program~od2od&#45;&gt;proc~comms_setup</title>
+<path fill="none" stroke="#ff0000" d="M29.97,-623.92C34.98,-596.95 50.74,-531.32 90,-495 92.63,-492.57 95.56,-490.41 98.67,-488.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.55,-491.47 107.81,-483.76 97.33,-485.26 100.55,-491.47"/>
+</g>
+<!-- proc~conv_get_seedname -->
+<g id="program~~od2od~~CallsGraph_node12" class="node">
+<title>proc~conv_get_seedname</title>
+<g id="a_program~~od2od~~CallsGraph_node12"><a xlink:href=".././proc/conv_get_seedname.html" xlink:title="conv_get_seedname">
+<polygon fill="#d9534f" stroke="#d9534f" points="212,-840 90,-840 90,-816 212,-816 212,-840"/>
+<text text-anchor="middle" x="151" y="-825.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">conv_get_seedname</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~conv_get_seedname -->
+<g id="program~~od2od~~CallsGraph_edge10" class="edge">
+<title>program~od2od&#45;&gt;proc~conv_get_seedname</title>
+<path fill="none" stroke="#ff0000" d="M29.29,-648.13C33.07,-678.1 46.78,-756.5 90,-802 93.16,-805.33 96.83,-808.26 100.75,-810.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.25,-814 109.67,-815.89 102.71,-807.91 99.25,-814"/>
+</g>
+<!-- proc~read_fem_fmt -->
+<g id="program~~od2od~~CallsGraph_node13" class="node">
+<title>proc~read_fem_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node13"><a xlink:href=".././proc/read_fem_fmt.html" xlink:title="read_fem_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="194,-444 108,-444 108,-420 194,-420 194,-444"/>
+<text text-anchor="middle" x="151" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_fem_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_fem_fmt -->
+<g id="program~~od2od~~CallsGraph_edge16" class="edge">
+<title>program~od2od&#45;&gt;proc~read_fem_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.58,-623.88C30.76,-591.54 41.15,-502.34 90,-453 92.64,-450.33 95.64,-448 98.85,-445.97"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="100.56,-449.02 107.76,-441.25 97.29,-442.84 100.56,-449.02"/>
+</g>
+<!-- proc~get_band_energy -->
+<g id="program~~od2od~~CallsGraph_node14" class="node">
+<title>proc~get_band_energy</title>
+<g id="a_program~~od2od~~CallsGraph_node14"><a xlink:href=".././proc/get_band_energy.html" xlink:title="get_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="374,-779 269,-779 269,-755 374,-755 374,-779"/>
+<text text-anchor="middle" x="321.5" y="-764.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_band_energy</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~get_band_energy -->
+<g id="program~~od2od~~CallsGraph_edge19" class="edge">
+<title>program~od2od&#45;&gt;proc~get_band_energy</title>
+<path fill="none" stroke="#ff0000" d="M31.83,-648.04C39.29,-669.3 57.89,-713.21 90,-734 140.06,-766.4 208.96,-772.42 258.37,-771.7"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="258.69,-775.19 268.6,-771.45 258.52,-768.2 258.69,-775.19"/>
+</g>
+<!-- proc~write_elnes_fmt -->
+<g id="program~~od2od~~CallsGraph_node15" class="node">
+<title>proc~write_elnes_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node15"><a xlink:href=".././proc/write_elnes_fmt.html" xlink:title="write_elnes_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="548.5,-1181 452.5,-1181 452.5,-1157 548.5,-1157 548.5,-1181"/>
+<text text-anchor="middle" x="500.5" y="-1166.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_elnes_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_elnes_fmt -->
+<g id="program~~od2od~~CallsGraph_edge13" class="edge">
+<title>program~od2od&#45;&gt;proc~write_elnes_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.7,-648.46C32.89,-721.03 55.65,-1087.04 90,-1122 137.76,-1170.61 341.12,-1172.91 442.11,-1170.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="442.22,-1174.39 452.14,-1170.67 442.07,-1167.39 442.22,-1174.39"/>
+</g>
+<!-- proc~io_error -->
+<g id="program~~od2od~~CallsGraph_node16" class="node">
+<title>proc~io_error</title>
+<g id="a_program~~od2od~~CallsGraph_node16"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="898.5,-724 844.5,-724 844.5,-700 898.5,-700 898.5,-724"/>
+<text text-anchor="middle" x="871.5" y="-709.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge18" class="edge">
+<title>program~od2od&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M27.38,-648.24C26.26,-685.09 28.38,-795.72 90,-849 143.63,-895.37 177.33,-865.33 248,-871 370.67,-880.85 700.22,-911.64 801,-841 837.92,-815.12 857.03,-763.24 865.3,-733.77"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="868.7,-734.58 867.86,-724.02 861.93,-732.8 868.7,-734.58"/>
+</g>
+<!-- proc~read_dome_bin -->
+<g id="program~~od2od~~CallsGraph_node17" class="node">
+<title>proc~read_dome_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node17"><a xlink:href=".././proc/read_dome_bin.html" xlink:title="read_dome_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="198,-608 104,-608 104,-584 198,-584 198,-608"/>
+<text text-anchor="middle" x="151" y="-593.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_dome_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_dome_bin -->
+<g id="program~~od2od~~CallsGraph_edge17" class="edge">
+<title>program~od2od&#45;&gt;proc~read_dome_bin</title>
+<path fill="none" stroke="#ff0000" d="M54.17,-627.42C68.57,-622.7 86.86,-616.7 103.59,-611.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="104.81,-614.5 113.23,-608.06 102.63,-607.85 104.81,-614.5"/>
+</g>
+<!-- proc~write_dome_fmt -->
+<g id="program~~od2od~~CallsGraph_node18" class="node">
+<title>proc~write_dome_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node18"><a xlink:href=".././proc/write_dome_fmt.html" xlink:title="write_dome_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="200,-402 102,-402 102,-378 200,-378 200,-402"/>
+<text text-anchor="middle" x="151" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_dome_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_dome_fmt -->
+<g id="program~~od2od~~CallsGraph_edge14" class="edge">
+<title>program~od2od&#45;&gt;proc~write_dome_fmt</title>
+<path fill="none" stroke="#ff0000" d="M27.67,-623.91C27.32,-586.88 31.35,-473.76 90,-411 91.06,-409.87 92.18,-408.79 93.36,-407.78"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="95.62,-410.47 101.82,-401.89 91.61,-404.73 95.62,-410.47"/>
+</g>
+<!-- proc~read_ome_fmt -->
+<g id="program~~od2od~~CallsGraph_node19" class="node">
+<title>proc~read_ome_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node19"><a xlink:href=".././proc/read_ome_fmt.html" xlink:title="read_ome_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="195.5,-360 106.5,-360 106.5,-336 195.5,-336 195.5,-360"/>
+<text text-anchor="middle" x="151" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_ome_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_ome_fmt -->
+<g id="program~~od2od~~CallsGraph_edge20" class="edge">
+<title>program~od2od&#45;&gt;proc~read_ome_fmt</title>
+<path fill="none" stroke="#ff0000" d="M29.26,-623.96C34.38,-577.15 55.05,-407.97 90,-369 92.25,-366.49 94.81,-364.29 97.58,-362.34"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.49,-365.28 106.42,-357.27 96.01,-359.21 99.49,-365.28"/>
+</g>
+<!-- proc~read_ome_bin -->
+<g id="program~~od2od~~CallsGraph_node20" class="node">
+<title>proc~read_ome_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node20"><a xlink:href=".././proc/read_ome_bin.html" xlink:title="read_ome_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="365.5,-531 277.5,-531 277.5,-507 365.5,-507 365.5,-531"/>
+<text text-anchor="middle" x="321.5" y="-516.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_ome_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_ome_bin -->
+<g id="program~~od2od~~CallsGraph_edge21" class="edge">
+<title>program~od2od&#45;&gt;proc~read_ome_bin</title>
+<path fill="none" stroke="#ff0000" d="M54.29,-638.89C91.51,-641.77 160.74,-642.66 212,-617 233.09,-606.44 230.81,-594.15 248,-578 263.42,-563.51 281.95,-548.47 296.41,-537.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="298.62,-539.92 304.4,-531.04 294.34,-534.38 298.62,-539.92"/>
+</g>
+<!-- proc~pad_an_ome -->
+<g id="program~~od2od~~CallsGraph_node21" class="node">
+<title>proc~pad_an_ome</title>
+<g id="a_program~~od2od~~CallsGraph_node21"><a xlink:href=".././proc/pad_an_ome.html" xlink:title="pad_an_ome">
+<polygon fill="#d9534f" stroke="#d9534f" points="191.5,-318 110.5,-318 110.5,-294 191.5,-294 191.5,-318"/>
+<text text-anchor="middle" x="151" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pad_an_ome</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~pad_an_ome -->
+<g id="program~~od2od~~CallsGraph_edge22" class="edge">
+<title>program~od2od&#45;&gt;proc~pad_an_ome</title>
+<path fill="none" stroke="#ff0000" d="M28.85,-623.87C32.71,-572.44 50.04,-372.92 90,-327 93.18,-323.34 97.04,-320.32 101.25,-317.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="102.83,-320.95 110.27,-313.41 99.75,-314.66 102.83,-320.95"/>
+</g>
+<!-- proc~read_pdos_bin -->
+<g id="program~~od2od~~CallsGraph_node22" class="node">
+<title>proc~read_pdos_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node22"><a xlink:href=".././proc/read_pdos_bin.html" xlink:title="read_pdos_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="366,-737 277,-737 277,-713 366,-713 366,-737"/>
+<text text-anchor="middle" x="321.5" y="-722.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_pdos_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~read_pdos_bin -->
+<g id="program~~od2od~~CallsGraph_edge23" class="edge">
+<title>program~od2od&#45;&gt;proc~read_pdos_bin</title>
+<path fill="none" stroke="#ff0000" d="M34.51,-648.12C44.16,-664.71 63.97,-693.93 90,-707 145.42,-734.84 217.91,-735.63 266.67,-731.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="267.04,-735.36 276.7,-731.02 266.44,-728.39 267.04,-735.36"/>
+</g>
+<!-- proc~write_pdos_fmt -->
+<g id="program~~od2od~~CallsGraph_node23" class="node">
+<title>proc~write_pdos_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node23"><a xlink:href=".././proc/write_pdos_fmt.html" xlink:title="write_pdos_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="368,-977 275,-977 275,-953 368,-953 368,-977"/>
+<text text-anchor="middle" x="321.5" y="-962.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_pdos_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_pdos_fmt -->
+<g id="program~~od2od~~CallsGraph_edge26" class="edge">
+<title>program~od2od&#45;&gt;proc~write_pdos_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.64,-648.14C31.63,-699.56 45.91,-898.69 90,-939 136.67,-981.67 212.82,-981.78 264.71,-975.48"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="265.3,-978.93 274.75,-974.15 264.38,-971.99 265.3,-978.93"/>
+</g>
+<!-- proc~io_date -->
+<g id="program~~od2od~~CallsGraph_node24" class="node">
+<title>proc~io_date</title>
+<g id="a_program~~od2od~~CallsGraph_node24"><a xlink:href=".././proc/io_date.html" xlink:title="io_date">
+<polygon fill="#d9534f" stroke="#d9534f" points="178,-276 124,-276 124,-252 178,-252 178,-276"/>
+<text text-anchor="middle" x="151" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_date</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~io_date -->
+<g id="program~~od2od~~CallsGraph_edge11" class="edge">
+<title>program~od2od&#45;&gt;proc~io_date</title>
+<path fill="none" stroke="#ff0000" d="M28.54,-623.77C31.25,-567.96 45.01,-337.93 90,-285 96.19,-277.71 105.07,-272.95 114.1,-269.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="115.18,-273.18 123.84,-267.08 113.27,-266.44 115.18,-273.18"/>
+</g>
+<!-- proc~write_ome_fmt -->
+<g id="program~~od2od~~CallsGraph_node25" class="node">
+<title>proc~write_ome_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node25"><a xlink:href=".././proc/write_ome_fmt.html" xlink:title="write_ome_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="196.5,-234 105.5,-234 105.5,-210 196.5,-210 196.5,-234"/>
+<text text-anchor="middle" x="151" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_ome_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_ome_fmt -->
+<g id="program~~od2od~~CallsGraph_edge27" class="edge">
+<title>program~od2od&#45;&gt;proc~write_ome_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.28,-623.94C29.92,-564.49 39.89,-303.07 90,-243 91.92,-240.7 94.11,-238.64 96.49,-236.82"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="98.54,-239.67 105.2,-231.43 94.86,-233.71 98.54,-239.67"/>
+</g>
+<!-- proc~write_pdos_bin -->
+<g id="program~~od2od~~CallsGraph_node26" class="node">
+<title>proc~write_pdos_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node26"><a xlink:href=".././proc/write_pdos_bin.html" xlink:title="write_pdos_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="367,-1019 276,-1019 276,-995 367,-995 367,-1019"/>
+<text text-anchor="middle" x="321.5" y="-1004.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_pdos_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_pdos_bin -->
+<g id="program~~od2od~~CallsGraph_edge28" class="edge">
+<title>program~od2od&#45;&gt;proc~write_pdos_bin</title>
+<path fill="none" stroke="#ff0000" d="M28.43,-648.27C30.6,-703.19 42.28,-925.77 90,-972 136.06,-1016.62 213.4,-1019.42 265.65,-1015.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="266.13,-1018.54 275.75,-1014.11 265.47,-1011.57 266.13,-1018.54"/>
+</g>
+<!-- proc~comms_end -->
+<g id="program~~od2od~~CallsGraph_node27" class="node">
+<title>proc~comms_end</title>
+<g id="a_program~~od2od~~CallsGraph_node27"><a xlink:href=".././proc/comms_end.html" xlink:title="comms_end">
+<polygon fill="#d9534f" stroke="#d9534f" points="189.5,-192 112.5,-192 112.5,-168 189.5,-168 189.5,-192"/>
+<text text-anchor="middle" x="151" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_end</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~comms_end -->
+<g id="program~~od2od~~CallsGraph_edge29" class="edge">
+<title>program~od2od&#45;&gt;proc~comms_end</title>
+<path fill="none" stroke="#ff0000" d="M28.08,-623.94C28.74,-560.75 34.79,-268.19 90,-201 93.59,-196.63 98.15,-193.17 103.14,-190.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="104.8,-193.52 112.49,-186.23 101.93,-187.13 104.8,-193.52"/>
+</g>
+<!-- proc~slice_an_ome -->
+<g id="program~~od2od~~CallsGraph_node28" class="node">
+<title>proc~slice_an_ome</title>
+<g id="a_program~~od2od~~CallsGraph_node28"><a xlink:href=".././proc/slice_an_ome.html" xlink:title="slice_an_ome">
+<polygon fill="#d9534f" stroke="#d9534f" points="193.5,-150 108.5,-150 108.5,-126 193.5,-126 193.5,-150"/>
+<text text-anchor="middle" x="151" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">slice_an_ome</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~slice_an_ome -->
+<g id="program~~od2od~~CallsGraph_edge25" class="edge">
+<title>program~od2od&#45;&gt;proc~slice_an_ome</title>
+<path fill="none" stroke="#ff0000" d="M27.91,-623.68C27.68,-556.35 29.75,-233.25 90,-159 92.7,-155.67 95.96,-152.87 99.55,-150.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="101.24,-153.58 108.41,-145.78 97.94,-147.41 101.24,-153.58"/>
+</g>
+<!-- proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_node29" class="node">
+<title>proc~io_file_unit</title>
+<g id="a_program~~od2od~~CallsGraph_node29"><a xlink:href=".././proc/io_file_unit.html" xlink:title="io_file_unit">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="738.5,-982 668.5,-982 668.5,-958 738.5,-958 738.5,-982"/>
+<text text-anchor="middle" x="703.5" y="-967.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_file_unit</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge9" class="edge">
+<title>program~od2od&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0000" d="M28.18,-648.36C29.28,-706.94 37.07,-955.81 90,-1007 166.68,-1081.16 465.31,-1023.46 570,-1003 599.78,-997.18 632.91,-988.93 658.59,-982.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="659.64,-985.48 668.4,-979.51 657.83,-978.71 659.64,-985.48"/>
+</g>
+<!-- proc~write_dome_bin -->
+<g id="program~~od2od~~CallsGraph_node30" class="node">
+<title>proc~write_dome_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node30"><a xlink:href=".././proc/write_dome_bin.html" xlink:title="write_dome_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="199.5,-108 102.5,-108 102.5,-84 199.5,-84 199.5,-108"/>
+<text text-anchor="middle" x="151" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_dome_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_dome_bin -->
+<g id="program~~od2od~~CallsGraph_edge30" class="edge">
+<title>program~od2od&#45;&gt;proc~write_dome_bin</title>
+<path fill="none" stroke="#ff0000" d="M27.77,-623.55C26.68,-552.46 24.66,-198.37 90,-117 91.27,-115.42 92.67,-113.96 94.16,-112.6"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="96.3,-115.38 102.39,-106.72 92.22,-109.69 96.3,-115.38"/>
+</g>
+<!-- proc~write_ome_bin -->
+<g id="program~~od2od~~CallsGraph_node31" class="node">
+<title>proc~write_ome_bin</title>
+<g id="a_program~~od2od~~CallsGraph_node31"><a xlink:href=".././proc/write_ome_bin.html" xlink:title="write_ome_bin">
+<polygon fill="#d9534f" stroke="#d9534f" points="196,-66 106,-66 106,-42 196,-42 196,-66"/>
+<text text-anchor="middle" x="151" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_ome_bin</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_ome_bin -->
+<g id="program~~od2od~~CallsGraph_edge31" class="edge">
+<title>program~od2od&#45;&gt;proc~write_ome_bin</title>
+<path fill="none" stroke="#ff0000" d="M28.57,-623.81C32.35,-545.91 54.54,-119.57 90,-75 92.1,-72.37 94.54,-70.06 97.23,-68.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.14,-70.98 105.89,-62.82 95.52,-64.99 99.14,-70.98"/>
+</g>
+<!-- proc~write_fem_fmt -->
+<g id="program~~od2od~~CallsGraph_node32" class="node">
+<title>proc~write_fem_fmt</title>
+<g id="a_program~~od2od~~CallsGraph_node32"><a xlink:href=".././proc/write_fem_fmt.html" xlink:title="write_fem_fmt">
+<polygon fill="#d9534f" stroke="#d9534f" points="195,-24 107,-24 107,0 195,0 195,-24"/>
+<text text-anchor="middle" x="151" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_fem_fmt</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;proc~write_fem_fmt -->
+<g id="program~~od2od~~CallsGraph_edge24" class="edge">
+<title>program~od2od&#45;&gt;proc~write_fem_fmt</title>
+<path fill="none" stroke="#ff0000" d="M28.47,-623.96C31.73,-543.14 51.93,-81.22 90,-33 92.26,-30.14 94.93,-27.67 97.87,-25.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="99.88,-28.42 106.76,-20.36 96.36,-22.37 99.88,-28.42"/>
+</g>
+<!-- proc~write_elnes_bin&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge33" class="edge">
+<title>proc~write_elnes_bin&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff6200" d="M547.83,-1116.28C555.53,-1113.53 563.2,-1110.15 570,-1106 620.75,-1075.03 665.75,-1020.2 687.92,-990.5"/>
+<polygon fill="#ff6200" stroke="#ff6200" points="690.96,-992.28 694.05,-982.14 685.31,-988.14 690.96,-992.28"/>
+</g>
+<!-- proc~elec_elnes_find_channel_numbers -->
+<g id="program~~od2od~~CallsGraph_node33" class="node">
+<title>proc~elec_elnes_find_channel_numbers</title>
+<g id="a_program~~od2od~~CallsGraph_node33"><a xlink:href=".././proc/elec_elnes_find_channel_numbers.html" xlink:title="elec_elnes_find_channel_numbers">
+<polygon fill="#d9534f" stroke="#d9534f" points="801,-1139 606,-1139 606,-1115 801,-1115 801,-1139"/>
+<text text-anchor="middle" x="703.5" y="-1124.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_elnes_find_channel_numbers</text>
+</a>
+</g>
+</g>
+<!-- proc~write_elnes_bin&#45;&gt;proc~elec_elnes_find_channel_numbers -->
+<g id="program~~od2od~~CallsGraph_edge32" class="edge">
+<title>proc~write_elnes_bin&#45;&gt;proc~elec_elnes_find_channel_numbers</title>
+<path fill="none" stroke="#ff6200" d="M547.61,-1127C562.01,-1127 578.54,-1127 595.32,-1127"/>
+<polygon fill="#ff6200" stroke="#ff6200" points="595.78,-1130.5 605.78,-1127 595.78,-1123.5 595.78,-1130.5"/>
+</g>
+<!-- proc~elec_read_elnes_mat -->
+<g id="program~~od2od~~CallsGraph_node37" class="node">
+<title>proc~elec_read_elnes_mat</title>
+<g id="a_program~~od2od~~CallsGraph_node37"><a xlink:href=".././proc/elec_read_elnes_mat.html" xlink:title="elec_read_elnes_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="562.5,-663 438.5,-663 438.5,-639 562.5,-639 562.5,-663"/>
+<text text-anchor="middle" x="500.5" y="-648.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_elnes_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~read_elnes_bin&#45;&gt;proc~elec_read_elnes_mat -->
+<g id="program~~od2od~~CallsGraph_edge34" class="edge">
+<title>proc~read_elnes_bin&#45;&gt;proc~elec_read_elnes_mat</title>
+<path fill="none" stroke="#ffc500" d="M367.62,-662.92C386.02,-661.26 407.75,-659.29 428.2,-657.45"/>
+<polygon fill="#ffc500" stroke="#ffc500" points="428.79,-660.91 438.43,-656.52 428.16,-653.94 428.79,-660.91"/>
+</g>
+<!-- proc~elec_read_foptical_mat -->
+<g id="program~~od2od~~CallsGraph_node34" class="node">
+<title>proc~elec_read_foptical_mat</title>
+<g id="a_program~~od2od~~CallsGraph_node34"><a xlink:href=".././proc/elec_read_foptical_mat.html" xlink:title="elec_read_foptical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="568.5,-541 432.5,-541 432.5,-517 568.5,-517 568.5,-541"/>
+<text text-anchor="middle" x="500.5" y="-526.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_foptical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~read_fem_bin&#45;&gt;proc~elec_read_foptical_mat -->
+<g id="program~~od2od~~CallsGraph_edge35" class="edge">
+<title>proc~read_fem_bin&#45;&gt;proc~elec_read_foptical_mat</title>
+<path fill="none" stroke="#fff600" d="M352.93,-586.97C382.31,-575.35 426.98,-557.68 459.28,-544.91"/>
+<polygon fill="#fff600" stroke="#fff600" points="460.87,-548.04 468.88,-541.11 458.29,-541.53 460.87,-548.04"/>
+</g>
+<!-- proc~read_elnes_fmt&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge37" class="edge">
+<title>proc~read_elnes_fmt&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#d5ff00" d="M515.9,-941.02C535.05,-956.14 570.6,-981.29 606,-991 689.58,-1013.93 732.71,-1044.36 801,-991 841.92,-959.03 862.23,-794.75 868.4,-734.33"/>
+<polygon fill="#d5ff00" stroke="#d5ff00" points="871.89,-734.61 869.4,-724.31 864.93,-733.92 871.89,-734.61"/>
+</g>
+<!-- proc~read_elnes_fmt&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge36" class="edge">
+<title>proc~read_elnes_fmt&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#d5ff00" d="M547.61,-938.41C580.77,-945.17 625.22,-954.24 658,-960.92"/>
+<polygon fill="#d5ff00" stroke="#d5ff00" points="657.7,-964.43 668.2,-963 659.1,-957.58 657.7,-964.43"/>
+</g>
+<!-- proc~elec_elnes_find_channel_names -->
+<g id="program~~od2od~~CallsGraph_node35" class="node">
+<title>proc~elec_elnes_find_channel_names</title>
+<g id="a_program~~od2od~~CallsGraph_node35"><a xlink:href=".././proc/elec_elnes_find_channel_names.html" xlink:title="elec_elnes_find_channel_names">
+<polygon fill="#d9534f" stroke="#d9534f" points="795.5,-940 611.5,-940 611.5,-916 795.5,-916 795.5,-940"/>
+<text text-anchor="middle" x="703.5" y="-925.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_elnes_find_channel_names</text>
+</a>
+</g>
+</g>
+<!-- proc~read_elnes_fmt&#45;&gt;proc~elec_elnes_find_channel_names -->
+<g id="program~~od2od~~CallsGraph_edge38" class="edge">
+<title>proc~read_elnes_fmt&#45;&gt;proc~elec_elnes_find_channel_names</title>
+<path fill="none" stroke="#d5ff00" d="M547.61,-928.77C563.73,-928.69 582.51,-928.6 601.32,-928.5"/>
+<polygon fill="#d5ff00" stroke="#d5ff00" points="601.47,-932 611.45,-928.45 601.43,-925 601.47,-932"/>
+</g>
+<!-- proc~read_pdos_fmt&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge40" class="edge">
+<title>proc~read_pdos_fmt&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#a4ff00" d="M546.23,-1088.83C611.57,-1091.79 732.75,-1086.86 801,-1019 841.67,-978.56 862.37,-798.05 868.51,-734.35"/>
+<polygon fill="#a4ff00" stroke="#a4ff00" points="872.01,-734.48 869.46,-724.19 865.04,-733.82 872.01,-734.48"/>
+</g>
+<!-- proc~read_pdos_fmt&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge39" class="edge">
+<title>proc~read_pdos_fmt&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#a4ff00" d="M538.08,-1072.88C548.6,-1068.93 559.94,-1064.2 570,-1059 610.25,-1038.19 653.14,-1007.66 678.88,-988.31"/>
+<polygon fill="#a4ff00" stroke="#a4ff00" points="681.07,-991.04 686.92,-982.2 676.84,-985.46 681.07,-991.04"/>
+</g>
+<!-- proc~conv_get_seedname&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge42" class="edge">
+<title>proc~conv_get_seedname&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#10ff00" d="M203.43,-840.09C319.08,-864.33 604.88,-907.54 801,-796 827.02,-781.2 847.41,-752.64 859.2,-732.96"/>
+<polygon fill="#10ff00" stroke="#10ff00" points="862.34,-734.52 864.28,-724.11 856.27,-731.04 862.34,-734.52"/>
+</g>
+<!-- proc~print_usage -->
+<g id="program~~od2od~~CallsGraph_node36" class="node">
+<title>proc~print_usage</title>
+<g id="a_program~~od2od~~CallsGraph_node36"><a xlink:href=".././proc/print_usage.html" xlink:title="print_usage">
+<polygon fill="#d9534f" stroke="#d9534f" points="359,-821 284,-821 284,-797 359,-797 359,-821"/>
+<text text-anchor="middle" x="321.5" y="-806.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">print_usage</text>
+</a>
+</g>
+</g>
+<!-- proc~conv_get_seedname&#45;&gt;proc~print_usage -->
+<g id="program~~od2od~~CallsGraph_edge41" class="edge">
+<title>proc~conv_get_seedname&#45;&gt;proc~print_usage</title>
+<path fill="none" stroke="#10ff00" d="M212.36,-821.19C232.44,-818.93 254.49,-816.44 273.41,-814.31"/>
+<polygon fill="#10ff00" stroke="#10ff00" points="274.03,-817.76 283.57,-813.16 273.24,-810.81 274.03,-817.76"/>
+</g>
+<!-- proc~elec_read_band_energy -->
+<g id="program~~od2od~~CallsGraph_node38" class="node">
+<title>proc~elec_read_band_energy</title>
+<g id="a_program~~od2od~~CallsGraph_node38"><a xlink:href=".././proc/elec_read_band_energy.html" xlink:title="elec_read_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="570,-621 431,-621 431,-597 570,-597 570,-621"/>
+<text text-anchor="middle" x="500.5" y="-606.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~get_band_energy&#45;&gt;proc~elec_read_band_energy -->
+<g id="program~~od2od~~CallsGraph_edge43" class="edge">
+<title>proc~get_band_energy&#45;&gt;proc~elec_read_band_energy</title>
+<path fill="none" stroke="#00ff52" d="M374.31,-758.9C381.96,-755.86 389.2,-751.69 395,-746 433.53,-708.19 392.76,-668.1 431,-630 432.1,-628.9 433.26,-627.86 434.46,-626.88"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="436.68,-629.61 443.02,-621.12 432.77,-623.8 436.68,-629.61"/>
+</g>
+<!-- proc~report_arraysize -->
+<g id="program~~od2od~~CallsGraph_node39" class="node">
+<title>proc~report_arraysize</title>
+<g id="a_program~~od2od~~CallsGraph_node39"><a xlink:href=".././proc/report_arraysize.html" xlink:title="report_arraysize">
+<polygon fill="#d9534f" stroke="#d9534f" points="550,-823 451,-823 451,-799 550,-799 550,-823"/>
+<text text-anchor="middle" x="500.5" y="-808.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">report_arraysize</text>
+</a>
+</g>
+</g>
+<!-- proc~get_band_energy&#45;&gt;proc~report_arraysize -->
+<g id="program~~od2od~~CallsGraph_edge44" class="edge">
+<title>proc~get_band_energy&#45;&gt;proc~report_arraysize</title>
+<path fill="none" stroke="#00ff52" d="M370.87,-779.02C392.62,-784.43 418.48,-790.86 441.29,-796.53"/>
+<polygon fill="#00ff52" stroke="#00ff52" points="440.64,-799.98 451.19,-798.99 442.33,-793.18 440.64,-799.98"/>
+</g>
+<!-- proc~write_elnes_fmt&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge46" class="edge">
+<title>proc~write_elnes_fmt&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#00ff83" d="M548.68,-1158.89C556.2,-1156.08 563.6,-1152.52 570,-1148 585.72,-1136.91 657.57,-1034.77 688.39,-990.41"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="691.32,-992.32 694.15,-982.11 685.57,-988.33 691.32,-992.32"/>
+</g>
+<!-- proc~write_elnes_fmt&#45;&gt;proc~elec_elnes_find_channel_numbers -->
+<g id="program~~od2od~~CallsGraph_edge45" class="edge">
+<title>proc~write_elnes_fmt&#45;&gt;proc~elec_elnes_find_channel_numbers</title>
+<path fill="none" stroke="#00ff83" d="M548.63,-1159.15C574.37,-1153.77 606.69,-1147.02 635.06,-1141.09"/>
+<polygon fill="#00ff83" stroke="#00ff83" points="635.84,-1144.51 644.91,-1139.03 634.41,-1137.65 635.84,-1144.51"/>
+</g>
+<!-- proc~elec_read_band_gradient -->
+<g id="program~~od2od~~CallsGraph_node40" class="node">
+<title>proc~elec_read_band_gradient</title>
+<g id="a_program~~od2od~~CallsGraph_node40"><a xlink:href=".././proc/elec_read_band_gradient.html" xlink:title="elec_read_band_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="395,-470 248,-470 248,-446 395,-446 395,-470"/>
+<text text-anchor="middle" x="321.5" y="-455.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~read_dome_bin&#45;&gt;proc~elec_read_band_gradient -->
+<g id="program~~od2od~~CallsGraph_edge47" class="edge">
+<title>proc~read_dome_bin&#45;&gt;proc~elec_read_band_gradient</title>
+<path fill="none" stroke="#00ffe6" d="M190.92,-583.87C198.52,-580.26 205.98,-575.7 212,-570 237.98,-545.4 223.22,-523.81 248,-498 257.11,-488.51 268.98,-480.69 280.46,-474.56"/>
+<polygon fill="#00ffe6" stroke="#00ffe6" points="282.16,-477.63 289.53,-470.01 279.02,-471.37 282.16,-477.63"/>
+</g>
+<!-- proc~elec_read_optical_mat -->
+<g id="program~~od2od~~CallsGraph_node41" class="node">
+<title>proc~elec_read_optical_mat</title>
+<g id="a_program~~od2od~~CallsGraph_node41"><a xlink:href=".././proc/elec_read_optical_mat.html" xlink:title="elec_read_optical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="566.5,-461 434.5,-461 434.5,-437 566.5,-437 566.5,-461"/>
+<text text-anchor="middle" x="500.5" y="-446.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_optical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~read_ome_bin&#45;&gt;proc~elec_read_optical_mat -->
+<g id="program~~od2od~~CallsGraph_edge48" class="edge">
+<title>proc~read_ome_bin&#45;&gt;proc~elec_read_optical_mat</title>
+<path fill="none" stroke="#0083ff" d="M352.93,-506.97C382.31,-495.35 426.98,-477.68 459.28,-464.91"/>
+<polygon fill="#0083ff" stroke="#0083ff" points="460.87,-468.04 468.88,-461.11 458.29,-461.53 460.87,-468.04"/>
+</g>
+<!-- proc~elec_pdos_read -->
+<g id="program~~od2od~~CallsGraph_node42" class="node">
+<title>proc~elec_pdos_read</title>
+<g id="a_program~~od2od~~CallsGraph_node42"><a xlink:href=".././proc/elec_pdos_read.html" xlink:title="elec_pdos_read">
+<polygon fill="#d9534f" stroke="#d9534f" points="548,-743 453,-743 453,-719 548,-719 548,-743"/>
+<text text-anchor="middle" x="500.5" y="-728.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_pdos_read</text>
+</a>
+</g>
+</g>
+<!-- proc~read_pdos_bin&#45;&gt;proc~elec_pdos_read -->
+<g id="program~~od2od~~CallsGraph_edge49" class="edge">
+<title>proc~read_pdos_bin&#45;&gt;proc~elec_pdos_read</title>
+<path fill="none" stroke="#0020ff" d="M366.25,-726.48C389.38,-727.27 418.03,-728.24 442.84,-729.08"/>
+<polygon fill="#0020ff" stroke="#0020ff" points="442.73,-732.58 452.85,-729.42 442.97,-725.58 442.73,-732.58"/>
+</g>
+<!-- proc~write_pdos_fmt&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge50" class="edge">
+<title>proc~write_pdos_fmt&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#1000ff" d="M368.34,-965.6C441.9,-966.57 585.41,-968.46 658.07,-969.42"/>
+<polygon fill="#1000ff" stroke="#1000ff" points="658.22,-972.92 668.26,-969.55 658.31,-965.92 658.22,-972.92"/>
+</g>
+<!-- proc~write_pdos_bin&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge51" class="edge">
+<title>proc~write_pdos_bin&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#a400ff" d="M367.21,-1002.65C440.42,-995.52 585.01,-981.44 658.05,-974.33"/>
+<polygon fill="#a400ff" stroke="#a400ff" points="658.68,-977.78 668.29,-973.33 658,-970.82 658.68,-977.78"/>
+</g>
+<!-- proc~elec_elnes_find_channel_numbers&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge53" class="edge">
+<title>proc~elec_elnes_find_channel_numbers&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M750.71,-1114.97C768.98,-1107.95 788.55,-1097.18 801,-1081 843.46,-1025.84 863.45,-805.89 868.91,-734.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="872.41,-734.6 869.66,-724.37 865.43,-734.08 872.41,-734.6"/>
+</g>
+<!-- selectcase -->
+<g id="program~~od2od~~CallsGraph_node43" class="node">
+<title>selectcase</title>
+<polygon fill="#777777" stroke="#777777" points="906,-1139 837,-1139 837,-1115 906,-1115 906,-1139"/>
+<text text-anchor="middle" x="871.5" y="-1124.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">selectcase</text>
+</g>
+<!-- proc~elec_elnes_find_channel_numbers&#45;&gt;selectcase -->
+<g id="program~~od2od~~CallsGraph_edge52" class="edge">
+<title>proc~elec_elnes_find_channel_numbers&#45;&gt;selectcase</title>
+<path fill="none" stroke="#ff0000" d="M801.06,-1127C809.99,-1127 818.7,-1127 826.77,-1127"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="826.97,-1130.5 836.97,-1127 826.97,-1123.5 826.97,-1130.5"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge54" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff9900" d="M538.62,-516.85C558.54,-510.44 583.54,-502.57 606,-496 625.86,-490.19 648.16,-484.15 666.31,-479.36"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="667.42,-482.69 676.2,-476.76 665.64,-475.92 667.42,-482.69"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge56" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff9900" d="M537.6,-516.97C598.05,-499.23 720.97,-473.78 801,-529 854.44,-565.87 866.82,-649.62 869.67,-689.75"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="866.18,-690.05 870.24,-699.84 873.17,-689.66 866.18,-690.05"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge55" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff9900" d="M522.72,-541.06C538.63,-551.34 559.43,-567.67 570,-588 607.2,-659.53 552.36,-888.81 606,-949 618.9,-963.47 639.23,-969.26 657.91,-971.21"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="657.83,-974.71 668.06,-971.92 658.33,-967.73 657.83,-974.71"/>
+</g>
+<!-- interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_node44" class="node">
+<title>interface~comms_send</title>
+<g id="a_program~~od2od~~CallsGraph_node44"><a xlink:href=".././interface/comms_send.html" xlink:title="comms_send">
+<polygon fill="#a7506f" stroke="#a7506f" points="744.5,-604 662.5,-604 662.5,-580 744.5,-580 744.5,-604"/>
+<text text-anchor="middle" x="703.5" y="-589.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_send</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge57" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff9900" d="M534.4,-541.06C545.73,-545.33 558.47,-550.25 570,-555 586.19,-561.66 589.36,-565.55 606,-571 620.7,-575.81 637.01,-579.84 651.99,-583.04"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="651.6,-586.53 662.1,-585.12 653.01,-579.67 651.6,-586.53"/>
+</g>
+<!-- proc~algor_dist_array -->
+<g id="program~~od2od~~CallsGraph_node45" class="node">
+<title>proc~algor_dist_array</title>
+<g id="a_program~~od2od~~CallsGraph_node45"><a xlink:href=".././proc/algor_dist_array.html" xlink:title="algor_dist_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="752.5,-440 654.5,-440 654.5,-416 752.5,-416 752.5,-440"/>
+<text text-anchor="middle" x="703.5" y="-425.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">algor_dist_array</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~algor_dist_array -->
+<g id="program~~od2od~~CallsGraph_edge58" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#ff9900" d="M515.58,-516.98C539.29,-496.94 586.51,-458.03 606,-449 617.9,-443.49 631.31,-439.39 644.26,-436.36"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="645,-439.78 654.04,-434.25 643.52,-432.94 645,-439.78"/>
+</g>
+<!-- interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_node46" class="node">
+<title>interface~comms_recv</title>
+<g id="a_program~~od2od~~CallsGraph_node46"><a xlink:href=".././interface/comms_recv.html" xlink:title="comms_recv">
+<polygon fill="#a7506f" stroke="#a7506f" points="743,-562 664,-562 664,-538 743,-538 743,-562"/>
+<text text-anchor="middle" x="703.5" y="-547.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_recv</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge59" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff9900" d="M568.71,-536.02C596.49,-538.92 628.11,-542.23 653.62,-544.89"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="653.49,-548.4 663.8,-545.96 654.21,-541.44 653.49,-548.4"/>
+</g>
+<!-- proc~elec_elnes_find_channel_names&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge60" class="edge">
+<title>proc~elec_elnes_find_channel_names&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#cbff00" d="M778.97,-915.97C787.02,-912.42 794.6,-907.86 801,-902 850.24,-856.89 864.68,-773.99 868.84,-734.31"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="872.33,-734.61 869.77,-724.33 865.36,-733.96 872.33,-734.61"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge61" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#00ff66" d="M557.49,-638.9C562.05,-636.46 566.31,-633.52 570,-630 604.45,-597.07 575.95,-565.99 606,-529 622.03,-509.26 646.54,-494.4 666.84,-484.52"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="668.53,-487.6 676.12,-480.21 665.58,-481.25 668.53,-487.6"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge63" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#00ff66" d="M532.91,-663.1C558.22,-672.66 591.85,-684.9 606,-688 686.11,-705.53 782.57,-710.28 834,-711.56"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="834.19,-715.06 844.27,-711.78 834.34,-708.06 834.19,-715.06"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge62" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#00ff66" d="M522.44,-663.21C538.2,-673.57 558.92,-689.94 570,-710 621.94,-804.03 532.54,-870.62 606,-949 619.26,-963.14 639.63,-968.89 658.24,-970.9"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="658.11,-974.4 668.34,-971.66 658.64,-967.42 658.11,-974.4"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;proc~elec_elnes_find_channel_names -->
+<g id="program~~od2od~~CallsGraph_edge67" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;proc~elec_elnes_find_channel_names</title>
+<path fill="none" stroke="#00ff66" d="M518.72,-663.19C533.52,-674.24 554.82,-691.59 570,-710 590.51,-734.88 589.47,-745.31 606,-773 634.87,-821.39 670.18,-877.31 689.06,-906.98"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="686.26,-909.09 694.58,-915.64 692.16,-905.33 686.26,-909.09"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge64" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#00ff66" d="M544.21,-638.94C552.83,-636.22 561.76,-633.19 570,-630 586.5,-623.61 589.25,-618.7 606,-613 620.64,-608.02 636.94,-603.95 651.92,-600.75"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="652.94,-604.12 662.04,-598.68 651.54,-597.26 652.94,-604.12"/>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge66" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#00ff66" d="M555.04,-638.87C560.37,-636.44 565.48,-633.51 570,-630 594.26,-611.16 580.97,-588.81 606,-571 619.88,-561.12 637.53,-555.75 653.92,-552.87"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="654.55,-556.31 663.92,-551.38 653.52,-549.39 654.55,-556.31"/>
+</g>
+<!-- interface~comms_bcast -->
+<g id="program~~od2od~~CallsGraph_node47" class="node">
+<title>interface~comms_bcast</title>
+<g id="a_program~~od2od~~CallsGraph_node47"><a xlink:href=".././interface/comms_bcast.html" xlink:title="comms_bcast">
+<polygon fill="#a7506f" stroke="#a7506f" points="746,-764 661,-764 661,-740 746,-740 746,-764"/>
+<text text-anchor="middle" x="703.5" y="-749.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_bcast</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;interface~comms_bcast -->
+<g id="program~~od2od~~CallsGraph_edge65" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#00ff66" d="M544.78,-663.1C553.62,-666.73 562.51,-671.3 570,-677 591.51,-693.35 583.7,-710.74 606,-726 619.27,-735.08 635.59,-741 651,-744.85"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="650.43,-748.31 660.95,-747.09 651.97,-741.48 650.43,-748.31"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge68" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#00ffff" d="M516.36,-596.83C536.3,-580.69 573.02,-551.61 606,-529 627.81,-514.04 653.38,-498.5 672.72,-487.12"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="674.53,-490.11 681.39,-482.04 671,-484.07 674.53,-490.11"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge71" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#00ffff" d="M547.94,-621.1C555.47,-623.66 563.06,-626.63 570,-630 587.52,-638.51 587.96,-647.64 606,-655 687.39,-688.2 715.84,-666.25 801,-688 812.17,-690.85 824.12,-694.68 834.89,-698.44"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="833.81,-701.77 844.41,-701.85 836.17,-695.18 833.81,-701.77"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge69" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#00ffff" d="M559.67,-621.04C563.54,-623.5 567.06,-626.46 570,-630 661.13,-739.78 510.38,-843.1 606,-949 618.99,-963.39 639.33,-969.16 657.99,-971.13"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="657.91,-974.63 668.13,-971.86 658.41,-967.65 657.91,-974.63"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge73" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#00ffff" d="M570.11,-603.2C596.98,-600.92 627.24,-598.37 652.04,-596.27"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="652.64,-599.73 662.31,-595.4 652.05,-592.75 652.64,-599.73"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~algor_dist_array -->
+<g id="program~~od2od~~CallsGraph_edge70" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#00ffff" d="M520.47,-596.8C535.74,-586.11 556.77,-569.29 570,-550 596.95,-510.7 570.21,-480.47 606,-449 616.57,-439.71 630.28,-434.21 644.03,-431.04"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="644.85,-434.45 654.01,-429.12 643.53,-427.57 644.85,-434.45"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge75" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#00ffff" d="M531.33,-596.94C552.04,-588.87 580.41,-578.4 606,-571 621.4,-566.55 638.43,-562.54 653.84,-559.26"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="654.62,-562.67 663.7,-557.2 653.19,-555.82 654.62,-562.67"/>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;interface~comms_bcast -->
+<g id="program~~od2od~~CallsGraph_edge72" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#00ffff" d="M554.66,-621C560.13,-623.47 565.37,-626.43 570,-630 594.04,-648.52 584.87,-666.23 606,-688 624.57,-707.14 649.82,-723.63 669.83,-735.08"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="668.17,-738.16 678.61,-739.98 671.58,-732.05 668.17,-738.16"/>
+</g>
+<!-- proc~cell_find_mp_grid -->
+<g id="program~~od2od~~CallsGraph_node48" class="node">
+<title>proc~cell_find_mp_grid</title>
+<g id="a_program~~od2od~~CallsGraph_node48"><a xlink:href=".././proc/cell_find_mp_grid.html" xlink:title="cell_find_MP_grid">
+<polygon fill="#d9534f" stroke="#d9534f" points="755,-646 652,-646 652,-622 755,-622 755,-646"/>
+<text text-anchor="middle" x="703.5" y="-631.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_find_MP_grid</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid -->
+<g id="program~~od2od~~CallsGraph_edge74" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;proc~cell_find_mp_grid</title>
+<path fill="none" stroke="#00ffff" d="M570.11,-617.53C593.39,-620.43 619.21,-623.64 641.82,-626.45"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="641.61,-629.95 651.96,-627.71 642.47,-623.01 641.61,-629.95"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge77" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#3200ff" d="M356.7,-445.99C377.81,-439.22 405.63,-431.44 431,-428 492.22,-419.69 510.36,-411.88 570,-428 587.88,-432.83 588.74,-442.28 606,-449 625.32,-456.52 647.93,-461.62 666.4,-464.91"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="666.02,-468.4 676.46,-466.6 667.18,-461.49 666.02,-468.4"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge79" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#3200ff" d="M340.63,-445.99C409.44,-402.03 657.86,-258.36 801,-375 850.24,-415.12 865.63,-621.14 869.43,-689.74"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="865.94,-690.07 869.96,-699.87 872.94,-689.7 865.94,-690.07"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge78" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#3200ff" d="M358.72,-470.01C372.17,-476.27 386.27,-485.34 395,-498 459.73,-591.86 355.62,-666.46 431,-752 473.34,-800.05 525.73,-743.72 570,-790 620.09,-842.35 554.55,-897.98 606,-949 619.66,-962.55 639.89,-968.25 658.3,-970.39"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="658.03,-973.88 668.29,-971.24 658.62,-966.9 658.03,-973.88"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat -->
+<g id="program~~od2od~~CallsGraph_edge83" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat</title>
+<path fill="none" stroke="#3200ff" d="M395,-454.31C404.71,-453.82 414.68,-453.31 424.43,-452.82"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="424.68,-456.31 434.49,-452.31 424.33,-449.32 424.68,-456.31"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge81" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#3200ff" d="M351.31,-470.08C365.47,-476.92 382.2,-486.44 395,-498 415.86,-516.84 407.17,-535.08 431,-550 467,-572.54 584.33,-584.05 652.39,-588.96"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="652.24,-592.46 662.46,-589.67 652.73,-585.48 652.24,-592.46"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array -->
+<g id="program~~od2od~~CallsGraph_edge80" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#3200ff" d="M345.43,-445.95C366.88,-435.41 400.15,-420.89 431,-415 503.65,-401.13 589.12,-409.12 644.47,-417.4"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="644.03,-420.87 654.45,-418.94 645.1,-413.95 644.03,-420.87"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge82" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#3200ff" d="M392.3,-470.03C442.13,-479.12 510.58,-492.63 570,-508 599.7,-515.68 632.58,-526.09 658.15,-534.63"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="657.33,-538.04 667.92,-537.91 659.56,-531.41 657.33,-538.04"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast -->
+<g id="program~~od2od~~CallsGraph_edge76" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#3200ff" d="M357.94,-470.12C371.44,-476.43 385.79,-485.5 395,-498 441.86,-561.56 376.94,-614.43 431,-672 474.84,-718.69 508.57,-691.88 570,-710 598.71,-718.47 630.7,-728.59 656.06,-736.78"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="655.19,-740.17 665.78,-739.93 657.35,-733.52 655.19,-740.17"/>
+</g>
+<!-- proc~elec_dealloc_optical -->
+<g id="program~~od2od~~CallsGraph_node49" class="node">
+<title>proc~elec_dealloc_optical</title>
+<g id="a_program~~od2od~~CallsGraph_node49"><a xlink:href=".././proc/elec_dealloc_optical.html" xlink:title="elec_dealloc_optical">
+<polygon fill="#d9534f" stroke="#d9534f" points="764,-305 643,-305 643,-281 764,-281 764,-305"/>
+<text text-anchor="middle" x="703.5" y="-290.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_dealloc_optical</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical -->
+<g id="program~~od2od~~CallsGraph_edge84" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical</title>
+<path fill="none" stroke="#3200ff" d="M327.9,-445.61C340.93,-417.41 377.05,-348.59 431,-319 493.07,-284.95 575.26,-281.8 632.88,-285.08"/>
+<polygon fill="#3200ff" stroke="#3200ff" points="632.78,-288.58 642.99,-285.73 633.23,-281.59 632.78,-288.58"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_time -->
+<g id="program~~od2od~~CallsGraph_edge85" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#cc00ff" d="M566.76,-455.82C599.79,-459.27 638.64,-463.33 666.3,-466.22"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="666,-469.71 676.31,-467.26 666.73,-462.74 666,-469.71"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge87" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#cc00ff" d="M522.02,-436.89C574.73,-407.52 716.65,-339.71 801,-407 845.66,-442.62 863.85,-625.66 868.92,-689.78"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="865.45,-690.28 869.69,-699.98 872.43,-689.75 865.45,-690.28"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge86" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#cc00ff" d="M522.82,-461.01C538.79,-471.26 559.61,-487.58 570,-508 614.58,-595.64 541.24,-875.01 606,-949 618.86,-963.7 639.38,-969.47 658.2,-971.36"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="658.21,-974.86 668.42,-972.03 658.68,-967.88 658.21,-974.86"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge88" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#cc00ff" d="M518.72,-461.19C533.52,-472.24 554.82,-489.59 570,-508 590.51,-532.88 580,-551.92 606,-571 619.27,-580.73 636.15,-586.12 652.07,-589.05"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="651.93,-592.57 662.35,-590.65 653,-585.65 651.93,-592.57"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array -->
+<g id="program~~od2od~~CallsGraph_edge89" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#cc00ff" d="M566.76,-442.18C591.73,-439.57 620.03,-436.62 644.31,-434.08"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="644.86,-437.54 654.44,-433.02 644.13,-430.58 644.86,-437.54"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge90" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#cc00ff" d="M536.42,-461.08C547.32,-465.17 559.29,-469.97 570,-475 607.24,-492.48 648.18,-516.43 674.55,-532.52"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="672.89,-535.61 683.24,-537.86 676.55,-529.64 672.89,-535.61"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge93" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0098" d="M534.4,-743.06C545.73,-747.33 558.47,-752.25 570,-757 586.19,-763.66 588.87,-769.37 606,-773 690.78,-790.99 719.89,-803.54 801,-773 822.6,-764.86 841.86,-746.63 854.6,-732.2"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="857.53,-734.15 861.31,-724.25 852.18,-729.63 857.53,-734.15"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;proc~io_file_unit -->
+<g id="program~~od2od~~CallsGraph_edge91" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0098" d="M548.04,-741.26C556.36,-744.99 564.2,-750.07 570,-757 625.71,-823.59 545.5,-886.73 606,-949 619.41,-962.8 639.6,-968.54 658.06,-970.63"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="657.83,-974.12 668.08,-971.44 658.4,-967.14 657.83,-974.12"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_send -->
+<g id="program~~od2od~~CallsGraph_edge92" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff0098" d="M518.3,-718.92C533.03,-707.81 554.46,-690.31 570,-672 589.88,-648.58 580.97,-630.81 606,-613 619.29,-603.54 636.04,-598.21 651.83,-595.25"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="652.7,-598.65 662.02,-593.62 651.6,-591.74 652.7,-598.65"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_recv -->
+<g id="program~~od2od~~CallsGraph_edge94" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff0098" d="M520.47,-718.8C535.74,-708.11 556.77,-691.29 570,-672 596.95,-632.7 570.21,-602.47 606,-571 619.01,-559.56 636.78,-553.88 653.53,-551.19"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="654.3,-554.62 663.77,-549.88 653.41,-547.68 654.3,-554.62"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_bcast -->
+<g id="program~~od2od~~CallsGraph_edge95" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ff0098" d="M548.12,-735.87C578.88,-739.08 619.22,-743.3 650.94,-746.61"/>
+<polygon fill="#ff0098" stroke="#ff0098" points="650.6,-750.1 660.91,-747.66 651.33,-743.13 650.6,-750.1"/>
+</g>
+<!-- proc~algor_dist_array&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge96" class="edge">
+<title>proc~algor_dist_array&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#48ff00" d="M752.54,-428.38C769.77,-430.89 788.12,-436.67 801,-449 836.19,-482.67 859.79,-632.8 867.63,-689.88"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="864.19,-690.55 868.99,-699.99 871.13,-689.61 864.19,-690.55"/>
+</g>
+<!-- proc~cell_find_mp_grid&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge97" class="edge">
+<title>proc~cell_find_mp_grid&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#4800ff" d="M755.39,-643.87C770.5,-647.81 786.8,-653.09 801,-660 818.79,-668.65 836.6,-682.1 849.74,-693.15"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="847.8,-696.1 857.66,-700 852.38,-690.81 847.8,-696.1"/>
+</g>
+<!-- proc~elec_dealloc_optical&#45;&gt;proc~io_error -->
+<g id="program~~od2od~~CallsGraph_edge98" class="edge">
+<title>proc~elec_dealloc_optical&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff00da" d="M764.07,-298.09C777.88,-301.99 791.33,-308.44 801,-319 851.4,-374.05 866.19,-614.78 869.61,-689.68"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="866.13,-690.01 870.05,-699.85 873.12,-689.71 866.13,-690.01"/>
+</g>
+</g>
+</svg>
+</div><script>var panprogramod2odCallsGraph = svgPanZoom('#programod2odCallsGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+<br>
+     <section class="visible-xs visible-sm hidden-md">
+         <h3>Contents</h3>
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#vars-1">Variables</a>
+        </h3>
+      </div>
+      <div id="vars-1" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../program/od2od.html#variable-cdate">cdate</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-ctime">ctime</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-dome_conv">dome_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-dummy_conv">dummy_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-elnes_conv">elnes_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-fem_conv">fem_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-file_found">file_found</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-ome_conv">ome_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-pdos_conv">pdos_conv</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-pos">pos</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-stat">stat</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-time0">time0</a>
+            <a class="list-group-item" href="../program/od2od.html#variable-time1">time1</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../program/od2od.html#src">od2od</a>
+      </div>
+    </div>
+
+
+     </section>
+     <br class="visible-xs visible-sm hidden-md">
+
+
+    <section>
+    <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Attributes</th>
+        <th></th>
+        <th>Name</th>
+<th></th><th>Initial</th>        <th></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cdate"></span>
+              character(len=11)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cdate</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Temp. date string</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ctime"></span>
+              character(len=9)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ctime</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Temp. time string</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dome_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dome_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dummy_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dummy_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-elnes_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>elnes_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fem_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fem_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-file_found"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>file_found</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ome_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ome_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pdos_conv"></span>
+              logical
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pdos_conv</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Flags to stop people trying to, say, read in a pdos and write out an
+elnes. That's not going to end well.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pos"></span>
+              character(len=9)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Status and position of .odo file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-stat"></span>
+              character(len=9)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>stat</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Position of .odo file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-time0"></span>
+              real(kind=dp)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>time0</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Varaibles for measuring exectuion time.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-time1"></span>
+              real(kind=dp)
+            </td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>time1</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Varaibles for measuring exectuion time.</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+    
+
+    
+
+
+    
+    <section>
+    <h2 id="src">Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="k">program </span><span class="n">od2od</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Program to convert checkpoint files from formatted to unformmated</span>
+<span class="w">  </span><span class="c">!! and vice versa - useful for switching between computers.</span>
+<span class="w">  </span><span class="c">!!</span>
+<span class="w">  </span><span class="c">!! Plan is to use to convert outputs of other DFT programs to ones that</span>
+<span class="w">  </span><span class="c">!! OptaDOS can read.</span>
+<span class="w">  </span><span class="c">!!</span>
+<span class="w">  </span><span class="c">!! AJM 2019</span>
+<span class="w">  </span><span class="k">use </span><span class="n">od_constants</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span><span class="w"></span>
+<span class="w">  </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">,</span><span class="w"> </span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="n">io_error</span><span class="p">,</span><span class="w"> </span><span class="n">seedname</span><span class="p">,</span><span class="w"> </span><span class="n">io_time</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">    </span><span class="p">&amp;</span><span class="w"> </span><span class="n">io_date</span><span class="w"></span>
+<span class="w">  </span><span class="k">use </span><span class="n">od_conv</span><span class="w"></span>
+<span class="w">  </span><span class="k">use </span><span class="n">od_comms</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">,</span><span class="w"> </span><span class="n">comms_setup</span><span class="p">,</span><span class="w"> </span><span class="n">comms_end</span><span class="w"></span>
+<span class="w">  </span><span class="k">implicit none</span>
+
+<span class="k">  </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">file_found</span><span class="w"></span>
+<span class="w">  </span><span class="kt">logical</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ome_conv</span><span class="p">,</span><span class="w"> </span><span class="n">fem_conv</span><span class="p">,</span><span class="w"> </span><span class="n">dome_conv</span><span class="p">,</span><span class="w"> </span><span class="n">pdos_conv</span><span class="p">,</span><span class="w"> </span><span class="n">elnes_conv</span><span class="p">,</span><span class="w"> </span><span class="n">dummy_conv</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Flags to stop people trying to, say, read in a pdos and write out an</span>
+<span class="w">  </span><span class="c">!! elnes. That&#39;s not going to end well.</span>
+<span class="w">  </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Varaibles for measuring exectuion time.</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pos</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Status and position of .odo file</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Position of .odo file</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">ctime</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Temp. time string</span>
+<span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span><span class="kd">::</span><span class="w"> </span><span class="n">cdate</span><span class="w"></span>
+<span class="w">  </span><span class="c">!! Temp. date string</span>
+
+<span class="w">  </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">iprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">comms_setup</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">conv_get_seedname</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">stderr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.opt_err&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">io_date</span><span class="p">(</span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;od2od: Execution started on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+
+<span class="nb">  </span><span class="n">stdout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.log&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;od2od: Execution started on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+<span class="nb">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+============================================================================+ &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                                                                            | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                         OO   DDD   222    OO   DDD                         | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                        O  O  D  D     2  O  O  D  D                        | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                        O  O  D  D   22   O  O  D  D                        | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                        O  O  D  D  2     O  O  D  D                        | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                         OO   DDD   2222   OO   DDD                         | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                                                                            | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                   For doing the odd thing to OptaDOS files                 | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                                                                            | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                      OptaDOS Developers Group 2019 (C)                     | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                             (But blame Andrew)                             | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;|                                                                            | &quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+============================================================================+ &quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">num_nodes</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">    call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;od2od can only be used in serial...&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end if</span>
+
+<span class="k">  write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+--------------------------------- JOB CONTROL ------------------------------+&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a40,i5)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Number of nodes : &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a40,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Convert from : &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a40,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Convert to : &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a40,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Seedname : &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(a40,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;Output Seedname : &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">outseedname</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+----------------------------------------------------------------------------+&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">ome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">fem_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">dome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">pdos_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">elnes_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="n">dummy_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">false</span><span class="p">.</span><span class="w"></span>
+
+<span class="w">  </span><span class="c">! Main case to decide what file format to read in.</span>
+<span class="w">  </span><span class="n">read_input</span><span class="p">:</span><span class="k">select case</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">))</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ome_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">ome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_ome_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ome_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">ome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_ome_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;fem_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">fem_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_fem_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;fem_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">fem_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_fem_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dome_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">dome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_dome_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dome_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">dome_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_dome_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pdos_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">pdos_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_pdos_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pdos_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">pdos_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_pdos_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;elnes_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">elnes_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_elnes_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;elnes_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">elnes_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">read_elnes_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dummy&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="n">dummy_conv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">get_band_energy</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_read_file</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Not reading any input file.&quot;</span><span class="w"></span>
+<span class="k">case </span><span class="n">default</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Unknown Input File format speccified&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end select </span><span class="n">read_input</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+----------------------------------------------------------------------------+&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+------------------------------- Write File ---------------------------------+&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="c">! Main case to decide what file format to write.</span>
+<span class="w">  </span><span class="n">write_output</span><span class="p">:</span><span class="k">select case</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ome_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ome_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">pad_an_ome</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_ome_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;ome_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ome_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">pad_an_ome</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_ome_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;fem_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">fem_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_fem_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;fem_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">fem_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_fem_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dome_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ome_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ome_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">slice_an_ome</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_dome_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dome_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="n">dome_conv</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="n">ome_conv</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">       </span><span class="p">&amp;</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ome_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">slice_an_ome</span><span class="p">()</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_dome_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pdos_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">pdos_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_pdos_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;pdos_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">pdos_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_pdos_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;elnes_fmt&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">elnes_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_elnes_fmt</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;elnes_bin&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">elnes_conv</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39; Input format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39; not compatible with output format &#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">outfile</span><span class="p">))</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">write_elnes_bin</span><span class="p">()</span><span class="w"></span>
+<span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s2">&quot;dummy&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Not writing any output file.&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dummy_conv</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;                 Dummy in + dummy out  -- who&#39;s the dummy now ?&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">else</span>
+<span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;                No point in taking up disk space unnecessarily, eh ?&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="k">end if</span>
+<span class="k">case </span><span class="n">default</span><span class="w"></span>
+<span class="w">  </span><span class="k">call </span><span class="n">io_error</span><span class="p">(</span><span class="s1">&#39;Unknown Output File format speccified&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">end select </span><span class="n">write_output</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">io_date</span><span class="p">(</span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot;+----------------------------------------------------------------------------+&quot;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a40,f11.3,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;Total runtime :&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec)&#39;</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;od2od: Execution complete on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+<span class="nb">  </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;delete&#39;</span><span class="p">)</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">call </span><span class="n">comms_end</span><span class="w"></span>
+
+<span class="c">!  close(unit=stdout,status=&#39;delete&#39;)</span>
+
+<span class="k">end program </span><span class="n">od2od</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2025 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

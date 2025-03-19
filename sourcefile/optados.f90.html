@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>optados.f90 &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>optados.f90
+      <small>Source File</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 1.7% of total for source files.">192 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/optados.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+          <li class="active">optados.f90</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#progs-0">Programs</a>
+        </h3>
+      </div>
+      <div id="progs-0" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../program/optados.html">optados</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/optados.f90.html#src">optados.f90</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      
+      <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">This file depends on</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~optados.f90~~EfferentGraph Pages: 1 -->
+<svg id="sourcefileoptadosf90EfferentGraph" width="641pt" height="908pt"
+ viewBox="0.00 0.00 641.00 907.66" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~optados.f90~~EfferentGraph" class="graph" transform="scale(0.51 0.51) rotate(0) translate(4 1763.18)">
+<title>sourcefile~~optados.f90~~EfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1763.18 1244,-1763.18 1244,4 -4,4"/>
+<!-- sourcefile~optados.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node1" class="node">
+<title>sourcefile~optados.f90</title>
+<polygon fill="none" stroke="black" points="1240,-567.28 1164,-567.28 1164,-543.28 1240,-543.28 1240,-567.28"/>
+<text text-anchor="middle" x="1202" y="-552.88" font-family="Helvetica,sans-Serif" font-size="10.50">optados.f90</text>
+</g>
+<!-- sourcefile~optics.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node2" class="node">
+<title>sourcefile~optics.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node2"><a xlink:href=".././sourcefile/optics.f90.html" xlink:title="optics.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1029,-699.28 965,-699.28 965,-675.28 1029,-675.28 1029,-699.28"/>
+<text text-anchor="middle" x="997" y="-684.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optics.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~optics.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge11" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~optics.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1200,-567.33C1195.31,-619.06 1172.5,-826.54 1097.5,-976.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-976.28C1082.76,-1001.72 1022.67,-780.66 1003.73,-709.14"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1007.09,-708.13 1001.15,-699.36 1000.32,-709.92 1007.09,-708.13"/>
+</g>
+<!-- sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node3" class="node">
+<title>sourcefile~parameters.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node3"><a xlink:href=".././sourcefile/parameters.f90.html" xlink:title="parameters.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="541,-928.28 446,-928.28 446,-904.28 541,-904.28 541,-928.28"/>
+<text text-anchor="middle" x="493.5" y="-913.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">parameters.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge1" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996,-956.28C863.76,-943.36 829.76,-949.44 698,-932.28 663.29,-927.76 655.5,-918.56 620.5,-918.28"/>
+</g>
+<!-- sourcefile~jdos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node4" class="node">
+<title>sourcefile~jdos.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node4"><a xlink:href=".././sourcefile/jdos.f90.html" xlink:title="jdos.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1024.5,-1008.28 969.5,-1008.28 969.5,-984.28 1024.5,-984.28 1024.5,-1008.28"/>
+<text text-anchor="middle" x="997" y="-993.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">jdos.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~jdos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge2" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~jdos.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-976.28C1084.9,-997.45 1057.71,-1001.68 1034.74,-1001.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1034.74,-997.55 1024.55,-1000.46 1034.33,-1004.53 1034.74,-997.55"/>
+</g>
+<!-- sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node5" class="node">
+<title>sourcefile~electronic.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node5"><a xlink:href=".././sourcefile/electronic.f90.html" xlink:title="electronic.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="662,-776.28 577,-776.28 577,-752.28 662,-752.28 662,-776.28"/>
+<text text-anchor="middle" x="619.5" y="-761.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">electronic.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge5" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-976.28C1075.69,-1015.83 1042.03,-960.58 998,-956.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996,-956.28C955.92,-952.36 962.44,-917.72 929,-895.28 912.66,-884.31 904.9,-887.87 889,-876.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-876.28C852.88,-851.4 848.32,-839.02 811,-819.28 787.96,-807.08 778.29,-812.94 755.5,-800.28"/>
+</g>
+<!-- sourcefile~pdis.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node6" class="node">
+<title>sourcefile~pdis.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node6"><a xlink:href=".././sourcefile/pdis.f90.html" xlink:title="pdis.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="915.5,-928.28 860.5,-928.28 860.5,-904.28 915.5,-904.28 915.5,-928.28"/>
+<text text-anchor="middle" x="888" y="-913.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pdis.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~pdis.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge4" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~pdis.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996,-956.28C969.3,-953.67 940.94,-942.65 920.13,-932.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="921.65,-929.68 911.13,-928.44 918.58,-935.97 921.65,-929.68"/>
+</g>
+<!-- sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node7" class="node">
+<title>sourcefile~constants.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node7"><a xlink:href=".././sourcefile/constants.f90.html" xlink:title="constants.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="84,-892.28 0,-892.28 0,-868.28 84,-868.28 84,-892.28"/>
+<text text-anchor="middle" x="42" y="-877.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">constants.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge3" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M382,-1754.28C336.33,-1742.7 320.66,-1769.28 276,-1754.28"/>
+</g>
+<!-- sourcefile~pdos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node8" class="node">
+<title>sourcefile~pdos.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node8"><a xlink:href=".././sourcefile/pdos.f90.html" xlink:title="pdos.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="918.5,-507.28 857.5,-507.28 857.5,-483.28 918.5,-483.28 918.5,-507.28"/>
+<text text-anchor="middle" x="888" y="-492.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pdos.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~pdos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge6" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~pdos.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-116.28C1064.77,-88.73 933.99,-389.29 898.13,-473.63"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="894.83,-472.44 894.15,-483.01 901.28,-475.17 894.83,-472.44"/>
+</g>
+<!-- sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node9" class="node">
+<title>sourcefile~cell.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node9"><a xlink:href=".././sourcefile/cell.f90.html" xlink:title="cell.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="410,-548.28 356,-548.28 356,-524.28 410,-524.28 410,-548.28"/>
+<text text-anchor="middle" x="383" y="-533.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge7" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-116.28C1020.58,-63.27 980.78,-116.28 889,-116.28 889,-116.28 889,-116.28 753.5,-116.28 683.79,-116.28 492.28,-126.15 446,-178.28 413.4,-214.99 418.48,-347.92 410,-396.28 402.72,-437.8 393.6,-486.11 388.33,-513.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="384.82,-513.45 386.38,-523.93 391.7,-514.77 384.82,-513.45"/>
+</g>
+<!-- sourcefile~dos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node10" class="node">
+<title>sourcefile~dos.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node10"><a xlink:href=".././sourcefile/dos.f90.html" xlink:title="dos.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="915,-1050.28 861,-1050.28 861,-1026.28 915,-1026.28 915,-1050.28"/>
+<text text-anchor="middle" x="888" y="-1035.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~dos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge8" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~dos.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996,-956.28C955.92,-952.36 960.49,-992.18 929,-1017.28 927.44,-1018.52 925.79,-1019.73 924.08,-1020.89"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="921.96,-1018.09 915.28,-1026.31 925.63,-1024.05 921.96,-1018.09"/>
+</g>
+<!-- sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node11" class="node">
+<title>sourcefile~io.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node11"><a xlink:href=".././sourcefile/io.f90.html" xlink:title="io.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="184,-662.28 130,-662.28 130,-638.28 184,-638.28 184,-662.28"/>
+<text text-anchor="middle" x="157" y="-647.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge9" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1200.15,-543.03C1195.33,-477.57 1169.04,-169.99 1097.5,-116.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-116.28C1055.73,-86.42 1071.34,-52.36 1029,-26.28 975.25,6.83 952.13,-2.28 889,-2.28 889,-2.28 889,-2.28 753.5,-2.28 609.93,-2.28 572.36,-33.1 446,-101.28 427.92,-111.03 426.41,-117.91 410,-130.28 386.56,-147.94 379.68,-150.94 356,-168.28 299.2,-209.88 266.92,-204.33 230,-264.28 191.74,-326.4 167.12,-554.49 160.08,-627.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="156.56,-627.65 159.11,-637.93 163.53,-628.31 156.56,-627.65"/>
+</g>
+<!-- sourcefile~core.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node12" class="node">
+<title>sourcefile~core.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node12"><a xlink:href=".././sourcefile/core.f90.html" xlink:title="core.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="916,-1008.28 860,-1008.28 860,-984.28 916,-984.28 916,-1008.28"/>
+<text text-anchor="middle" x="888" y="-993.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">core.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~core.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge10" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~core.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M996,-956.28C967.11,-953.46 936.29,-966.93 915.18,-978.99"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="913.27,-976.06 906.48,-984.2 916.86,-982.07 913.27,-976.06"/>
+</g>
+<!-- sourcefile~photo.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node13" class="node">
+<title>sourcefile~photo.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node13"><a xlink:href=".././sourcefile/photo.f90.html" xlink:title="photo.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="1128,-567.28 1065,-567.28 1065,-543.28 1128,-543.28 1128,-567.28"/>
+<text text-anchor="middle" x="1096.5" y="-552.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">photo.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~photo.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge12" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~photo.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1163.93,-555.28C1155.6,-555.28 1146.71,-555.28 1138.24,-555.28"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="1138.18,-551.78 1128.18,-555.28 1138.18,-558.78 1138.18,-551.78"/>
+</g>
+<!-- sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node14" class="node">
+<title>sourcefile~comms.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node14"><a xlink:href=".././sourcefile/comms.f90.html" xlink:title="comms.F90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="194,-1007.28 120,-1007.28 120,-983.28 194,-983.28 194,-1007.28"/>
+<text text-anchor="middle" x="157" y="-992.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms.F90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optados.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge13" class="edge">
+<title>sourcefile~optados.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M1095.5,-976.28C935.28,-1296.15 1246.75,-1754.28 889,-1754.28 889,-1754.28 889,-1754.28 618.5,-1754.28 514.28,-1754.28 487.83,-1763.34 384,-1754.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M382,-1754.28C270.16,-1743.49 272.39,-1656.33 230,-1552.28 189.3,-1452.37 165.17,-1109.05 159.37,-1017.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="162.86,-1017.42 158.74,-1007.66 155.87,-1017.86 162.86,-1017.42"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge19" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M992.09,-699.46C983.8,-723.77 962.42,-778.97 929,-814.28 914.75,-829.33 907.62,-829.16 889,-838.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-838.28C880.11,-841.65 761.5,-875.5 755.5,-880.28"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge15" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M990.72,-699.44C977.98,-726.77 942.56,-791.32 889,-800.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-800.28C829.36,-809.92 806.59,-828.65 755.5,-800.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M753.5,-800.28C728.39,-786.33 697.58,-777.55 671.94,-772.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="672.52,-768.7 662.03,-770.18 671.15,-775.57 672.52,-768.7"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge14" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M992.92,-675.12C979.91,-624.48 928.31,-430.59 889,-382.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-382.28C849.73,-336.47 859.53,-306.93 811,-273.28 691.67,-190.55 637.23,-165.59 494.5,-192.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M492.5,-192.28C433.72,-195.7 442.88,-116.28 384,-116.28"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge18" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-382.28C809.26,-279.55 746.76,-470.71 620.5,-496.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M618.5,-496.28C564.06,-504.83 539.58,-464.57 494.5,-496.28"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge21" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M492.5,-192.28C388.94,-216.7 405.8,-295.35 320,-358.28 302.04,-371.45 292.34,-367.14 276,-382.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M274,-382.28C202.44,-454.36 171.84,-577.76 161.92,-628.01"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="158.43,-627.62 160.01,-638.1 165.31,-628.92 158.43,-627.62"/>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge17" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M992.9,-699.3C986.86,-723.05 973.38,-777.72 965,-824.28 912.5,-1116.05 1047.14,-1294.05 811,-1473.28 763.63,-1509.23 324.18,-1523.14 276,-1488.28"/>
+</g>
+<!-- sourcefile~jdos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node15" class="node">
+<title>sourcefile~jdos_utils.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node15"><a xlink:href=".././sourcefile/jdos_utils.f90.html" xlink:title="jdos_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="929,-587.28 847,-587.28 847,-563.28 929,-563.28 929,-587.28"/>
+<text text-anchor="middle" x="888" y="-572.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">jdos_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~jdos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge16" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~jdos_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M984.14,-674.86C965.64,-655.5 929.77,-617.96 907.75,-594.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="910.03,-592.22 900.59,-587.41 904.96,-597.06 910.03,-592.22"/>
+</g>
+<!-- sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node16" class="node">
+<title>sourcefile~dos_utils.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node16"><a xlink:href=".././sourcefile/dos_utils.f90.html" xlink:title="dos_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="794,-586.28 715,-586.28 715,-562.28 794,-562.28 794,-586.28"/>
+<text text-anchor="middle" x="754.5" y="-571.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge20" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M993.24,-674.89C984.76,-640.59 955.56,-546.18 889,-535.28"/>
+</g>
+<!-- sourcefile~xmgrace_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node19" class="node">
+<title>sourcefile~xmgrace_utils.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node19"><a xlink:href=".././sourcefile/xmgrace_utils.f90.html" xlink:title="xmgrace_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="808,-1464.28 701,-1464.28 701,-1440.28 808,-1440.28 808,-1464.28"/>
+<text text-anchor="middle" x="754.5" y="-1449.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">xmgrace_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~optics.f90&#45;&gt;sourcefile~xmgrace_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge22" class="edge">
+<title>sourcefile~optics.f90&#45;&gt;sourcefile~xmgrace_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M992.98,-699.31C987.07,-723.09 973.81,-777.8 965,-824.28 945.33,-928.09 992.07,-974.51 929,-1059.28 917.25,-1075.07 896.43,-1060.05 889,-1078.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887,-1078.28C827.2,-1224.86 909.79,-1302.57 811,-1426.28 808.46,-1429.46 805.44,-1432.27 802.13,-1434.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="800.02,-1431.95 793.46,-1440.26 803.78,-1437.86 800.02,-1431.95"/>
+</g>
+<!-- sourcefile~parameters.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge23" class="edge">
+<title>sourcefile~parameters.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M467.8,-904.14C446.27,-894.53 413.89,-882.39 384,-880.28"/>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M382,-880.28C282.69,-873.27 257.52,-877.61 158,-880.28"/>
+</g>
+<!-- sourcefile~parameters.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge27" class="edge">
+<title>sourcefile~parameters.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M487.88,-904.07C478.87,-879.94 458.73,-824.31 446,-776.28 425.1,-697.42 434.36,-674.14 410,-596.28 405.86,-583.04 399.75,-568.77 394.49,-557.46"/>
+<polygon fill="#ff7500" stroke="#ff7500" points="397.63,-555.91 390.16,-548.4 391.31,-558.93 397.63,-555.91"/>
+</g>
+<!-- sourcefile~parameters.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge24" class="edge">
+<title>sourcefile~parameters.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M481.83,-904.02C445.74,-862.88 327.59,-731.15 276,-709.28"/>
+</g>
+<!-- sourcefile~parameters.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge26" class="edge">
+<title>sourcefile~parameters.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M382,-880.28C357.04,-878.52 298.44,-907.21 276,-918.28"/>
+</g>
+<!-- sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node17" class="node">
+<title>sourcefile~algorithms.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node17"><a xlink:href=".././sourcefile/algorithms.f90.html" xlink:title="algorithms.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="320,-622.28 230,-622.28 230,-598.28 320,-598.28 320,-622.28"/>
+<text text-anchor="middle" x="275" y="-607.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">algorithms.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~parameters.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge25" class="edge">
+<title>sourcefile~parameters.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#ff7500" stroke-dasharray="5,2" d="M484.78,-903.95C470.45,-881.21 438.6,-831.22 410,-790.28 368.63,-731.06 316.88,-663.19 291.5,-630.27"/>
+<polygon fill="#ff7500" stroke="#ff7500" points="294.24,-628.09 285.36,-622.31 288.7,-632.37 294.24,-628.09"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge31" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M995.86,-1008.36C994.83,-1077.37 986.82,-1421.4 929,-1506.28 879.38,-1579.11 841.33,-1622.27 755.5,-1602.28"/>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M753.5,-1602.28C680.87,-1599.38 531.7,-1055.68 500.36,-938.4"/>
+<polygon fill="#ffeb00" stroke="#ffeb00" points="503.65,-937.18 497.7,-928.42 496.89,-938.98 503.65,-937.18"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge33" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M979.01,-984.22C974.08,-980.18 968.96,-975.38 965,-970.28 942.32,-941.07 955.2,-921.37 929,-895.28 915.05,-881.39 904.9,-887.87 889,-876.28"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge28" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M753.5,-1602.28C697.84,-1600.86 329.15,-1770.88 276,-1754.28"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge29" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M753.5,-1602.28C603.8,-1595.64 292.89,-1313.29 230,-1177.28 171.6,-1050.98 213.44,-1004.06 194,-866.28 183.97,-795.2 169.15,-711.48 162.07,-672.42"/>
+<polygon fill="#ffeb00" stroke="#ffeb00" points="165.48,-671.63 160.24,-662.42 158.59,-672.89 165.48,-671.63"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge32" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M753.5,-1602.28C535.5,-1593.25 450.58,-1619.15 276,-1488.28"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~jdos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge30" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~jdos_utils.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M977.52,-984.27C972.77,-980.34 968.13,-975.61 965,-970.28 963.79,-968.22 908.95,-680.19 893.19,-597.34"/>
+<polygon fill="#ffeb00" stroke="#ffeb00" points="896.62,-596.63 891.32,-587.46 889.75,-597.94 896.62,-596.63"/>
+</g>
+<!-- sourcefile~jdos.f90&#45;&gt;sourcefile~xmgrace_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge34" class="edge">
+<title>sourcefile~jdos.f90&#45;&gt;sourcefile~xmgrace_utils.f90</title>
+<path fill="none" stroke="#ffeb00" stroke-dasharray="5,2" d="M985.1,-1008.62C972.56,-1022.28 950.89,-1044.33 929,-1059.28 912.75,-1070.38 896.43,-1060.05 889,-1078.28"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge38" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M594.63,-776.49C588.43,-780.36 582.08,-785.02 577,-790.28 554.85,-813.18 558.39,-825.58 541,-852.28 531.23,-867.28 519.35,-883.6 510.05,-896"/>
+<polygon fill="#9cff00" stroke="#9cff00" points="507.04,-894.18 503.79,-904.27 512.62,-898.41 507.04,-894.18"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge35" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M492.5,-762.28C336.8,-737.6 315.56,-875.16 158,-880.28"/>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M156,-880.28C135.82,-879.37 113.58,-879.19 94.22,-879.3"/>
+<polygon fill="#9cff00" stroke="#9cff00" points="94.05,-875.8 84.08,-879.39 94.11,-882.8 94.05,-875.8"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge39" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M602.59,-752.26C587.2,-740.87 563.05,-723.57 541,-710.28 521.08,-698.27 512.18,-701.39 494.5,-686.28"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge36" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M576.91,-766.51C552.72,-767.09 521.72,-766.59 494.5,-762.28"/>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M492.5,-762.28C469.53,-758.64 465.61,-750.78 446,-738.28 416.62,-719.54 417.7,-699.15 384,-690.28"/>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M382,-690.28C335.71,-678.09 320.26,-727.5 276,-709.28"/>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M274,-709.28C244.07,-696.95 211.31,-679.95 188.26,-667.36"/>
+<polygon fill="#9cff00" stroke="#9cff00" points="189.77,-664.19 179.32,-662.43 186.39,-670.32 189.77,-664.19"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge37" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M580.5,-776.29C528.48,-793.35 432.8,-826.93 356,-866.28 318.26,-885.62 314.03,-899.52 276,-918.28"/>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M274,-918.28C239.7,-934.49 203.86,-959.77 181.26,-976.9"/>
+<polygon fill="#9cff00" stroke="#9cff00" points="179.07,-974.16 173.27,-983.03 183.33,-979.71 179.07,-974.16"/>
+</g>
+<!-- sourcefile~electronic.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge40" class="edge">
+<title>sourcefile~electronic.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#9cff00" stroke-dasharray="5,2" d="M576.99,-756.2C551.82,-750.06 519.79,-739.93 494.5,-724.28"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge43" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M860.39,-914.68C833.72,-913.54 791.54,-913.03 755.5,-918.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-918.28C695.01,-926.8 679.61,-918.75 620.5,-918.28"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge42" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M863.81,-904.12C857.84,-900.25 851.76,-895.58 847,-890.28 823.36,-863.96 837.7,-842.49 811,-819.28 791.32,-802.17 778.29,-812.94 755.5,-800.28"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge41" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-1184.28C549.43,-1378.97 544.9,-1517.15 276,-1602.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M274,-1602.28C222.7,-1607.45 193.47,-1639.7 158,-1602.28"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge48" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M885.35,-904.21C878.69,-860.81 849.49,-712.01 755.5,-652.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-652.28C696.5,-616.05 501.39,-565.24 420.05,-545.05"/>
+<polygon fill="#27ff00" stroke="#27ff00" points="420.81,-541.63 410.26,-542.63 419.13,-548.43 420.81,-541.63"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge46" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-918.28C540.85,-949.26 385.37,-1027.26 276,-842.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M274,-842.28C236.53,-780.07 192.1,-706.62 170.73,-671.31"/>
+<polygon fill="#27ff00" stroke="#27ff00" points="173.51,-669.14 165.34,-662.4 167.52,-672.77 173.51,-669.14"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge45" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M877.36,-928.32C868.51,-939.84 855.53,-957.96 847,-975.28 802.22,-1066.26 833.61,-1119.61 755.5,-1184.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-1184.28C733.9,-1200.5 722.21,-1190.46 698,-1198.28 642.95,-1216.06 624.64,-1213.46 577,-1246.28 532.31,-1277.06 546.24,-1319.92 494.5,-1336.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M492.5,-1336.28C445.71,-1347.94 431.56,-1328.33 384,-1336.28"/>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge47" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M753.5,-652.28C649.48,-593.5 596.09,-787.15 494.5,-724.28"/>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M492.5,-724.28C472.23,-712.88 463.45,-715.65 446,-700.28 409.55,-668.18 432.47,-613.41 384,-610.28"/>
+</g>
+<!-- sourcefile~projection_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_node18" class="node">
+<title>sourcefile~projection_utils.f90</title>
+<g id="a_sourcefile~~optados.f90~~EfferentGraph_node18"><a xlink:href=".././sourcefile/projection_utils.f90.html" xlink:title="projection_utils.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="811,-852.28 698,-852.28 698,-828.28 811,-828.28 811,-852.28"/>
+<text text-anchor="middle" x="754.5" y="-837.88" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">projection_utils.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~pdis.f90&#45;&gt;sourcefile~projection_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge44" class="edge">
+<title>sourcefile~pdis.f90&#45;&gt;sourcefile~projection_utils.f90</title>
+<path fill="none" stroke="#27ff00" stroke-dasharray="5,2" d="M868.25,-904.15C861.53,-899.8 853.92,-894.83 847,-890.28 830.94,-879.7 827.75,-875.72 811,-866.28 805.08,-862.94 798.67,-859.66 792.37,-856.6"/>
+<polygon fill="#27ff00" stroke="#27ff00" points="793.83,-853.42 783.29,-852.31 790.84,-859.75 793.83,-853.42"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge54" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M876.18,-507.41C866.77,-518.69 853.65,-536.42 847,-554.28 823.04,-618.65 854.13,-807.82 811,-861.28 794.63,-881.57 775.9,-864.04 755.5,-880.28"/>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M753.5,-880.28C729.45,-899.42 651.24,-918.52 620.5,-918.28"/>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M618.5,-918.28C596.48,-918.1 572.27,-917.75 551.12,-917.39"/>
+<polygon fill="#00ffc4" stroke="#00ffc4" points="551.08,-913.88 541.02,-917.21 550.95,-920.88 551.08,-913.88"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge50" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M857.15,-501.07C809.97,-510.77 721.11,-531.39 698,-553.28 643.12,-605.26 626.92,-699.37 622.29,-742.1"/>
+<polygon fill="#00ffc4" stroke="#00ffc4" points="618.78,-741.97 621.3,-752.26 625.75,-742.64 618.78,-741.97"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge49" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M882.07,-483.03C865.83,-442.76 814.81,-316.81 811,-314.28 690.02,-233.87 267.42,-248.73 158,-344.28"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge57" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M857.32,-498.02C830.56,-499.89 790.19,-501.24 755.5,-496.28"/>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M753.5,-496.28C694.98,-487.91 678.44,-484.55 620.5,-496.28"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge55" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M882.28,-483.13C867.96,-446.53 825.08,-339.29 811,-330.28 768.71,-303.19 748.13,-327.3 698,-330.28 585.41,-336.96 555.83,-334.59 446,-360.28 417.53,-366.94 412.22,-374.64 384,-382.28"/>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M382,-382.28C335.14,-387.1 310.56,-350.26 276,-382.28"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge53" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M876.08,-507.37C866.62,-518.64 853.45,-536.35 847,-554.28 818.43,-633.68 865.79,-868.1 811,-932.28 731.28,-1025.66 396.32,-1094.73 276,-1070.28"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge51" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M867.7,-507.45C861.07,-511.73 853.65,-516.63 847,-521.28 830.61,-532.73 828.15,-537.98 811,-548.28 805.43,-551.62 799.37,-554.85 793.35,-557.82"/>
+<polygon fill="#00ffc4" stroke="#00ffc4" points="791.55,-554.81 784.03,-562.27 794.56,-561.12 791.55,-554.81"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge56" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M857.35,-483.45C770.74,-451.02 514.27,-370.3 356,-482.28 316.76,-510.04 350.53,-547.15 320,-584.28 317.6,-587.19 314.79,-589.85 311.77,-592.27"/>
+<polygon fill="#00ffc4" stroke="#00ffc4" points="309.62,-589.5 303.4,-598.08 313.61,-595.25 309.62,-589.5"/>
+</g>
+<!-- sourcefile~pdos.f90&#45;&gt;sourcefile~projection_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge52" class="edge">
+<title>sourcefile~pdos.f90&#45;&gt;sourcefile~projection_utils.f90</title>
+<path fill="none" stroke="#00ffc4" stroke-dasharray="5,2" d="M876.26,-507.44C866.92,-518.75 853.83,-536.49 847,-554.28 805.18,-663.18 880.21,-720.37 811,-814.28 808.72,-817.37 805.98,-820.11 802.95,-822.53"/>
+<polygon fill="#00ffc4" stroke="#00ffc4" points="800.77,-819.78 794.39,-828.23 804.65,-825.6 800.77,-819.78"/>
+</g>
+<!-- sourcefile~cell.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge58" class="edge">
+<title>sourcefile~cell.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#00c4ff" stroke-dasharray="5,2" d="M372.74,-524.1C336.04,-476.49 200.76,-307.39 158,-344.28"/>
+</g>
+<!-- sourcefile~cell.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge59" class="edge">
+<title>sourcefile~cell.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#00c4ff" stroke-dasharray="5,2" d="M355.59,-538.83C332.2,-542.35 298.39,-550.67 276,-570.28"/>
+<path fill="none" stroke="#00c4ff" stroke-dasharray="5,2" d="M274,-570.28C257.98,-584.31 248.1,-578.05 230,-589.28 210.68,-601.26 191.15,-618.18 177.31,-631.16"/>
+<polygon fill="#00c4ff" stroke="#00c4ff" points="174.68,-628.84 169.87,-638.28 179.52,-633.89 174.68,-628.84"/>
+</g>
+<!-- sourcefile~cell.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge61" class="edge">
+<title>sourcefile~cell.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#00c4ff" stroke-dasharray="5,2" d="M274,-570.28C257.98,-584.31 242.73,-572.2 230,-589.28 189.22,-644.01 209.56,-827.83 194,-894.28 187.42,-922.37 175.62,-953.47 167.32,-973.63"/>
+<polygon fill="#00c4ff" stroke="#00c4ff" points="163.99,-972.53 163.35,-983.11 170.44,-975.24 163.99,-972.53"/>
+</g>
+<!-- sourcefile~cell.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge60" class="edge">
+<title>sourcefile~cell.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#00c4ff" stroke-dasharray="5,2" d="M367.11,-548.66C354.79,-558.69 336.67,-572.96 320,-584.28 315.71,-587.19 311.08,-590.13 306.49,-592.93"/>
+<polygon fill="#00c4ff" stroke="#00c4ff" points="304.61,-589.98 297.82,-598.11 308.2,-595.99 304.61,-589.98"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge64" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M869.51,-1050.38C854.68,-1059.91 832.46,-1072.52 811,-1078.28 710.53,-1105.26 665.3,-1139.29 577,-1084.28 525.04,-1051.91 504.88,-976.19 497.85,-938.46"/>
+<polygon fill="#004eff" stroke="#004eff" points="501.28,-937.74 496.14,-928.48 494.38,-938.93 501.28,-937.74"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge67" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M860.72,-1028.86C855.49,-1025.88 850.53,-1022.08 847,-1017.28 794.05,-945.2 869.33,-887.08 811,-819.28 794,-799.51 778.29,-812.94 755.5,-800.28"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge62" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M753.5,-1412.28C736.81,-1432.3 722.42,-1422.16 698,-1431.28 508.42,-1502.08 477.35,-1581.98 276,-1602.28"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge63" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M862.22,-1050.37C856.53,-1054.14 850.99,-1058.78 847,-1064.28 810.75,-1114.16 859.94,-1160.75 811,-1198.28 771.15,-1228.84 746.48,-1211.38 698,-1198.28 449.31,-1131.04 363.65,-1076.52 230,-856.28 192.81,-795 171.26,-711.77 162.55,-672.51"/>
+<polygon fill="#004eff" stroke="#004eff" points="165.96,-671.7 160.43,-662.66 159.11,-673.17 165.96,-671.7"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge66" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M860.8,-1050.53C855.43,-1054.22 850.39,-1058.78 847,-1064.28 770.96,-1187.6 897.14,-1271.78 811,-1388.28 795.02,-1409.89 772.82,-1391.73 755.5,-1412.28"/>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M753.5,-1412.28C725.01,-1446.07 396.32,-1380.17 356,-1398.28 307.18,-1420.2 319.88,-1518.92 276,-1488.28"/>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M274,-1488.28C256.18,-1474.92 242.8,-1482.51 230,-1464.28 178.31,-1390.62 162.41,-1101.14 158.86,-1017.83"/>
+<polygon fill="#004eff" stroke="#004eff" points="162.35,-1017.53 158.44,-1007.68 155.35,-1017.82 162.35,-1017.53"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge65" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M860.82,-1029.31C855.45,-1026.29 850.41,-1022.36 847,-1017.28 799.86,-947.03 844.3,-716.05 811,-638.28 803.59,-620.98 789.72,-604.98 777.7,-593.31"/>
+<polygon fill="#004eff" stroke="#004eff" points="779.86,-590.54 770.16,-586.29 775.1,-595.66 779.86,-590.54"/>
+</g>
+<!-- sourcefile~dos.f90&#45;&gt;sourcefile~xmgrace_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge68" class="edge">
+<title>sourcefile~dos.f90&#45;&gt;sourcefile~xmgrace_utils.f90</title>
+<path fill="none" stroke="#004eff" stroke-dasharray="5,2" d="M860.75,-1050.5C855.38,-1054.19 850.36,-1058.76 847,-1064.28 762.94,-1202.39 904.4,-1294.3 811,-1426.28 808.81,-1429.37 806.16,-1432.1 803.21,-1434.52"/>
+<polygon fill="#004eff" stroke="#004eff" points="801.15,-1431.69 794.85,-1440.2 805.09,-1437.48 801.15,-1431.69"/>
+</g>
+<!-- sourcefile~io.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge69" class="edge">
+<title>sourcefile~io.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#2700ff" stroke-dasharray="5,2" d="M150.08,-662.32C131.9,-699.34 76.64,-811.81 53.43,-859.04"/>
+<polygon fill="#2700ff" stroke="#2700ff" points="50.26,-857.56 48.99,-868.08 56.55,-860.65 50.26,-857.56"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge75" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M862.03,-1008.43C856.95,-1011.16 851.72,-1014.18 847,-1017.28 829.82,-1028.55 829.91,-1038.24 811,-1046.28 732.46,-1079.64 700.58,-1099.77 620.5,-1070.28"/>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M618.5,-1070.28C553.87,-1057.61 516.47,-977.44 501.78,-938.05"/>
+<polygon fill="#9c00ff" stroke="#9c00ff" points="505.05,-936.79 498.39,-928.55 498.45,-939.14 505.05,-936.79"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge71" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M877.27,-984.28C868.36,-972.79 855.33,-954.69 847,-937.28 823.35,-887.81 849.11,-858.7 811,-819.28 792.88,-800.53 778.29,-812.94 755.5,-800.28"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge70" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M859.78,-1006.1C854.87,-1009 850.27,-1012.68 847,-1017.28 784.49,-1105.18 873.39,-1169.29 811,-1257.28 787.27,-1290.75 186.23,-1632.06 158,-1602.28"/>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M156,-1602.28C61.94,-1493.67 45.87,-1012.12 43.41,-902.53"/>
+<polygon fill="#9c00ff" stroke="#9c00ff" points="46.9,-902.25 43.2,-892.32 39.91,-902.39 46.9,-902.25"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge76" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M876.67,-983.95C867.6,-972.53 854.68,-954.72 847,-937.28 819.19,-874.14 858,-836.79 811,-786.28 760.75,-732.28 550.58,-734.2 494.5,-686.28"/>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M492.5,-686.28C449.94,-646.87 413.47,-588.48 395.65,-557.45"/>
+<polygon fill="#9c00ff" stroke="#9c00ff" points="398.5,-555.39 390.53,-548.4 392.4,-558.83 398.5,-555.39"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge72" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M618.5,-1070.28C493.68,-1045.82 454.3,-1036.99 356,-956.28 334.28,-938.44 336.13,-927.3 320,-904.28 300.61,-876.61 293.43,-871.22 276,-842.28"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge74" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M859.95,-1006.22C855.02,-1009.11 850.38,-1012.75 847,-1017.28 797.9,-1082.98 862.44,-1134.4 811,-1198.28 714.75,-1317.8 644.51,-1303.93 494.5,-1336.28"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge73" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M876.19,-984.14C866.79,-972.85 853.67,-955.13 847,-937.28 800.12,-811.91 865.22,-760.65 811,-638.28 803.38,-621.07 789.51,-605.07 777.54,-593.38"/>
+<polygon fill="#9c00ff" stroke="#9c00ff" points="779.72,-590.63 770.04,-586.34 774.94,-595.74 779.72,-590.63"/>
+</g>
+<!-- sourcefile~core.f90&#45;&gt;sourcefile~xmgrace_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge77" class="edge">
+<title>sourcefile~core.f90&#45;&gt;sourcefile~xmgrace_utils.f90</title>
+<path fill="none" stroke="#9c00ff" stroke-dasharray="5,2" d="M859.97,-1005.7C854.92,-1008.65 850.22,-1012.45 847,-1017.28 745.84,-1169.15 915.57,-1276.73 811,-1426.28 808.83,-1429.38 806.19,-1432.12 803.25,-1434.55"/>
+<polygon fill="#9c00ff" stroke="#9c00ff" points="801.19,-1431.72 794.9,-1440.24 805.14,-1437.5 801.19,-1431.72"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~optics.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge88" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~optics.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1086.5,-567.46C1069.74,-590.15 1033.58,-639.1 1013.05,-666.9"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="1010.1,-665 1006.98,-675.13 1015.73,-669.16 1010.1,-665"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge82" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-838.28C954.97,-862.32 931.71,-817.37 889,-838.28"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge80" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1096.12,-567.38C1097.74,-613.78 1096.41,-780.61 998,-838.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-838.28C952.46,-863.79 938.77,-791.95 889,-800.28"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge79" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1094.81,-543.22C1091.17,-482.53 1072.62,-210.68 1029,-140.28 988.73,-75.28 965.47,-40.28 889,-40.28 889,-40.28 889,-40.28 618.5,-40.28 563.72,-40.28 438.78,-116.28 384,-116.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M382,-116.28C307.58,-109.27 282.59,-135.16 230,-188.28 176.27,-242.54 219.59,-299.14 158,-344.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M156,-344.28C68.69,-404 47.79,-764.67 43.81,-858.16"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="40.32,-858.06 43.41,-868.2 47.31,-858.35 40.32,-858.06"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~pdos.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge86" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~pdos.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-535.28C973.51,-527.3 948.53,-517.98 928.36,-510.35"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="929.47,-507.03 918.88,-506.75 926.99,-513.57 929.47,-507.03"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge87" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-154.28C905.12,-54.6 604.83,-418.67 494.5,-496.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M492.5,-496.28C468.4,-506.03 440.92,-516.15 419.65,-523.77"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="418.29,-520.54 410.04,-527.19 420.64,-527.13 418.29,-520.54"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge85" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1094.13,-542.88C1087.15,-481.79 1053.65,-213.32 998,-154.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-154.28C912.11,-65.27 554.59,-76.98 446,-133.28 438.13,-137.36 234.22,-360.48 230,-368.28 181.98,-456.89 165.08,-578.61 159.96,-628.06"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="156.45,-627.95 158.97,-638.24 163.42,-628.63 156.45,-627.95"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge83" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1094.67,-567.53C1086.16,-691.61 1012.09,-1716.28 889,-1716.28 889,-1716.28 889,-1716.28 753.5,-1716.28 627.82,-1716.28 302.8,-1604.72 230,-1502.28 173.27,-1422.44 160.86,-1104.44 158.5,-1017.4"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="162,-1017.23 158.24,-1007.33 155,-1017.41 162,-1017.23"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~jdos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge81" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~jdos_utils.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-535.28C981.77,-530.23 946.6,-545.34 920.44,-558.42"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="918.58,-555.44 911.27,-563.1 921.77,-561.67 918.58,-555.44"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge84" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-535.28C951.18,-519.37 935.93,-542.96 889,-535.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M887,-535.28C869.22,-532.37 826.5,-546.53 794.55,-558.59"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="793.1,-555.4 785.02,-562.25 795.61,-561.94 793.1,-555.4"/>
+</g>
+<!-- sourcefile~photo.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge78" class="edge">
+<title>sourcefile~photo.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M1064.6,-551.19C1045.13,-548.06 1019.66,-542.96 998,-535.28"/>
+<path fill="none" stroke="#ff00eb" stroke-dasharray="5,2" d="M996,-535.28C920.63,-508.53 993.29,-415.84 929,-368.28 846.38,-307.16 798.39,-336.34 698,-358.28 657.15,-367.21 386.3,-486.47 356,-515.28 330.93,-539.11 343.8,-559.18 320,-584.28 317.19,-587.23 313.98,-589.97 310.59,-592.46"/>
+<polygon fill="#ff00eb" stroke="#ff00eb" points="308.37,-589.73 301.95,-598.16 312.23,-595.58 308.37,-589.73"/>
+</g>
+<!-- sourcefile~comms.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge89" class="edge">
+<title>sourcefile~comms.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff0075" stroke-dasharray="5,2" d="M143.91,-982.97C124.37,-963.08 85.68,-923.72 62.3,-899.92"/>
+<polygon fill="#ff0075" stroke="#ff0075" points="64.51,-897.18 55.01,-892.5 59.52,-902.08 64.51,-897.18"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge93" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M887.54,-587.49C888.77,-630.93 887.02,-779.73 811,-861.28 793.22,-880.35 775.9,-864.04 755.5,-880.28"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge91" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M879.16,-587.51C866.61,-606.35 840.41,-642.74 811,-666.28 765.03,-703.07 703.07,-731.84 662.47,-748.43"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="661.11,-745.21 653.14,-752.19 663.72,-751.7 661.11,-745.21"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge90" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M877.41,-563.21C868.59,-551.68 855.62,-533.55 847,-516.28 824.96,-472.14 847.49,-444.48 811,-411.28 633.77,-249.98 511.79,-301.52 276,-344.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M274,-344.28C222.53,-347.25 196.83,-310.37 158,-344.28"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge95" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M874.59,-563.02C852.75,-542.65 805.07,-503.37 755.5,-496.28"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge92" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M878.56,-563.09C862.6,-540.38 828.07,-492.93 811,-482.28 645.64,-379.1 573.41,-336.3 384,-382.28"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge94" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M885.6,-587.62C877.55,-657.94 836.64,-1006.14 811,-1046.28 743.45,-1152.03 680.79,-1133.75 577,-1204.28 491.05,-1262.69 486.5,-1319.15 384,-1336.28"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M382,-1336.28C229.51,-1357.26 174.5,-1096.9 161.35,-1017.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="164.74,-1016.74 159.71,-1007.41 157.83,-1017.84 164.74,-1016.74"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~dos_utils.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge96" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~dos_utils.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M846.83,-574.97C833.34,-574.87 818.14,-574.75 804.07,-574.65"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="804.1,-571.15 794.07,-574.57 804.04,-578.15 804.1,-571.15"/>
+</g>
+<!-- sourcefile~jdos_utils.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge97" class="edge">
+<title>sourcefile~jdos_utils.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M847.9,-587.34C836.15,-590.49 823.15,-593.49 811,-595.28 623.13,-622.95 573.59,-621.11 384,-610.28"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge101" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M737.5,-586.28C704.09,-611.98 625.97,-675.55 577,-743.28 541.13,-792.88 514.21,-860.54 501.9,-894.68"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="498.59,-893.55 498.55,-904.14 505.19,-895.88 498.59,-893.55"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge99" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M741.81,-586.52C730.12,-599.05 711.92,-619.3 698,-638.28 672.14,-673.53 646.4,-717.62 632.06,-743.2"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="628.94,-741.6 627.14,-752.04 635.06,-745.01 628.94,-741.6"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge98" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M743.94,-562.15C728.43,-543.09 696.06,-505.9 662,-482.28 512.3,-378.43 455.59,-313.6 276,-344.28"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge103" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M492.5,-534.28C468.49,-534.35 441.49,-534.85 420.43,-535.33"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="420.22,-531.83 410.31,-535.57 420.39,-538.83 420.22,-531.83"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge100" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M714.74,-564.42C664.34,-552.5 573.44,-534.04 494.5,-534.28"/>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M492.5,-534.28C454.91,-532.61 447.39,-519.53 410,-515.28 328.48,-506.01 296.97,-508.88 230,-556.28 202.93,-575.43 181.39,-607.77 169.16,-629.07"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="166,-627.55 164.21,-637.99 172.12,-630.95 166,-627.55"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge102" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M739.33,-586.52C726.5,-598.42 708.1,-617.68 698,-638.28 662.08,-711.53 716.87,-757.9 662,-818.28 622.66,-861.56 466.88,-880.65 410,-894.28 351.16,-908.37 330.7,-892.42 276,-918.28"/>
+</g>
+<!-- sourcefile~dos_utils.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge104" class="edge">
+<title>sourcefile~dos_utils.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M492.5,-534.28C433.62,-534.46 442.78,-613.64 384,-610.28"/>
+<path fill="none" stroke="#cbff00" stroke-dasharray="5,2" d="M382,-610.28C365.19,-609.32 346.85,-609.04 330.23,-609.09"/>
+<polygon fill="#cbff00" stroke="#cbff00" points="330.1,-605.59 320.13,-609.15 330.15,-612.59 330.1,-605.59"/>
+</g>
+<!-- sourcefile~algorithms.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge105" class="edge">
+<title>sourcefile~algorithms.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M246.41,-598.23C240.31,-594.5 234.38,-589.87 230,-584.28 161.35,-496.59 242.32,-271.53 158,-344.28"/>
+</g>
+<!-- sourcefile~algorithms.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge106" class="edge">
+<title>sourcefile~algorithms.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M239.2,-622.28C224.88,-627.22 208.31,-632.93 193.88,-637.9"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="192.61,-634.64 184.3,-641.21 194.89,-641.26 192.61,-634.64"/>
+</g>
+<!-- sourcefile~algorithms.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge107" class="edge">
+<title>sourcefile~algorithms.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#00ff66" stroke-dasharray="5,2" d="M270.86,-622.55C260.67,-662.15 227.2,-790.08 194,-894.28 185.19,-921.92 173.77,-953.33 166.18,-973.69"/>
+<polygon fill="#00ff66" stroke="#00ff66" points="162.83,-972.65 162.59,-983.24 169.38,-975.11 162.83,-972.65"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~parameters.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge111" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~parameters.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M703.22,-852.33C677.89,-859.16 647.01,-868.68 620.5,-880.28"/>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M618.5,-880.28C597.04,-889.67 572.44,-897.39 550.84,-903.24"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="549.92,-899.86 541.14,-905.8 551.71,-906.63 549.92,-899.86"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~electronic.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge110" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~electronic.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M725.71,-828.25C716.72,-824.1 706.81,-819.24 698,-814.28 681.25,-804.84 678.15,-800.72 662,-790.28 657.65,-787.47 653.02,-784.52 648.49,-781.66"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="650.33,-778.68 640,-776.33 646.61,-784.61 650.33,-778.68"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge108" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M743.52,-852.3C724.23,-875.18 682,-923.47 662,-932.28 612.74,-953.96 594.81,-936.17 541,-937.28 498.79,-938.15 488.02,-941.4 446,-937.28 381.07,-930.91 223.18,-883.22 158,-880.28"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~cell.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge112" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~cell.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M698.25,-828.25C674,-822.23 645.42,-814.11 620.5,-804.28"/>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M618.5,-804.28C599.63,-796.83 591.47,-799.49 577,-785.28 550.62,-759.37 566.76,-736.8 541,-710.28 524.79,-693.6 512.18,-701.39 494.5,-686.28"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge109" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M618.5,-804.28C546.25,-775.78 510.14,-820.09 446,-776.28 407.09,-749.7 429.57,-702.27 384,-690.28"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~comms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge113" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~comms.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M618.5,-880.28C579.33,-897.42 577.46,-914.94 541,-937.28 484.82,-971.7 341.46,-1077.77 276,-1070.28"/>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M274,-1070.28C235.45,-1062.44 198.67,-1033.85 177.23,-1014.32"/>
+<polygon fill="#0066ff" stroke="#0066ff" points="179.47,-1011.63 169.79,-1007.35 174.69,-1016.74 179.47,-1011.63"/>
+</g>
+<!-- sourcefile~projection_utils.f90&#45;&gt;sourcefile~algorithms.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge114" class="edge">
+<title>sourcefile~projection_utils.f90&#45;&gt;sourcefile~algorithms.f90</title>
+<path fill="none" stroke="#0066ff" stroke-dasharray="5,2" d="M618.5,-804.28C599.63,-796.83 593.58,-796.97 577,-785.28 558.25,-772.05 559.43,-761.94 541,-748.28 522.31,-734.43 514.28,-736.52 494.5,-724.28"/>
+</g>
+<!-- sourcefile~xmgrace_utils.f90&#45;&gt;sourcefile~constants.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge116" class="edge">
+<title>sourcefile~xmgrace_utils.f90&#45;&gt;sourcefile~constants.f90</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M747.65,-1464.42C735.2,-1489.11 703.73,-1545.63 662,-1578.28 546.42,-1668.69 486.11,-1634.43 356,-1702.28 318.4,-1721.89 317.23,-1764.19 276,-1754.28"/>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M274,-1754.28C252.74,-1747.63 245.85,-1745.93 230,-1730.28 183.55,-1684.43 202.9,-1649.65 158,-1602.28"/>
+</g>
+<!-- sourcefile~xmgrace_utils.f90&#45;&gt;sourcefile~io.f90 -->
+<g id="sourcefile~~optados.f90~~EfferentGraph_edge115" class="edge">
+<title>sourcefile~xmgrace_utils.f90&#45;&gt;sourcefile~io.f90</title>
+<path fill="none" stroke="#cc00ff" stroke-dasharray="5,2" d="M725.71,-1440.23C716.73,-1436.08 706.81,-1431.23 698,-1426.28 604.83,-1373.97 601.35,-1298.28 494.5,-1298.28 494.5,-1298.28 494.5,-1298.28 382,-1298.28 251.2,-1298.28 276.24,-1168.63 230,-1046.28 223.26,-1028.45 175.69,-753.23 161.8,-672.42"/>
+<polygon fill="#cc00ff" stroke="#cc00ff" points="165.21,-671.62 160.07,-662.36 158.31,-672.81 165.21,-671.62"/>
+</g>
+</g>
+</svg>
+</div><script>var pansourcefileoptadosf90EfferentGraph = svgPanZoom('#sourcefileoptadosf90EfferentGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a file to a file which it depends on. A file
+    is dependent upon another if the latter must be compiled before the former
+    can be. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+<br>
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#progs-1">Programs</a>
+        </h3>
+      </div>
+      <div id="progs-1" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../program/optados.html">optados</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../sourcefile/optados.f90.html#src">optados.f90</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+    <section>
+      <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="c">!-*- mode: F90; mode: font-lock; column-number-mode: true -*-!</span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="c">!</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="c">! This file is part of OptaDOS</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="c">!</span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a><span class="c">! OptaDOS - For obtaining electronic structure properties based on</span>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="c">!             integrations over the Brillouin zone</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a><span class="c">! Copyright (C) 2011  Andrew J. Morris,  R. J. Nicholls, C. J. Pickard</span>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="c">!                         and J. R. Yates</span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="c">!</span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="c">! This program is free software: you can redistribute it and/or modify</span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="c">! it under the terms of the GNU General Public License as published by</span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="c">! the Free Software Foundation, either version 3 of the License, or</span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="c">! (at your option) any later version.</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="c">!</span>
+<a id="ln-15" name="ln-15" href="#ln-15"></a><span class="c">! This program is distributed in the hope that it will be useful,</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a><span class="c">! but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="c">! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="c">! GNU General Public License for more details.</span>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="c">!</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a><span class="c">! You should have received a copy of the GNU General Public License</span>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="c">! along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="c">!</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="k">program </span><span class="n">optados</span><span class="w"></span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a><span class="w">  </span><span class="c">!=========================================================================!</span>
+<a id="ln-25" name="ln-25" href="#ln-25"></a><span class="w">  </span><span class="c">!                             O P T A D O S                               !</span>
+<a id="ln-26" name="ln-26" href="#ln-26"></a><span class="w">  </span><span class="c">!                      OPTics And Density Of States                       !</span>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a><span class="w">  </span><span class="c">! Key Internal Variables:                                                 !</span>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="w">  </span><span class="c">! Described below.                                                        !</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="w">  </span><span class="c">! Necessary conditions:                                                   !</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="w">  </span><span class="c">! Written by Andrew Morris, Rebecca Nicholls, Chris Pickard               !</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="w">  </span><span class="c">!             and Jonathan Yates      2010                                !</span>
+<a id="ln-35" name="ln-35" href="#ln-35"></a><span class="w">  </span><span class="c">!=========================================================================!</span>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="w">  </span><span class="k">use </span><span class="n">od_comms</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">comms_setup</span><span class="p">,</span><span class="w"> </span><span class="n">on_root</span><span class="p">,</span><span class="w"> </span><span class="n">comms_end</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="w"></span>
+<a id="ln-37" name="ln-37" href="#ln-37"></a><span class="w">  </span><span class="k">use </span><span class="n">od_constants</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dp</span><span class="w"></span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a><span class="w">  </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">io_get_seedname</span><span class="p">,</span><span class="w"> </span><span class="n">io_time</span><span class="p">,</span><span class="w"> </span><span class="n">io_date</span><span class="p">,</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">,&amp;</span><span class="c">! Functions</span>
+<a id="ln-39" name="ln-39" href="#ln-39"></a><span class="w">       </span><span class="p">&amp;</span><span class="w"> </span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="n">seedname</span><span class="p">,</span><span class="w"> </span><span class="k">options</span><span class="p">,</span><span class="w"> </span><span class="n">temp_dir</span><span class="w">                </span><span class="c">! Variables</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="w">  </span><span class="k">use </span><span class="n">od_parameters</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">param_read</span><span class="p">,</span><span class="w"> </span><span class="n">param_write_header</span><span class="p">,</span><span class="w"> </span><span class="n">param_Dist</span><span class="p">,</span><span class="w"> </span><span class="n">param_write</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a><span class="w">    </span><span class="n">param_dealloc</span><span class="p">,</span><span class="w"> </span><span class="n">pdos</span><span class="p">,</span><span class="w"> </span><span class="n">pdis</span><span class="p">,</span><span class="w"> </span><span class="n">dos</span><span class="p">,</span><span class="w"> </span><span class="n">jdos</span><span class="p">,</span><span class="w"> </span><span class="n">core</span><span class="p">,</span><span class="w"> </span><span class="n">optics</span><span class="p">,</span><span class="w"> </span><span class="n">photo</span><span class="p">,</span><span class="w"> </span><span class="n">iprint</span><span class="p">,</span><span class="w"> </span><span class="n">param_write_atomic_coord</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="w">    </span><span class="n">devel_flag</span><span class="p">,</span><span class="w"> </span><span class="n">photo_photon_energy</span><span class="p">,</span><span class="w"> </span><span class="n">photo_model</span><span class="w"></span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="w">  </span><span class="k">use </span><span class="n">od_cell</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">cell_calc_lattice</span><span class="p">,</span><span class="w"> </span><span class="n">cell_report_parameters</span><span class="p">,</span><span class="w"> </span><span class="n">cell_dist</span><span class="w"></span>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="w">  </span><span class="k">use </span><span class="n">od_electronic</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">elec_read_band_energy</span><span class="p">,</span><span class="w"> </span><span class="n">elec_read_band_energy_ordered</span><span class="p">,</span><span class="w"> </span><span class="n">elec_report_parameters</span><span class="w"></span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="w">  </span><span class="k">use </span><span class="n">od_dos</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dos_calculate</span><span class="w"></span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="w">  </span><span class="k">use </span><span class="n">od_jdos</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">jdos_calculate</span><span class="w"></span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a><span class="w">  </span><span class="k">use </span><span class="n">od_core</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">core_calculate</span><span class="w"></span>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="w">  </span><span class="k">use </span><span class="n">od_pdos</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">pdos_calculate</span><span class="w"></span>
+<a id="ln-49" name="ln-49" href="#ln-49"></a><span class="w">  </span><span class="k">use </span><span class="n">od_pdis</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">pdis_calculate</span><span class="w"></span>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="w">  </span><span class="k">use </span><span class="n">od_optics</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">optics_calculate</span><span class="w"></span>
+<a id="ln-51" name="ln-51" href="#ln-51"></a><span class="w">  </span><span class="k">use </span><span class="n">od_photo</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">photo_calculate</span><span class="w"></span>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="w">  </span><span class="k">use </span><span class="n">od_build</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_info</span><span class="w"></span>
+<a id="ln-53" name="ln-53" href="#ln-53"></a><span class="w">  </span><span class="k">implicit none</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a>
+<a id="ln-55" name="ln-55" href="#ln-55"></a><span class="k">  </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w">    </span><span class="kd">::</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w">       </span><span class="c">! Variables for timing</span>
+<a id="ln-56" name="ln-56" href="#ln-56"></a><span class="w">  </span><span class="kt">logical</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">odo_found</span><span class="w">         </span><span class="c">! Ouptut file exists?</span>
+<a id="ln-57" name="ln-57" href="#ln-57"></a><span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">stat</span><span class="p">,</span><span class="w"> </span><span class="n">pos</span><span class="w">          </span><span class="c">! Status and position of .odo file</span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a><span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="nb">ctime</span><span class="w">             </span><span class="c">! Temp. time string</span>
+<a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span><span class="kd">::</span><span class="w"> </span><span class="n">cdate</span><span class="w">             </span><span class="c">! Temp. date string</span>
+<a id="ln-60" name="ln-60" href="#ln-60"></a><span class="w">  </span><span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span><span class="kd">::</span><span class="w"> </span><span class="n">filename</span><span class="w">            </span><span class="c">! Added by Felix Mildner, 03/23 for multi file output</span>
+<a id="ln-61" name="ln-61" href="#ln-61"></a>
+<a id="ln-62" name="ln-62" href="#ln-62"></a><span class="w">  </span><span class="c">! call sleep(25)</span>
+<a id="ln-63" name="ln-63" href="#ln-63"></a>
+<a id="ln-64" name="ln-64" href="#ln-64"></a><span class="w">  </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-65" name="ln-65" href="#ln-65"></a>
+<a id="ln-66" name="ln-66" href="#ln-66"></a><span class="w">  </span><span class="k">call </span><span class="n">comms_setup</span><span class="w"></span>
+<a id="ln-67" name="ln-67" href="#ln-67"></a>
+<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="k">    call </span><span class="n">io_get_seedname</span><span class="p">()</span><span class="w"></span>
+<a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">    </span><span class="c">! If blank set to seedname=&#39;--help&#39;</span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;-h&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;--help&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">help_output</span><span class="w"></span>
+<a id="ln-72" name="ln-72" href="#ln-72"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;-v&#39;</span><span class="w"> </span><span class="p">.</span><span class="nb">or</span><span class="p">.</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;--version&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">version_output</span><span class="w"></span>
+<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="w">    </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-74" name="ln-74" href="#ln-74"></a><span class="w">    </span><span class="c">! O R G A N I S E   T H E   E R R O R   F I L E</span>
+<a id="ln-75" name="ln-75" href="#ln-75"></a><span class="w">    </span><span class="n">stderr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<a id="ln-76" name="ln-76" href="#ln-76"></a><span class="w">    </span><span class="c">! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.</span>
+<a id="ln-77" name="ln-77" href="#ln-77"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nb">index</span><span class="p">(</span><span class="k">options</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-temp&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-78" name="ln-78" href="#ln-78"></a><span class="k">      </span><span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">))</span><span class="o">//</span><span class="s1">&#39;/&#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.opt_err&#39;</span><span class="w"></span>
+<a id="ln-79" name="ln-79" href="#ln-79"></a><span class="w">      </span><span class="k">open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span><span class="w"></span>
+<a id="ln-80" name="ln-80" href="#ln-80"></a><span class="w">    </span><span class="k">else</span>
+<a id="ln-81" name="ln-81" href="#ln-81"></a><span class="k">      open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.opt_err&#39;</span><span class="p">)</span><span class="w"></span>
+<a id="ln-82" name="ln-82" href="#ln-82"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-83" name="ln-83" href="#ln-83"></a><span class="k">    call </span><span class="n">io_date</span><span class="p">(</span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="p">)</span><span class="w"></span>
+<a id="ln-84" name="ln-84" href="#ln-84"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;OptaDOS: Execution started on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="w"></span>
+<a id="ln-85" name="ln-85" href="#ln-85"></a><span class="w">    </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-86" name="ln-86" href="#ln-86"></a>
+<a id="ln-87" name="ln-87" href="#ln-87"></a><span class="w">    </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-88" name="ln-88" href="#ln-88"></a><span class="w">    </span><span class="c">! O R G A N I S E   T H E   O U T P U T   F I L E  A N D</span>
+<a id="ln-89" name="ln-89" href="#ln-89"></a><span class="w">    </span><span class="c">! R E A D   A N D   W R I T E   U S E R   P A R A M E T E R S</span>
+<a id="ln-90" name="ln-90" href="#ln-90"></a><span class="w">    </span><span class="k">call </span><span class="n">param_read</span><span class="p">()</span><span class="w"></span>
+<a id="ln-91" name="ln-91" href="#ln-91"></a><span class="w">    </span><span class="c">! This is to allow multiple simultaneous OptaDOS photoemission runs to be performed in the same directory.</span>
+<a id="ln-92" name="ln-92" href="#ln-92"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nb">index</span><span class="p">(</span><span class="k">options</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-temp&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-93" name="ln-93" href="#ln-93"></a><span class="k">      </span><span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="nb">adjustl</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">))</span><span class="o">//</span><span class="s1">&#39;/&#39;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.odo&#39;</span><span class="w"></span>
+<a id="ln-94" name="ln-94" href="#ln-94"></a><span class="w">      </span><span class="k">inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">odo_found</span><span class="p">)</span><span class="w"></span>
+<a id="ln-95" name="ln-95" href="#ln-95"></a><span class="w">    </span><span class="k">else</span>
+<a id="ln-96" name="ln-96" href="#ln-96"></a><span class="k">      inquire</span><span class="w"> </span><span class="p">(</span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.odo&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">exist</span><span class="o">=</span><span class="n">odo_found</span><span class="p">)</span><span class="w"></span>
+<a id="ln-97" name="ln-97" href="#ln-97"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-98" name="ln-98" href="#ln-98"></a><span class="k">    if</span><span class="w"> </span><span class="p">(</span><span class="n">odo_found</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-99" name="ln-99" href="#ln-99"></a><span class="k">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;old&#39;</span><span class="w"></span>
+<a id="ln-100" name="ln-100" href="#ln-100"></a><span class="w">    </span><span class="k">else</span>
+<a id="ln-101" name="ln-101" href="#ln-101"></a><span class="k">      </span><span class="nb">stat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;replace&#39;</span><span class="w"></span>
+<a id="ln-102" name="ln-102" href="#ln-102"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-103" name="ln-103" href="#ln-103"></a><span class="k">    </span><span class="n">pos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;append&#39;</span><span class="w"></span>
+<a id="ln-104" name="ln-104" href="#ln-104"></a>
+<a id="ln-105" name="ln-105" href="#ln-105"></a><span class="w">    </span><span class="n">stdout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_file_unit</span><span class="p">()</span><span class="w"></span>
+<a id="ln-106" name="ln-106" href="#ln-106"></a><span class="w">    </span><span class="c">! This is to allow multiple OptaDOS photoemission runs to be performed in the same directory.</span>
+<a id="ln-107" name="ln-107" href="#ln-107"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nb">index</span><span class="p">(</span><span class="k">options</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-temp&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-108" name="ln-108" href="#ln-108"></a><span class="k">      open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="nb">stat</span><span class="p">),</span><span class="w"> </span><span class="n">position</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span><span class="w"></span>
+<a id="ln-109" name="ln-109" href="#ln-109"></a><span class="w">    </span><span class="k">else</span>
+<a id="ln-110" name="ln-110" href="#ln-110"></a><span class="k">      open</span><span class="w"> </span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="k">file</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">seedname</span><span class="p">)</span><span class="o">//</span><span class="s1">&#39;.odo&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="nb">stat</span><span class="p">),</span><span class="w"> </span><span class="n">position</span><span class="o">=</span><span class="nb">trim</span><span class="p">(</span><span class="n">pos</span><span class="p">))</span><span class="w"></span>
+<a id="ln-111" name="ln-111" href="#ln-111"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-112" name="ln-112" href="#ln-112"></a><span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;OptaDOS: Execution started on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+<a id="ln-113" name="ln-113" href="#ln-113"></a><span class="nb">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a26,i5,a10)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;Parallelised over&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">num_nodes</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; thread(s)&#39;</span><span class="w"></span>
+<a id="ln-114" name="ln-114" href="#ln-114"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">param_write_header</span><span class="p">()</span><span class="w"></span>
+<a id="ln-115" name="ln-115" href="#ln-115"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">param_write</span><span class="p">()</span><span class="w"></span>
+<a id="ln-116" name="ln-116" href="#ln-116"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-117" name="ln-117" href="#ln-117"></a>
+<a id="ln-118" name="ln-118" href="#ln-118"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a40,f11.3,a)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;Time to read parameters &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec)&#39;</span><span class="w"></span>
+<a id="ln-119" name="ln-119" href="#ln-119"></a><span class="w">    </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-120" name="ln-120" href="#ln-120"></a><span class="w">  </span><span class="k">end if</span>
+<a id="ln-121" name="ln-121" href="#ln-121"></a>
+<a id="ln-122" name="ln-122" href="#ln-122"></a><span class="k">  if</span><span class="w"> </span><span class="p">(</span><span class="n">pdis</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-123" name="ln-123" href="#ln-123"></a><span class="k">    call </span><span class="n">elec_read_band_energy_ordered</span><span class="w"></span>
+<a id="ln-124" name="ln-124" href="#ln-124"></a><span class="w">  </span><span class="k">else</span>
+<a id="ln-125" name="ln-125" href="#ln-125"></a><span class="k">    call </span><span class="n">elec_read_band_energy</span><span class="w"></span>
+<a id="ln-126" name="ln-126" href="#ln-126"></a><span class="w">  </span><span class="k">end if</span>
+<a id="ln-127" name="ln-127" href="#ln-127"></a>
+<a id="ln-128" name="ln-128" href="#ln-128"></a><span class="k">  if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-129" name="ln-129" href="#ln-129"></a><span class="k">    call </span><span class="n">cell_calc_lattice</span><span class="w"></span>
+<a id="ln-130" name="ln-130" href="#ln-130"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">param_write_atomic_coord</span><span class="w"></span>
+<a id="ln-131" name="ln-131" href="#ln-131"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">cell_report_parameters</span><span class="w"></span>
+<a id="ln-132" name="ln-132" href="#ln-132"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">elec_report_parameters</span><span class="w"></span>
+<a id="ln-133" name="ln-133" href="#ln-133"></a><span class="w">  </span><span class="k">end if</span><span class="w"></span>
+<a id="ln-134" name="ln-134" href="#ln-134"></a><span class="w">  </span><span class="c">! now send the data from the parameter file to each node</span>
+<a id="ln-135" name="ln-135" href="#ln-135"></a>
+<a id="ln-136" name="ln-136" href="#ln-136"></a><span class="w">  </span><span class="k">call </span><span class="n">param_dist</span><span class="w"></span>
+<a id="ln-137" name="ln-137" href="#ln-137"></a><span class="w">  </span><span class="k">call </span><span class="n">cell_dist</span><span class="w"></span>
+<a id="ln-138" name="ln-138" href="#ln-138"></a>
+<a id="ln-139" name="ln-139" href="#ln-139"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-140" name="ln-140" href="#ln-140"></a><span class="w">  </span><span class="c">! C A L L   P D O S   R O U T I N E S</span>
+<a id="ln-141" name="ln-141" href="#ln-141"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pdos</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-142" name="ln-142" href="#ln-142"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-143" name="ln-143" href="#ln-143"></a><span class="w">    </span><span class="k">call </span><span class="n">pdos_calculate</span><span class="w"></span>
+<a id="ln-144" name="ln-144" href="#ln-144"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-145" name="ln-145" href="#ln-145"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-146" name="ln-146" href="#ln-146"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-147" name="ln-147" href="#ln-147"></a><span class="w">           </span><span class="s1">&#39;+ Time to calculate Projected Density of States          &amp;</span>
+<a id="ln-148" name="ln-148" href="#ln-148"></a><span class="s1">           &amp;      &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-149" name="ln-149" href="#ln-149"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-150" name="ln-150" href="#ln-150"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-152" name="ln-152" href="#ln-152"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-153" name="ln-153" href="#ln-153"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-154" name="ln-154" href="#ln-154"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-155" name="ln-155" href="#ln-155"></a>
+<a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="w">  </span><span class="c">! C A L L   P D I S   R O U T I N E S</span>
+<a id="ln-158" name="ln-158" href="#ln-158"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pdis</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-160" name="ln-160" href="#ln-160"></a><span class="w">    </span><span class="k">call </span><span class="n">pdis_calculate</span><span class="w"></span>
+<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-163" name="ln-163" href="#ln-163"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">           </span><span class="s1">&#39;+ Time to calculate Projected Dispersion &amp;</span>
+<a id="ln-165" name="ln-165" href="#ln-165"></a><span class="s1">           &amp;      &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-166" name="ln-166" href="#ln-166"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-167" name="ln-167" href="#ln-167"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-168" name="ln-168" href="#ln-168"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-169" name="ln-169" href="#ln-169"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-170" name="ln-170" href="#ln-170"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-172" name="ln-172" href="#ln-172"></a>
+<a id="ln-173" name="ln-173" href="#ln-173"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">  </span><span class="c">! C A L L   C O R E   R O U T I N E S</span>
+<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">core</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-176" name="ln-176" href="#ln-176"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">    </span><span class="k">call </span><span class="n">core_calculate</span><span class="w"></span>
+<a id="ln-178" name="ln-178" href="#ln-178"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-180" name="ln-180" href="#ln-180"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;|                                                                            |&#39;</span><span class="w"></span>
+<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">                       </span><span class="s1">&#39;+ Time to calculate Core Level Spectra       &amp;</span>
+<a id="ln-183" name="ln-183" href="#ln-183"></a><span class="s1">                       &amp;                  &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-188" name="ln-188" href="#ln-188"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-190" name="ln-190" href="#ln-190"></a>
+<a id="ln-191" name="ln-191" href="#ln-191"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">  </span><span class="c">! C A L L   D O S  R O U T I N E S</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dos</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">    </span><span class="k">call </span><span class="n">dos_calculate</span><span class="w"></span>
+<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">                       </span><span class="s1">&#39;+ Time to calculate Density of States        &amp;</span>
+<a id="ln-200" name="ln-200" href="#ln-200"></a><span class="s1">                       &amp;                  &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-207" name="ln-207" href="#ln-207"></a>
+<a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">  </span><span class="c">! C A L L   O P T I C S   R O U T I N E S</span>
+<a id="ln-210" name="ln-210" href="#ln-210"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">optics</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-212" name="ln-212" href="#ln-212"></a><span class="w">    </span><span class="k">call </span><span class="n">optics_calculate</span><span class="w"></span>
+<a id="ln-213" name="ln-213" href="#ln-213"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-214" name="ln-214" href="#ln-214"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-215" name="ln-215" href="#ln-215"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;|                                                                            |&#39;</span><span class="w"></span>
+<a id="ln-216" name="ln-216" href="#ln-216"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-217" name="ln-217" href="#ln-217"></a><span class="w">        </span><span class="s1">&#39;+ Time to calculate Optical properties                         &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-218" name="ln-218" href="#ln-218"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-219" name="ln-219" href="#ln-219"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-220" name="ln-220" href="#ln-220"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-221" name="ln-221" href="#ln-221"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-222" name="ln-222" href="#ln-222"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-223" name="ln-223" href="#ln-223"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-224" name="ln-224" href="#ln-224"></a>
+<a id="ln-225" name="ln-225" href="#ln-225"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-226" name="ln-226" href="#ln-226"></a><span class="w">  </span><span class="c">! C A L L   P H O T O E M I S S I O N   R O U T I N E S</span>
+<a id="ln-227" name="ln-227" href="#ln-227"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">photo</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-228" name="ln-228" href="#ln-228"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-229" name="ln-229" href="#ln-229"></a><span class="w">    </span><span class="k">call </span><span class="n">photo_calculate</span><span class="w"></span>
+<a id="ln-230" name="ln-230" href="#ln-230"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-231" name="ln-231" href="#ln-231"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-232" name="ln-232" href="#ln-232"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;|                                                                            |&#39;</span><span class="w"></span>
+<a id="ln-233" name="ln-233" href="#ln-233"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-234" name="ln-234" href="#ln-234"></a><span class="w">        </span><span class="s1">&#39;+ Time to calculate Photoemission                              &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-235" name="ln-235" href="#ln-235"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-236" name="ln-236" href="#ln-236"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-237" name="ln-237" href="#ln-237"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-238" name="ln-238" href="#ln-238"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-239" name="ln-239" href="#ln-239"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-240" name="ln-240" href="#ln-240"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-241" name="ln-241" href="#ln-241"></a>
+<a id="ln-242" name="ln-242" href="#ln-242"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-243" name="ln-243" href="#ln-243"></a><span class="w">  </span><span class="c">! C A L L   J D O S   R O U T I N E S</span>
+<a id="ln-244" name="ln-244" href="#ln-244"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">jdos</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-245" name="ln-245" href="#ln-245"></a><span class="k">    </span><span class="n">time0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-246" name="ln-246" href="#ln-246"></a><span class="w">    </span><span class="k">call </span><span class="n">jdos_calculate</span><span class="w"></span>
+<a id="ln-247" name="ln-247" href="#ln-247"></a><span class="w">    </span><span class="n">time1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<a id="ln-248" name="ln-248" href="#ln-248"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-249" name="ln-249" href="#ln-249"></a><span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;|                                                                            |&#39;</span><span class="w"></span>
+<a id="ln-250" name="ln-250" href="#ln-250"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a59,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<a id="ln-251" name="ln-251" href="#ln-251"></a><span class="w">        </span><span class="s1">&#39;+ Time to calculate Joint Density of States                    &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time0</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<a id="ln-252" name="ln-252" href="#ln-252"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<a id="ln-253" name="ln-253" href="#ln-253"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-254" name="ln-254" href="#ln-254"></a><span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"></span>
+<a id="ln-255" name="ln-255" href="#ln-255"></a><span class="w">    </span><span class="k">end if</span>
+<a id="ln-256" name="ln-256" href="#ln-256"></a>
+<a id="ln-257" name="ln-257" href="#ln-257"></a><span class="k">  end if</span><span class="w"></span>
+<a id="ln-258" name="ln-258" href="#ln-258"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-259" name="ln-259" href="#ln-259"></a>
+<a id="ln-260" name="ln-260" href="#ln-260"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-261" name="ln-261" href="#ln-261"></a><span class="w">  </span><span class="c">! F I N A L I S E</span>
+<a id="ln-262" name="ln-262" href="#ln-262"></a><span class="w">  </span><span class="k">call </span><span class="n">param_dealloc</span><span class="w"></span>
+<a id="ln-263" name="ln-263" href="#ln-263"></a>
+<a id="ln-264" name="ln-264" href="#ln-264"></a><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<a id="ln-265" name="ln-265" href="#ln-265"></a><span class="k">    call </span><span class="n">io_date</span><span class="p">(</span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span><span class="p">)</span><span class="w"></span>
+<a id="ln-266" name="ln-266" href="#ln-266"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-267" name="ln-267" href="#ln-267"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;OptaDOS: Execution complete on &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cdate</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; at &#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ctime</span>
+<a id="ln-268" name="ln-268" href="#ln-268"></a>
+<a id="ln-269" name="ln-269" href="#ln-269"></a><span class="nb">    </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">)</span><span class="w"></span>
+<a id="ln-270" name="ln-270" href="#ln-270"></a><span class="w">    </span><span class="k">close</span><span class="w"> </span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;delete&#39;</span><span class="p">)</span><span class="w"></span>
+<a id="ln-271" name="ln-271" href="#ln-271"></a><span class="w">  </span><span class="k">end if</span>
+<a id="ln-272" name="ln-272" href="#ln-272"></a>
+<a id="ln-273" name="ln-273" href="#ln-273"></a><span class="k">  call </span><span class="n">comms_end</span><span class="w"></span>
+<a id="ln-274" name="ln-274" href="#ln-274"></a>
+<a id="ln-275" name="ln-275" href="#ln-275"></a><span class="w">  </span><span class="c">!-------------------------------------------------------------------------!</span>
+<a id="ln-276" name="ln-276" href="#ln-276"></a><span class="k">contains</span>
+<a id="ln-277" name="ln-277" href="#ln-277"></a><span class="k">  subroutine </span><span class="n">help_output</span><span class="w"></span>
+<a id="ln-278" name="ln-278" href="#ln-278"></a><span class="w">    </span><span class="k">use </span><span class="n">od_constants</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">optados_version</span><span class="p">,</span><span class="w"> </span><span class="n">copyright</span><span class="w"></span>
+<a id="ln-279" name="ln-279" href="#ln-279"></a><span class="w">    </span><span class="k">implicit none</span>
+<a id="ln-280" name="ln-280" href="#ln-280"></a><span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-281" name="ln-281" href="#ln-281"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; OptaDOS version &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">build</span><span class="p">)</span><span class="w"></span>
+<a id="ln-282" name="ln-282" href="#ln-282"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-283" name="ln-283" href="#ln-283"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">copyright</span><span class="p">)</span><span class="w"></span>
+<a id="ln-284" name="ln-284" href="#ln-284"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Usage: optados &lt;seedname&gt;&quot;</span><span class="w"></span>
+<a id="ln-285" name="ln-285" href="#ln-285"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-286" name="ln-286" href="#ln-286"></a><span class="w">    </span><span class="k">stop</span>
+<a id="ln-287" name="ln-287" href="#ln-287"></a><span class="k">  end subroutine </span><span class="n">help_output</span><span class="w"></span>
+<a id="ln-288" name="ln-288" href="#ln-288"></a>
+<a id="ln-289" name="ln-289" href="#ln-289"></a><span class="w">  </span><span class="k">subroutine </span><span class="n">version_output</span><span class="w"></span>
+<a id="ln-290" name="ln-290" href="#ln-290"></a><span class="w">    </span><span class="k">use </span><span class="n">od_build</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">build_info</span><span class="w"></span>
+<a id="ln-291" name="ln-291" href="#ln-291"></a><span class="w">    </span><span class="k">use </span><span class="n">od_constants</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">optados_version</span><span class="p">,</span><span class="w"> </span><span class="n">copyright</span><span class="w"></span>
+<a id="ln-292" name="ln-292" href="#ln-292"></a><span class="w">    </span><span class="k">implicit none</span>
+<a id="ln-293" name="ln-293" href="#ln-293"></a><span class="k">    write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-294" name="ln-294" href="#ln-294"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; OptaDOS version &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">build</span><span class="p">)</span><span class="w"></span>
+<a id="ln-295" name="ln-295" href="#ln-295"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"></span>
+<a id="ln-296" name="ln-296" href="#ln-296"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Andrew J. Morris, R. J. Nicholls, C. J. Pickard and J. R. Yates&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">trim</span><span class="p">(</span><span class="n">copyright</span><span class="p">)</span><span class="w"></span>
+<a id="ln-297" name="ln-297" href="#ln-297"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Compiled with &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">compiler</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; on &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">compile_date</span><span class="p">)&amp;</span><span class="w"></span>
+<a id="ln-298" name="ln-298" href="#ln-298"></a><span class="w">         </span><span class="p">&amp;</span><span class="w"> </span><span class="o">//</span><span class="s2">&quot; at &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">compile_time</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.&quot;</span><span class="w"></span>
+<a id="ln-299" name="ln-299" href="#ln-299"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; Compile type: &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">build_type</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;, &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">comms_arch</span><span class="p">)</span><span class="w"></span>
+<a id="ln-300" name="ln-300" href="#ln-300"></a><span class="w">    </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="s2">&quot; From source &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">build</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot; submitted on &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">source_date</span><span class="p">)&amp;</span><span class="w"></span>
+<a id="ln-301" name="ln-301" href="#ln-301"></a><span class="w">         </span><span class="p">&amp;</span><span class="o">//</span><span class="s2">&quot; at &quot;</span><span class="o">//</span><span class="nb">trim</span><span class="p">(</span><span class="n">build_info</span><span class="p">%</span><span class="n">source_time</span><span class="p">)</span><span class="o">//</span><span class="s2">&quot;.&quot;</span><span class="w"></span>
+<a id="ln-302" name="ln-302" href="#ln-302"></a>
+<a id="ln-303" name="ln-303" href="#ln-303"></a><span class="w">    </span><span class="k">stop</span>
+<a id="ln-304" name="ln-304" href="#ln-304"></a><span class="k">  end subroutine </span><span class="n">version_output</span><span class="w"></span>
+<a id="ln-305" name="ln-305" href="#ln-305"></a>
+<a id="ln-306" name="ln-306" href="#ln-306"></a><span class="k">end program </span><span class="n">optados</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2025 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

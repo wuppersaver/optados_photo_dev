@@ -1,0 +1,2868 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>od_parameters &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>od_parameters 
+    <small>Module</small>
+    
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title="11.7% of total for modules and submodules.">1253 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/parameters.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/parameters.f90.html'>parameters.f90</a></li>
+          <li class="active">od_parameters</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#vars-0">Variables</a>
+        </h3>
+      </div>
+      <div id="vars-0" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_gaussian">LAI_gaussian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_gaussian_width">LAI_gaussian_width</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian">LAI_lorentzian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_offset">LAI_lorentzian_offset</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_scale">LAI_lorentzian_scale</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_width">LAI_lorentzian_width</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-adaptive">adaptive</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-adaptive_smearing">adaptive_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compare_dos">compare_dos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compare_jdos">compare_jdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compute_band_energy">compute_band_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compute_band_gap">compute_band_gap</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core">core</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_lai_broadening">core_LAI_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_chemical_shift">core_chemical_shift</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_geom">core_geom</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_qdir">core_qdir</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_type">core_type</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-devel_flag">devel_flag</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos~6">dos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_max_energy">dos_max_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_min_energy">dos_min_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_nbins">dos_nbins</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_per_volume">dos_per_volume</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_spacing">dos_spacing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-efermi_choice">efermi_choice</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-efermi_user">efermi_user</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-energy_unit">energy_unit</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-exclude_bands">exclude_bands</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-finite_bin_correction">finite_bin_correction</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-fixed">fixed</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-fixed_smearing">fixed_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-hybrid_linear">hybrid_linear</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-hybrid_linear_grad_tol">hybrid_linear_grad_tol</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-iprint">iprint</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos~4">jdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos_max_energy">jdos_max_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos_spacing">jdos_spacing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-kpoint_mp_grid">kpoint_mp_grid</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-legacy_file_format">legacy_file_format</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lenconfac">lenconfac</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-length_unit">length_unit</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-linear">linear</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-linear_smearing">linear_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-num_exclude_bands">num_exclude_bands</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-numerical_intdos">numerical_intdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics">optics</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_drude_broadening">optics_drude_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_geom">optics_geom</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_intraband">optics_intraband</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_lossfn_broadening">optics_lossfn_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_lossfn_gaussian">optics_lossfn_gaussian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_qdir">optics_qdir</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-output_format">output_format</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-pdis">pdis</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-pdos">pdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo">photo</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_bulk_length">photo_bulk_length</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_elec_field">photo_elec_field</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_imfp_const">photo_imfp_const</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_layer_choice">photo_layer_choice</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_len_imfp_const">photo_len_imfp_const</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_max_layer">photo_max_layer</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_model">photo_model</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_momentum">photo_momentum</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_phi_lower">photo_phi_lower</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_phi_upper">photo_phi_upper</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_energy">photo_photon_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_max">photo_photon_max</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_min">photo_photon_min</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_sweep">photo_photon_sweep</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_slab_volume">photo_slab_volume</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_surface_area">photo_surface_area</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_temperature">photo_temperature</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_theta_lower">photo_theta_lower</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_theta_upper">photo_theta_upper</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_work_function">photo_work_function</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-projectors_string">projectors_string</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-quad">quad</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-scissor_op">scissor_op</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-set_efermi_zero">set_efermi_zero</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-write_photo_output">write_photo_output</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#subs-0">Subroutines</a>
+        </h3>
+      </div>
+      <div id="subs-0" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_dealloc">param_dealloc</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_dist">param_dist</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_read">param_read</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write">param_write</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write_atomic_coord">param_write_atomic_coord</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write_header">param_write_header</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    
+<br>        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_cell.html'>od_cell</a></li>
+                <li><a href='../module/od_io.html'>od_io</a></li>
+                <li><a href='../module/od_constants.html'>od_constants</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~od_parameters~~UsesGraph Pages: 1 -->
+<svg id="moduleod_parametersUsesGraph" width="400pt" height="71pt"
+ viewBox="0.00 0.00 400.00 71.35" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~od_parameters~~UsesGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 67.35)">
+<title>module~~od_parameters~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-67.35 396,-67.35 396,4 -4,4"/>
+<!-- module~od_parameters -->
+<g id="module~~od_parameters~~UsesGraph_node1" class="node">
+<title>module~od_parameters</title>
+<polygon fill="none" stroke="black" points="392,-52.38 298,-52.38 298,-28.38 392,-28.38 392,-52.38"/>
+<text text-anchor="middle" x="345" y="-37.98" font-family="Helvetica,sans-Serif" font-size="10.50">od_parameters</text>
+</g>
+<!-- module~od_cell -->
+<g id="module~~od_parameters~~UsesGraph_node2" class="node">
+<title>module~od_cell</title>
+<g id="a_module~~od_parameters~~UsesGraph_node2"><a xlink:href=".././module/od_cell.html" xlink:title="od_cell">
+<polygon fill="#337ab7" stroke="#337ab7" points="262,-52.38 208,-52.38 208,-28.38 262,-28.38 262,-52.38"/>
+<text text-anchor="middle" x="235" y="-37.98" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_cell</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_cell -->
+<g id="module~~od_parameters~~UsesGraph_edge1" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M297.89,-40.38C289.26,-40.38 280.36,-40.38 272.09,-40.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="272.02,-36.88 262.02,-40.38 272.02,-43.88 272.02,-36.88"/>
+</g>
+<!-- module~od_io -->
+<g id="module~~od_parameters~~UsesGraph_node3" class="node">
+<title>module~od_io</title>
+<g id="a_module~~od_parameters~~UsesGraph_node3"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="172,-52.38 118,-52.38 118,-28.38 172,-28.38 172,-52.38"/>
+<text text-anchor="middle" x="145" y="-37.98" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_io -->
+<g id="module~~od_parameters~~UsesGraph_edge2" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M307.03,-52.44C279.66,-59.83 241.47,-66.89 208,-61.38 199.3,-59.94 190.17,-57.45 181.68,-54.67"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.66,-51.3 172.06,-51.32 180.36,-57.91 182.66,-51.3"/>
+</g>
+<!-- module~od_constants -->
+<g id="module~~od_parameters~~UsesGraph_node4" class="node">
+<title>module~od_constants</title>
+<g id="a_module~~od_parameters~~UsesGraph_node4"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-32.38 0,-32.38 0,-8.38 82,-8.38 82,-32.38"/>
+<text text-anchor="middle" x="41" y="-17.98" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_constants -->
+<g id="module~~od_parameters~~UsesGraph_edge3" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M305.76,-28.27C266.21,-16.8 202.46,-1.19 146,-0.38"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M144,-0.38C126.53,0.38 107.68,-2.31 90.98,-5.93"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="89.84,-2.6 80.9,-8.29 91.44,-9.42 89.84,-2.6"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_io -->
+<g id="module~~od_parameters~~UsesGraph_edge4" class="edge">
+<title>module~od_cell&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M207.6,-40.38C199.61,-40.38 190.69,-40.38 182.18,-40.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="182.08,-36.88 172.08,-40.38 182.08,-43.88 182.08,-36.88"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_constants -->
+<g id="module~~od_parameters~~UsesGraph_edge5" class="edge">
+<title>module~od_cell&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M218.11,-28.32C201.2,-16.68 173.18,-0.77 146,-0.38"/>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="module~~od_parameters~~UsesGraph_edge6" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M118,-35.28C110.11,-33.73 101.16,-31.98 92.23,-30.23"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="92.72,-26.76 82.24,-28.27 91.37,-33.62 92.72,-26.76"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Used by</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: module~~od_parameters~~UsedByGraph Pages: 1 -->
+<svg id="moduleod_parametersUsedByGraph" width="594pt" height="1578pt"
+ viewBox="0.00 0.00 594.00 1578.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="module~~od_parameters~~UsedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 1574)">
+<title>module~~od_parameters~~UsedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-1574 590,-1574 590,4 -4,4"/>
+<!-- module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_node1" class="node">
+<title>module~od_parameters</title>
+<polygon fill="none" stroke="black" points="94,-801 0,-801 0,-777 94,-777 94,-801"/>
+<text text-anchor="middle" x="47" y="-786.6" font-family="Helvetica,sans-Serif" font-size="10.50">od_parameters</text>
+</g>
+<!-- proc~elec_read_optical_mat -->
+<g id="module~~od_parameters~~UsedByGraph_node2" class="node">
+<title>proc~elec_read_optical_mat</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node2"><a xlink:href=".././proc/elec_read_optical_mat.html" xlink:title="elec_read_optical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="293.5,-1570 161.5,-1570 161.5,-1546 293.5,-1546 293.5,-1570"/>
+<text text-anchor="middle" x="227.5" y="-1555.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_optical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge29" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M161.41,-1555.27C149.51,-1551.85 138.26,-1546.18 130,-1537 80.1,-1481.56 53.97,-929.72 48.91,-811.3"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.41,-811.07 48.49,-801.23 45.41,-811.36 52.41,-811.07"/>
+</g>
+<!-- proc~dos_utils_compute_dos_at_efermi -->
+<g id="module~~od_parameters~~UsedByGraph_node3" class="node">
+<title>proc~dos_utils_compute_dos_at_efermi</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node3"><a xlink:href=".././proc/dos_utils_compute_dos_at_efermi.html" xlink:title="dos_utils_compute_dos_at_efermi">
+<polygon fill="#d9534f" stroke="#d9534f" points="323,-1528 132,-1528 132,-1504 323,-1504 323,-1528"/>
+<text text-anchor="middle" x="227.5" y="-1513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_compute_dos_at_efermi</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_compute_dos_at_efermi&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge17" class="edge">
+<title>proc~dos_utils_compute_dos_at_efermi&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M140.45,-1503.89C136.63,-1501.37 133.11,-1498.43 130,-1495 82.85,-1442.95 54.71,-925.1 49.06,-811.11"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.55,-810.92 48.57,-801.1 45.56,-811.26 52.55,-810.92"/>
+</g>
+<!-- proc~elec_read_band_energy_ordered -->
+<g id="module~~od_parameters~~UsedByGraph_node4" class="node">
+<title>proc~elec_read_band_energy_ordered</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node4"><a xlink:href=".././proc/elec_read_band_energy_ordered.html" xlink:title="elec_read_band_energy_ordered">
+<polygon fill="#d9534f" stroke="#d9534f" points="321,-1486 134,-1486 134,-1462 321,-1462 321,-1486"/>
+<text text-anchor="middle" x="227.5" y="-1471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_energy_ordered</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy_ordered&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge18" class="edge">
+<title>proc~elec_read_band_energy_ordered&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M140.48,-1461.86C136.66,-1459.35 133.12,-1456.42 130,-1453 85.67,-1404.42 55.6,-922.08 49.25,-811.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.73,-810.99 48.67,-801.2 45.74,-811.38 52.73,-810.99"/>
+</g>
+<!-- proc~setup_energy_scale -->
+<g id="module~~od_parameters~~UsedByGraph_node5" class="node">
+<title>proc~setup_energy_scale</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node5"><a xlink:href=".././proc/setup_energy_scale.html" xlink:title="setup_energy_scale">
+<polygon fill="#d9534f" stroke="#d9534f" points="286.5,-1444 168.5,-1444 168.5,-1420 286.5,-1420 286.5,-1444"/>
+<text text-anchor="middle" x="227.5" y="-1429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">setup_energy_scale</text>
+</a>
+</g>
+</g>
+<!-- proc~setup_energy_scale&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge12" class="edge">
+<title>proc~setup_energy_scale&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M168.31,-1430.82C153.99,-1427.71 139.93,-1421.79 130,-1411 47.36,-1321.18 46.57,-911.93 47.65,-811.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.16,-811.19 47.78,-801.15 44.16,-811.11 51.16,-811.19"/>
+</g>
+<!-- module~od_conv -->
+<g id="module~~od_parameters~~UsedByGraph_node6" class="node">
+<title>module~od_conv</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node6"><a xlink:href=".././module/od_conv.html" xlink:title="od_conv">
+<polygon fill="#337ab7" stroke="#337ab7" points="256,-1402 199,-1402 199,-1378 256,-1378 256,-1402"/>
+<text text-anchor="middle" x="227.5" y="-1387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_conv</text>
+</a>
+</g>
+</g>
+<!-- module~od_conv&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge1" class="edge">
+<title>module~od_conv&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M198.69,-1391.87C176.82,-1391.71 147.27,-1387.59 130,-1369 52.78,-1285.86 47.88,-906.92 47.89,-811.07"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.39,-811.07 47.91,-801.06 44.39,-811.05 51.39,-811.07"/>
+</g>
+<!-- proc~dos_utils_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node7" class="node">
+<title>proc~dos_utils_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node7"><a xlink:href=".././proc/dos_utils_calculate.html" xlink:title="dos_utils_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="283.5,-1360 171.5,-1360 171.5,-1336 283.5,-1336 283.5,-1360"/>
+<text text-anchor="middle" x="227.5" y="-1345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge5" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M171.47,-1347.3C156.13,-1344.38 140.74,-1338.44 130,-1327 58.3,-1250.63 49.29,-902.89 48.16,-811.21"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.66,-811.08 48.06,-801.11 44.66,-811.15 51.66,-811.08"/>
+</g>
+<!-- proc~optics_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node8" class="node">
+<title>proc~optics_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node8"><a xlink:href=".././proc/optics_calculate.html" xlink:title="optics_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="276.5,-1318 178.5,-1318 178.5,-1294 276.5,-1294 276.5,-1318"/>
+<text text-anchor="middle" x="227.5" y="-1303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optics_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~optics_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge3" class="edge">
+<title>proc~optics_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M178.16,-1303.62C160.67,-1300.3 142.24,-1293.5 130,-1280 66.18,-1209.62 51.5,-897.97 48.63,-811.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.12,-811.22 48.31,-801.33 45.13,-811.44 52.12,-811.22"/>
+</g>
+<!-- proc~photo_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node9" class="node">
+<title>proc~photo_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node9"><a xlink:href=".././proc/photo_calculate.html" xlink:title="photo_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="586,-1300 489,-1300 489,-1276 586,-1276 586,-1300"/>
+<text text-anchor="middle" x="537.5" y="-1285.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">photo_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge2" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499.08,-1300.06C484.82,-1304.07 468.31,-1308.02 453,-1310 412.45,-1315.25 400.02,-1322.22 361,-1310 342.41,-1304.18 342.94,-1292.6 325,-1285 284.75,-1267.95 261.3,-1294.89 228.5,-1266"/>
+</g>
+<!-- module~od_pdos -->
+<g id="module~~od_parameters~~UsedByGraph_node43" class="node">
+<title>module~od_pdos</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node43"><a xlink:href=".././module/od_pdos.html" xlink:title="od_pdos">
+<polygon fill="#337ab7" stroke="#337ab7" points="435.5,-1259 378.5,-1259 378.5,-1235 435.5,-1235 435.5,-1259"/>
+<text text-anchor="middle" x="407" y="-1244.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_pdos</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_pdos -->
+<g id="module~~od_parameters~~UsedByGraph_edge46" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_pdos</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M498.64,-1275.92C481.97,-1270.6 462.42,-1264.36 445.75,-1259.05"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="446.39,-1255.58 435.8,-1255.87 444.27,-1262.25 446.39,-1255.58"/>
+</g>
+<!-- proc~jdos_utils_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node10" class="node">
+<title>proc~jdos_utils_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node10"><a xlink:href=".././proc/jdos_utils_calculate.html" xlink:title="jdos_utils_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="285,-1158 170,-1158 170,-1134 285,-1134 285,-1158"/>
+<text text-anchor="middle" x="227.5" y="-1143.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">jdos_utils_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~jdos_utils_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge4" class="edge">
+<title>proc~jdos_utils_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M169.82,-1144.24C155.24,-1141.18 140.68,-1135.41 130,-1125 84.39,-1080.52 58.05,-878.94 50.38,-811.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="53.85,-810.79 49.27,-801.24 46.89,-811.56 53.85,-810.79"/>
+</g>
+<!-- proc~elec_pdos_read -->
+<g id="module~~od_parameters~~UsedByGraph_node11" class="node">
+<title>proc~elec_pdos_read</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node11"><a xlink:href=".././proc/elec_pdos_read.html" xlink:title="elec_pdos_read">
+<polygon fill="#d9534f" stroke="#d9534f" points="275,-1116 180,-1116 180,-1092 275,-1092 275,-1116"/>
+<text text-anchor="middle" x="227.5" y="-1101.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_pdos_read</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge6" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M179.55,-1103.67C162.03,-1101.22 143.22,-1095.47 130,-1083 89.73,-1044.99 60.56,-873.1 51.21,-811.25"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="54.62,-810.42 49.69,-801.04 47.7,-811.45 54.62,-810.42"/>
+</g>
+<!-- proc~elec_read_band_gradient -->
+<g id="module~~od_parameters~~UsedByGraph_node12" class="node">
+<title>proc~elec_read_band_gradient</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node12"><a xlink:href=".././proc/elec_read_band_gradient.html" xlink:title="elec_read_band_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="301,-1074 154,-1074 154,-1050 301,-1050 301,-1074"/>
+<text text-anchor="middle" x="227.5" y="-1059.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge7" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M153.9,-1055.01C145.13,-1051.74 136.87,-1047.21 130,-1041 61.94,-979.44 50.16,-860.83 48.27,-811.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="51.77,-811.11 47.99,-801.22 44.77,-811.31 51.77,-811.11"/>
+</g>
+<!-- proc~calc_epsilon_1 -->
+<g id="module~~od_parameters~~UsedByGraph_node13" class="node">
+<title>proc~calc_epsilon_1</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node13"><a xlink:href=".././proc/calc_epsilon_1.html" xlink:title="calc_epsilon_1">
+<polygon fill="#d9534f" stroke="#d9534f" points="272.5,-1032 182.5,-1032 182.5,-1008 272.5,-1008 272.5,-1032"/>
+<text text-anchor="middle" x="227.5" y="-1017.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_epsilon_1</text>
+</a>
+</g>
+</g>
+<!-- proc~calc_epsilon_1&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge9" class="edge">
+<title>proc~calc_epsilon_1&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M182.14,-1019.25C164.18,-1016.84 144.35,-1011.24 130,-999 72.21,-949.69 54.91,-854.43 49.93,-811.24"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="53.4,-810.8 48.89,-801.22 46.44,-811.52 53.4,-810.8"/>
+</g>
+<!-- proc~pdis_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node14" class="node">
+<title>proc~pdis_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node14"><a xlink:href=".././proc/pdis_calculate.html" xlink:title="pdis_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="451,-1301 363,-1301 363,-1277 451,-1277 451,-1301"/>
+<text text-anchor="middle" x="407" y="-1286.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pdis_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~pdis_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge16" class="edge">
+<title>proc~pdis_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M362.72,-1285.91C313.43,-1282.01 238.41,-1274.73 228.5,-1266"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M226.5,-1266C193.7,-1237.11 160.64,-1278.17 130,-1247 68.01,-1183.94 52.08,-893.76 48.76,-811.05"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.26,-810.87 48.38,-801.01 45.26,-811.13 52.26,-810.87"/>
+</g>
+<!-- module~od_projection_utils -->
+<g id="module~~od_parameters~~UsedByGraph_node29" class="node">
+<title>module~od_projection_utils</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node29"><a xlink:href=".././module/od_projection_utils.html" xlink:title="od_projection_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="283.5,-1238 171.5,-1238 171.5,-1214 283.5,-1214 283.5,-1238"/>
+<text text-anchor="middle" x="227.5" y="-1223.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_projection_utils</text>
+</a>
+</g>
+</g>
+<!-- proc~pdis_calculate&#45;&gt;module~od_projection_utils -->
+<g id="module~~od_parameters~~UsedByGraph_edge44" class="edge">
+<title>proc~pdis_calculate&#45;&gt;module~od_projection_utils</title>
+<path fill="none" stroke="#0c00ff" stroke-dasharray="5,2" d="M379.92,-1276.82C358.41,-1266.83 330.56,-1254 325,-1252 313.65,-1247.91 301.35,-1244.12 289.45,-1240.78"/>
+<polygon fill="#0c00ff" stroke="#0c00ff" points="290.14,-1237.34 279.57,-1238.07 288.29,-1244.09 290.14,-1237.34"/>
+</g>
+<!-- proc~make_weights -->
+<g id="module~~od_parameters~~UsedByGraph_node15" class="node">
+<title>proc~make_weights</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node15"><a xlink:href=".././proc/make_weights.html" xlink:title="make_weights">
+<polygon fill="#d9534f" stroke="#d9534f" points="271.5,-990 183.5,-990 183.5,-966 271.5,-966 271.5,-990"/>
+<text text-anchor="middle" x="227.5" y="-975.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">make_weights</text>
+</a>
+</g>
+</g>
+<!-- proc~make_weights&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge33" class="edge">
+<title>proc~make_weights&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M183.1,-976.73C165.1,-974.26 144.97,-968.75 130,-957 82.57,-919.77 60.8,-848.1 52.42,-811.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="55.76,-810.49 50.24,-801.45 48.92,-811.97 55.76,-810.49"/>
+</g>
+<!-- proc~core_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node16" class="node">
+<title>proc~core_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node16"><a xlink:href=".././proc/core_calculate.html" xlink:title="core_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="272.5,-948 182.5,-948 182.5,-924 272.5,-924 272.5,-948"/>
+<text text-anchor="middle" x="227.5" y="-933.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">core_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~core_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge8" class="edge">
+<title>proc~core_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M182.31,-933.61C164.8,-930.9 145.24,-925.52 130,-915 92.31,-888.99 67.77,-839.45 56.05,-810.85"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="59.23,-809.37 52.32,-801.34 52.72,-811.93 59.23,-809.37"/>
+</g>
+<!-- proc~elec_report_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_node17" class="node">
+<title>proc~elec_report_parameters</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node17"><a xlink:href=".././proc/elec_report_parameters.html" xlink:title="elec_report_parameters">
+<polygon fill="#d9534f" stroke="#d9534f" points="297.5,-906 157.5,-906 157.5,-882 297.5,-882 297.5,-906"/>
+<text text-anchor="middle" x="227.5" y="-891.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_report_parameters</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_report_parameters&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge20" class="edge">
+<title>proc~elec_report_parameters&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M157.47,-884.17C147.91,-881.34 138.47,-877.69 130,-873 101.71,-857.33 76.98,-828.81 62.27,-809.39"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="64.99,-807.17 56.24,-801.19 59.35,-811.32 64.99,-807.17"/>
+</g>
+<!-- proc~dos_utils_compute_bandgap -->
+<g id="module~~od_parameters~~UsedByGraph_node18" class="node">
+<title>proc~dos_utils_compute_bandgap</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node18"><a xlink:href=".././proc/dos_utils_compute_bandgap.html" xlink:title="dos_utils_compute_bandgap">
+<polygon fill="#d9534f" stroke="#d9534f" points="309,-864 146,-864 146,-840 309,-840 309,-864"/>
+<text text-anchor="middle" x="227.5" y="-849.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_compute_bandgap</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_compute_bandgap&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge22" class="edge">
+<title>proc~dos_utils_compute_bandgap&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M160.19,-839.95C149.96,-837.41 139.6,-834.44 130,-831 111.67,-824.44 92.23,-814.62 76.88,-806.12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="78.33,-802.92 67.9,-801.05 74.88,-809.02 78.33,-802.92"/>
+</g>
+<!-- proc~projection_get_string -->
+<g id="module~~od_parameters~~UsedByGraph_node19" class="node">
+<title>proc~projection_get_string</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node19"><a xlink:href=".././proc/projection_get_string.html" xlink:title="projection_get_string">
+<polygon fill="#d9534f" stroke="#d9534f" points="289.5,-822 165.5,-822 165.5,-798 289.5,-798 289.5,-822"/>
+<text text-anchor="middle" x="227.5" y="-807.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">projection_get_string</text>
+</a>
+</g>
+</g>
+<!-- proc~projection_get_string&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge28" class="edge">
+<title>proc~projection_get_string&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M165.07,-802.77C145.32,-800.45 123.56,-797.89 104.21,-795.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="104.37,-792.11 94.03,-794.42 103.55,-799.06 104.37,-792.11"/>
+</g>
+<!-- proc~dos_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node20" class="node">
+<title>proc~dos_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node20"><a xlink:href=".././proc/dos_calculate.html" xlink:title="dos_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="270,-780 185,-780 185,-756 270,-756 270,-780"/>
+<text text-anchor="middle" x="227.5" y="-765.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge13" class="edge">
+<title>proc~dos_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M184.65,-772.92C160.72,-775.74 130.4,-779.31 104.4,-782.37"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="103.82,-778.91 94.29,-783.55 104.63,-785.86 103.82,-778.91"/>
+</g>
+<!-- proc~write_jdos -->
+<g id="module~~od_parameters~~UsedByGraph_node21" class="node">
+<title>proc~write_jdos</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node21"><a xlink:href=".././proc/write_jdos.html" xlink:title="write_jdos">
+<polygon fill="#d9534f" stroke="#d9534f" points="260.5,-738 194.5,-738 194.5,-714 260.5,-714 260.5,-738"/>
+<text text-anchor="middle" x="227.5" y="-723.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_jdos</text>
+</a>
+</g>
+</g>
+<!-- proc~write_jdos&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge15" class="edge">
+<title>proc~write_jdos&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M194.19,-730.87C175.16,-734.27 150.82,-739.54 130,-747 111.67,-753.56 92.23,-763.38 76.88,-771.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="74.88,-768.98 67.9,-776.95 78.33,-775.08 74.88,-768.98"/>
+</g>
+<!-- program~optados -->
+<g id="module~~od_parameters~~UsedByGraph_node22" class="node">
+<title>program~optados</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node22"><a xlink:href=".././program/optados.html" xlink:title="optados">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="565,-1217 510,-1217 510,-1193 565,-1193 565,-1217"/>
+<text text-anchor="middle" x="537.5" y="-1202.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optados</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge19" class="edge">
+<title>program~optados&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M525.51,-1192.84C510.77,-1177.53 482.96,-1152.04 453,-1142 414.23,-1129.01 400.02,-1129.78 361,-1142 342.41,-1147.82 342.94,-1159.4 325,-1167 284.75,-1184.05 267.78,-1205.19 228.5,-1186"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M226.5,-1186C187.59,-1166.08 161.2,-1197.61 130,-1167 78.58,-1116.56 55.76,-885.22 49.71,-811.58"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="53.16,-810.86 48.88,-801.17 46.19,-811.41 53.16,-810.86"/>
+</g>
+<!-- program~optados&#45;&gt;module~od_pdos -->
+<g id="module~~od_parameters~~UsedByGraph_edge47" class="edge">
+<title>program~optados&#45;&gt;module~od_pdos</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M509.87,-1213.7C491.3,-1219.77 466.25,-1227.96 445.64,-1234.7"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="444.34,-1231.44 435.92,-1237.87 446.52,-1238.09 444.34,-1231.44"/>
+</g>
+<!-- module~od_pdis -->
+<g id="module~~od_parameters~~UsedByGraph_node44" class="node">
+<title>module~od_pdis</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node44"><a xlink:href=".././module/od_pdis.html" xlink:title="od_pdis">
+<polygon fill="#337ab7" stroke="#337ab7" points="434,-1217 380,-1217 380,-1193 434,-1193 434,-1217"/>
+<text text-anchor="middle" x="407" y="-1202.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_pdis</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;module~od_pdis -->
+<g id="module~~od_parameters~~UsedByGraph_edge48" class="edge">
+<title>program~optados&#45;&gt;module~od_pdis</title>
+<path fill="none" stroke="#0000ff" stroke-dasharray="5,2" d="M509.87,-1205C490.88,-1205 465.12,-1205 444.25,-1205"/>
+<polygon fill="#0000ff" stroke="#0000ff" points="444.15,-1201.5 434.15,-1205 444.15,-1208.5 444.15,-1201.5"/>
+</g>
+<!-- proc~elec_pdis_read -->
+<g id="module~~od_parameters~~UsedByGraph_node23" class="node">
+<title>proc~elec_pdis_read</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node23"><a xlink:href=".././proc/elec_pdis_read.html" xlink:title="elec_pdis_read">
+<polygon fill="#d9534f" stroke="#d9534f" points="273,-696 182,-696 182,-672 273,-672 273,-696"/>
+<text text-anchor="middle" x="227.5" y="-681.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_pdis_read</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_pdis_read&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge14" class="edge">
+<title>proc~elec_pdis_read&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M181.82,-688.19C164.81,-691.18 145.75,-696.28 130,-705 101.71,-720.67 76.98,-749.19 62.27,-768.61"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="59.35,-766.68 56.24,-776.81 64.99,-770.83 59.35,-766.68"/>
+</g>
+<!-- proc~elec_read_band_curvature -->
+<g id="module~~od_parameters~~UsedByGraph_node24" class="node">
+<title>proc~elec_read_band_curvature</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node24"><a xlink:href=".././proc/elec_read_band_curvature.html" xlink:title="elec_read_band_curvature">
+<polygon fill="#d9534f" stroke="#d9534f" points="304,-654 151,-654 151,-630 304,-630 304,-654"/>
+<text text-anchor="middle" x="227.5" y="-639.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_curvature</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_curvature&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge21" class="edge">
+<title>proc~elec_read_band_curvature&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M150.84,-652.35C143.45,-655.13 136.35,-658.62 130,-663 92.31,-689.01 67.77,-738.55 56.05,-767.15"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.72,-766.07 52.32,-776.66 59.23,-768.63 52.72,-766.07"/>
+</g>
+<!-- proc~calc_epsilon_2 -->
+<g id="module~~od_parameters~~UsedByGraph_node25" class="node">
+<title>proc~calc_epsilon_2</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node25"><a xlink:href=".././proc/calc_epsilon_2.html" xlink:title="calc_epsilon_2">
+<polygon fill="#d9534f" stroke="#d9534f" points="272.5,-612 182.5,-612 182.5,-588 272.5,-588 272.5,-612"/>
+<text text-anchor="middle" x="227.5" y="-597.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_epsilon_2</text>
+</a>
+</g>
+</g>
+<!-- proc~calc_epsilon_2&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge10" class="edge">
+<title>proc~calc_epsilon_2&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M182.13,-601.41C164.38,-603.94 144.7,-609.46 130,-621 82.57,-658.23 60.8,-729.9 52.42,-766.42"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="48.92,-766.03 50.24,-776.55 55.76,-767.51 48.92,-766.03"/>
+</g>
+<!-- proc~write_dos -->
+<g id="module~~od_parameters~~UsedByGraph_node26" class="node">
+<title>proc~write_dos</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node26"><a xlink:href=".././proc/write_dos.html" xlink:title="write_dos">
+<polygon fill="#d9534f" stroke="#d9534f" points="259,-570 196,-570 196,-546 259,-546 259,-570"/>
+<text text-anchor="middle" x="227.5" y="-555.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_dos</text>
+</a>
+</g>
+</g>
+<!-- proc~write_dos&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge23" class="edge">
+<title>proc~write_dos&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M195.81,-557.46C175.02,-558.67 148.13,-563.53 130,-579 72.21,-628.31 54.91,-723.57 49.93,-766.76"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="46.44,-766.48 48.89,-776.78 53.4,-767.2 46.44,-766.48"/>
+</g>
+<!-- proc~calc_refract -->
+<g id="module~~od_parameters~~UsedByGraph_node27" class="node">
+<title>proc~calc_refract</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node27"><a xlink:href=".././proc/calc_refract.html" xlink:title="calc_refract">
+<polygon fill="#d9534f" stroke="#d9534f" points="265,-528 190,-528 190,-504 265,-504 265,-528"/>
+<text text-anchor="middle" x="227.5" y="-513.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_refract</text>
+</a>
+</g>
+</g>
+<!-- proc~calc_refract&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge24" class="edge">
+<title>proc~calc_refract&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M189.99,-515.5C170.03,-517.11 146.15,-522.39 130,-537 61.94,-598.56 50.16,-717.17 48.27,-766.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="44.77,-766.69 47.99,-776.78 51.77,-766.89 44.77,-766.69"/>
+</g>
+<!-- proc~calc_loss_fn -->
+<g id="module~~od_parameters~~UsedByGraph_node28" class="node">
+<title>proc~calc_loss_fn</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node28"><a xlink:href=".././proc/calc_loss_fn.html" xlink:title="calc_loss_fn">
+<polygon fill="#d9534f" stroke="#d9534f" points="265.5,-486 189.5,-486 189.5,-462 265.5,-462 265.5,-486"/>
+<text text-anchor="middle" x="227.5" y="-471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_loss_fn</text>
+</a>
+</g>
+</g>
+<!-- proc~calc_loss_fn&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge25" class="edge">
+<title>proc~calc_loss_fn&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M189.27,-473.27C169.33,-474.85 145.71,-480.17 130,-495 89.73,-533.01 60.56,-704.9 51.21,-766.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="47.7,-766.55 49.69,-776.96 54.62,-767.58 47.7,-766.55"/>
+</g>
+<!-- module~od_projection_utils&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge26" class="edge">
+<title>module~od_projection_utils&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M171.36,-1221.89C156.1,-1218.15 140.79,-1211.53 130,-1200 76.22,-1142.53 54.77,-888.63 49.42,-811.38"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="52.91,-811.05 48.75,-801.31 45.92,-811.52 52.91,-811.05"/>
+</g>
+<!-- proc~dos_utils_merge -->
+<g id="module~~od_parameters~~UsedByGraph_node30" class="node">
+<title>proc~dos_utils_merge</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node30"><a xlink:href=".././proc/dos_utils_merge.html" xlink:title="dos_utils_merge">
+<polygon fill="#d9534f" stroke="#d9534f" points="277,-444 178,-444 178,-420 277,-420 277,-444"/>
+<text text-anchor="middle" x="227.5" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_merge</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_merge&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge30" class="edge">
+<title>proc~dos_utils_merge&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M177.84,-432.32C160.73,-434.86 142.64,-440.67 130,-453 84.39,-497.48 58.05,-699.06 50.38,-766.75"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="46.89,-766.44 49.27,-776.76 53.85,-767.21 46.89,-766.44"/>
+</g>
+<!-- proc~dos_utils_set_efermi -->
+<g id="module~~od_parameters~~UsedByGraph_node31" class="node">
+<title>proc~dos_utils_set_efermi</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node31"><a xlink:href=".././proc/dos_utils_set_efermi.html" xlink:title="dos_utils_set_efermi">
+<polygon fill="#d9534f" stroke="#d9534f" points="287.5,-402 167.5,-402 167.5,-378 287.5,-378 287.5,-402"/>
+<text text-anchor="middle" x="227.5" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_set_efermi</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_set_efermi&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge31" class="edge">
+<title>proc~dos_utils_set_efermi&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M167.38,-392.08C153.58,-395.26 140,-400.99 130,-411 79.09,-461.95 55.92,-692.95 49.75,-766.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="46.23,-766.6 48.9,-776.85 53.2,-767.17 46.23,-766.6"/>
+</g>
+<!-- proc~elec_read_band_energy -->
+<g id="module~~od_parameters~~UsedByGraph_node32" class="node">
+<title>proc~elec_read_band_energy</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node32"><a xlink:href=".././proc/elec_read_band_energy.html" xlink:title="elec_read_band_energy">
+<polygon fill="#d9534f" stroke="#d9534f" points="297,-360 158,-360 158,-336 297,-336 297,-360"/>
+<text text-anchor="middle" x="227.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_energy</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_energy&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge34" class="edge">
+<title>proc~elec_read_band_energy&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M157.54,-352.65C147.24,-356.09 137.56,-361.28 130,-369 73.66,-426.56 53.93,-687.94 49.21,-766.56"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.71,-766.6 48.62,-776.79 52.69,-767.01 45.71,-766.6"/>
+</g>
+<!-- proc~elec_read_elnes_mat -->
+<g id="module~~od_parameters~~UsedByGraph_node33" class="node">
+<title>proc~elec_read_elnes_mat</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node33"><a xlink:href=".././proc/elec_read_elnes_mat.html" xlink:title="elec_read_elnes_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="289.5,-318 165.5,-318 165.5,-294 289.5,-294 289.5,-318"/>
+<text text-anchor="middle" x="227.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_elnes_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_elnes_mat&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge11" class="edge">
+<title>proc~elec_read_elnes_mat&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M165.37,-308.24C152.18,-311.5 139.39,-317.24 130,-327 68.17,-391.26 52.12,-683.52 48.77,-766.79"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.27,-766.78 48.39,-776.91 52.26,-767.05 45.27,-766.78"/>
+</g>
+<!-- proc~elec_read_foptical_mat -->
+<g id="module~~od_parameters~~UsedByGraph_node34" class="node">
+<title>proc~elec_read_foptical_mat</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node34"><a xlink:href=".././proc/elec_read_foptical_mat.html" xlink:title="elec_read_foptical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="295.5,-276 159.5,-276 159.5,-252 295.5,-252 295.5,-276"/>
+<text text-anchor="middle" x="227.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_foptical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge35" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M159.3,-267.81C148.28,-271.25 137.9,-276.66 130,-285 62.79,-355.87 50.53,-678.12 48.42,-766.51"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="44.91,-766.67 48.19,-776.75 51.91,-766.83 44.91,-766.67"/>
+</g>
+<!-- proc~jdos_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node35" class="node">
+<title>proc~jdos_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node35"><a xlink:href=".././proc/jdos_calculate.html" xlink:title="jdos_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="271.5,-234 183.5,-234 183.5,-210 271.5,-210 271.5,-234"/>
+<text text-anchor="middle" x="227.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">jdos_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~jdos_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge36" class="edge">
+<title>proc~jdos_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M183.19,-221C164.32,-222.91 143.48,-228.61 130,-243 57.34,-320.56 49.03,-673.43 48.11,-766.46"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="44.61,-766.68 48.03,-776.71 51.61,-766.74 44.61,-766.68"/>
+</g>
+<!-- proc~calculate_jdos -->
+<g id="module~~od_parameters~~UsedByGraph_node36" class="node">
+<title>proc~calculate_jdos</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node36"><a xlink:href=".././proc/calculate_jdos.html" xlink:title="calculate_jdos">
+<polygon fill="#d9534f" stroke="#d9534f" points="271.5,-192 183.5,-192 183.5,-168 271.5,-168 271.5,-192"/>
+<text text-anchor="middle" x="227.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calculate_jdos</text>
+</a>
+</g>
+</g>
+<!-- proc~calculate_jdos&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge37" class="edge">
+<title>proc~calculate_jdos&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M183.12,-178.93C164.24,-180.83 143.4,-186.54 130,-201 51.81,-285.34 47.63,-669.47 47.84,-766.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="44.34,-766.79 47.88,-776.78 51.34,-766.76 44.34,-766.79"/>
+</g>
+<!-- proc~dos_utils_calculate_at_e -->
+<g id="module~~od_parameters~~UsedByGraph_node37" class="node">
+<title>proc~dos_utils_calculate_at_e</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node37"><a xlink:href=".././proc/dos_utils_calculate_at_e.html" xlink:title="dos_utils_calculate_at_e">
+<polygon fill="#d9534f" stroke="#d9534f" points="297.5,-150 157.5,-150 157.5,-126 297.5,-126 297.5,-150"/>
+<text text-anchor="middle" x="227.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_calculate_at_e</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_calculate_at_e&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge39" class="edge">
+<title>proc~dos_utils_calculate_at_e&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M157.12,-142.25C146.86,-145.73 137.31,-151.04 130,-159 46.3,-250.12 46.33,-665.4 47.61,-766.68"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="44.12,-767 47.76,-776.95 51.12,-766.9 44.12,-767"/>
+</g>
+<!-- proc~write_dos_xmgrace -->
+<g id="module~~od_parameters~~UsedByGraph_node38" class="node">
+<title>proc~write_dos_xmgrace</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node38"><a xlink:href=".././proc/write_dos_xmgrace.html" xlink:title="write_dos_xmgrace">
+<polygon fill="#d9534f" stroke="#d9534f" points="285,-108 170,-108 170,-84 285,-84 285,-108"/>
+<text text-anchor="middle" x="227.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">write_dos_xmgrace</text>
+</a>
+</g>
+</g>
+<!-- proc~write_dos_xmgrace&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge38" class="edge">
+<title>proc~write_dos_xmgrace&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M169.75,-96.8C154.91,-99.81 140.22,-105.78 130,-117 85.08,-166.29 55.36,-656.35 49.19,-766.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.7,-766.75 48.64,-776.93 52.69,-767.14 45.7,-766.75"/>
+</g>
+<!-- proc~pdos_calculate -->
+<g id="module~~od_parameters~~UsedByGraph_node39" class="node">
+<title>proc~pdos_calculate</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node39"><a xlink:href=".././proc/pdos_calculate.html" xlink:title="pdos_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="453,-1175 361,-1175 361,-1151 453,-1151 453,-1175"/>
+<text text-anchor="middle" x="407" y="-1160.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">pdos_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~pdos_calculate&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge27" class="edge">
+<title>proc~pdos_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M379.84,-1175.12C343.85,-1189.91 277.92,-1210.14 228.5,-1186"/>
+</g>
+<!-- proc~pdos_calculate&#45;&gt;module~od_projection_utils -->
+<g id="module~~od_parameters~~UsedByGraph_edge42" class="edge">
+<title>proc~pdos_calculate&#45;&gt;module~od_projection_utils</title>
+<path fill="none" stroke="#0c00ff" stroke-dasharray="5,2" d="M379.92,-1175.18C358.41,-1185.17 330.56,-1198 325,-1200 313.65,-1204.09 301.35,-1207.88 289.45,-1211.22"/>
+<polygon fill="#0c00ff" stroke="#0c00ff" points="288.29,-1207.91 279.57,-1213.93 290.14,-1214.66 288.29,-1207.91"/>
+</g>
+<!-- proc~calc_conduct -->
+<g id="module~~od_parameters~~UsedByGraph_node40" class="node">
+<title>proc~calc_conduct</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node40"><a xlink:href=".././proc/calc_conduct.html" xlink:title="calc_conduct">
+<polygon fill="#d9534f" stroke="#d9534f" points="268.5,-66 186.5,-66 186.5,-42 268.5,-42 268.5,-66"/>
+<text text-anchor="middle" x="227.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">calc_conduct</text>
+</a>
+</g>
+</g>
+<!-- proc~calc_conduct&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge32" class="edge">
+<title>proc~calc_conduct&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M186.4,-52.49C166.61,-53.99 144.03,-59.49 130,-75 82.35,-127.66 54.6,-651.37 49.04,-766.64"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.54,-766.61 48.56,-776.76 52.53,-766.94 45.54,-766.61"/>
+</g>
+<!-- proc~dos_utils_compute_band_energies -->
+<g id="module~~od_parameters~~UsedByGraph_node41" class="node">
+<title>proc~dos_utils_compute_band_energies</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node41"><a xlink:href=".././proc/dos_utils_compute_band_energies.html" xlink:title="dos_utils_compute_band_energies">
+<polygon fill="#d9534f" stroke="#d9534f" points="325,-24 130,-24 130,0 325,0 325,-24"/>
+<text text-anchor="middle" x="227.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_compute_band_energies</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_compute_band_energies&#45;&gt;module~od_parameters -->
+<g id="module~~od_parameters~~UsedByGraph_edge40" class="edge">
+<title>proc~dos_utils_compute_band_energies&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M140.42,-24.08C136.61,-26.61 133.1,-29.56 130,-33 79.55,-89.11 53.81,-647.96 48.88,-766.84"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="45.38,-766.8 48.47,-776.94 52.37,-767.09 45.38,-766.8"/>
+</g>
+<!-- program~od2od -->
+<g id="module~~od_parameters~~UsedByGraph_node42" class="node">
+<title>program~od2od</title>
+<g id="a_module~~od_parameters~~UsedByGraph_node42"><a xlink:href=".././program/od2od.html" xlink:title="od2od">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="434,-1402 380,-1402 380,-1378 434,-1378 434,-1402"/>
+<text text-anchor="middle" x="407" y="-1387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od2od</text>
+</a>
+</g>
+</g>
+<!-- program~od2od&#45;&gt;module~od_conv -->
+<g id="module~~od_parameters~~UsedByGraph_edge41" class="edge">
+<title>program~od2od&#45;&gt;module~od_conv</title>
+<path fill="none" stroke="#ff9900" stroke-dasharray="5,2" d="M379.81,-1390C349.83,-1390 300.48,-1390 266.33,-1390"/>
+<polygon fill="#ff9900" stroke="#ff9900" points="266.26,-1386.5 256.26,-1390 266.26,-1393.5 266.26,-1386.5"/>
+</g>
+<!-- module~od_pdos&#45;&gt;module~od_projection_utils -->
+<g id="module~~od_parameters~~UsedByGraph_edge43" class="edge">
+<title>module~od_pdos&#45;&gt;module~od_projection_utils</title>
+<path fill="none" stroke="#0c00ff" stroke-dasharray="5,2" d="M378.27,-1243.72C355.68,-1241.05 322.86,-1237.16 293.71,-1233.71"/>
+<polygon fill="#0c00ff" stroke="#0c00ff" points="293.91,-1230.21 283.57,-1232.52 293.09,-1237.17 293.91,-1230.21"/>
+</g>
+<!-- module~od_pdis&#45;&gt;module~od_projection_utils -->
+<g id="module~~od_parameters~~UsedByGraph_edge45" class="edge">
+<title>module~od_pdis&#45;&gt;module~od_projection_utils</title>
+<path fill="none" stroke="#0c00ff" stroke-dasharray="5,2" d="M379.81,-1208.1C357.2,-1210.77 323.56,-1214.75 293.74,-1218.28"/>
+<polygon fill="#0c00ff" stroke="#0c00ff" points="293.31,-1214.81 283.79,-1219.46 294.13,-1221.76 293.31,-1214.81"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#vars-1">Variables</a>
+        </h3>
+      </div>
+      <div id="vars-1" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_gaussian">LAI_gaussian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_gaussian_width">LAI_gaussian_width</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian">LAI_lorentzian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_offset">LAI_lorentzian_offset</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_scale">LAI_lorentzian_scale</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lai_lorentzian_width">LAI_lorentzian_width</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-adaptive">adaptive</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-adaptive_smearing">adaptive_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compare_dos">compare_dos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compare_jdos">compare_jdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compute_band_energy">compute_band_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-compute_band_gap">compute_band_gap</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core">core</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_lai_broadening">core_LAI_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_chemical_shift">core_chemical_shift</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_geom">core_geom</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_qdir">core_qdir</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-core_type">core_type</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-devel_flag">devel_flag</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos~6">dos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_max_energy">dos_max_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_min_energy">dos_min_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_nbins">dos_nbins</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_per_volume">dos_per_volume</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-dos_spacing">dos_spacing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-efermi_choice">efermi_choice</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-efermi_user">efermi_user</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-energy_unit">energy_unit</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-exclude_bands">exclude_bands</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-finite_bin_correction">finite_bin_correction</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-fixed">fixed</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-fixed_smearing">fixed_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-hybrid_linear">hybrid_linear</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-hybrid_linear_grad_tol">hybrid_linear_grad_tol</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-iprint">iprint</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos~4">jdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos_max_energy">jdos_max_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-jdos_spacing">jdos_spacing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-kpoint_mp_grid">kpoint_mp_grid</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-legacy_file_format">legacy_file_format</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-lenconfac">lenconfac</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-length_unit">length_unit</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-linear">linear</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-linear_smearing">linear_smearing</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-num_exclude_bands">num_exclude_bands</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-numerical_intdos">numerical_intdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics">optics</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_drude_broadening">optics_drude_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_geom">optics_geom</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_intraband">optics_intraband</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_lossfn_broadening">optics_lossfn_broadening</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_lossfn_gaussian">optics_lossfn_gaussian</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-optics_qdir">optics_qdir</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-output_format">output_format</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-pdis">pdis</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-pdos">pdos</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo">photo</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_bulk_length">photo_bulk_length</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_elec_field">photo_elec_field</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_imfp_const">photo_imfp_const</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_layer_choice">photo_layer_choice</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_len_imfp_const">photo_len_imfp_const</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_max_layer">photo_max_layer</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_model">photo_model</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_momentum">photo_momentum</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_phi_lower">photo_phi_lower</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_phi_upper">photo_phi_upper</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_energy">photo_photon_energy</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_max">photo_photon_max</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_min">photo_photon_min</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_photon_sweep">photo_photon_sweep</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_slab_volume">photo_slab_volume</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_surface_area">photo_surface_area</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_temperature">photo_temperature</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_theta_lower">photo_theta_lower</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_theta_upper">photo_theta_upper</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-photo_work_function">photo_work_function</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-projectors_string">projectors_string</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-quad">quad</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-scissor_op">scissor_op</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-set_efermi_zero">set_efermi_zero</a>
+            <a class="list-group-item" href="../module/od_parameters.html#variable-write_photo_output">write_photo_output</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="panel panel-primary">
+      <div class="panel-heading text-left">
+        <h3 class="panel-title">
+          <a data-toggle="collapse" href="#subs-1">Subroutines</a>
+        </h3>
+      </div>
+      <div id="subs-1" class="panel-collapse collapse">
+        <div class="list-group">
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_dealloc">param_dealloc</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_dist">param_dist</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_read">param_read</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write">param_write</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write_atomic_coord">param_write_atomic_coord</a>
+            <a class="list-group-item" href="../module/od_parameters.html#proc-param_write_header">param_write_header</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    <section>
+    <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th>Type</th>
+<th>Visibility</th>        <th>Attributes</th>
+        <th></th>
+        <th>Name</th>
+<th></th><th>Initial</th>        <th></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_gaussian"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_gaussian</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_gaussian_width"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_gaussian_width</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_lorentzian"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_lorentzian</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_lorentzian_offset"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_lorentzian_offset</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_lorentzian_scale"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_lorentzian_scale</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lai_lorentzian_width"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>LAI_lorentzian_width</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-adaptive"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>adaptive</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-adaptive_smearing"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>adaptive_smearing</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compare_dos"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>compare_dos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compare_jdos"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>compare_jdos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compute_band_energy"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>compute_band_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compute_band_gap"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>compute_band_gap</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core_lai_broadening"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core_LAI_broadening</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core_chemical_shift"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core_chemical_shift</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core_geom"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core_geom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core_qdir"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core_qdir</strong>(3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-core_type"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>core_type</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-devel_flag"></span>
+              character(len=100),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>devel_flag</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos~6"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_max_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos_max_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_min_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos_min_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_nbins"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos_nbins</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_per_volume"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos_per_volume</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dos_spacing"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>dos_spacing</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-efermi_choice"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>efermi_choice</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-efermi_user"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>efermi_user</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-energy_unit"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>energy_unit</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-exclude_bands"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable, save
+            </td>
+            <td>::</td>
+            <td><strong>exclude_bands</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-finite_bin_correction"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>finite_bin_correction</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fixed"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>fixed</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fixed_smearing"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>fixed_smearing</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hybrid_linear"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>hybrid_linear</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hybrid_linear_grad_tol"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>hybrid_linear_grad_tol</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iprint"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>iprint</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-jdos~4"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>jdos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-jdos_max_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>jdos_max_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-jdos_spacing"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>jdos_spacing</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kpoint_mp_grid"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>kpoint_mp_grid</strong>(3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-legacy_file_format"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>legacy_file_format</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lenconfac"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>lenconfac</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-length_unit"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>length_unit</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-linear"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>linear</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-linear_smearing"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>linear_smearing</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-num_exclude_bands"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>num_exclude_bands</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-numerical_intdos"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>numerical_intdos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_drude_broadening"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_drude_broadening</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_geom"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_geom</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_intraband"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_intraband</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_lossfn_broadening"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_lossfn_broadening</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_lossfn_gaussian"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_lossfn_gaussian</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-optics_qdir"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>optics_qdir</strong>(3)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-output_format"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>output_format</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pdis"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>pdis</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pdos"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>pdos</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_bulk_length"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_bulk_length</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_elec_field"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_elec_field</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_imfp_const"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              dimension(:), allocatable, save
+            </td>
+            <td>::</td>
+            <td><strong>photo_imfp_const</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_layer_choice"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_layer_choice</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_len_imfp_const"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_len_imfp_const</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_max_layer"></span>
+              integer,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_max_layer</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_model"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_model</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_momentum"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_momentum</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_phi_lower"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_phi_lower</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_phi_upper"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_phi_upper</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_photon_energy"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_photon_energy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_photon_max"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_photon_max</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_photon_min"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_photon_min</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_photon_sweep"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_photon_sweep</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_slab_volume"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_slab_volume</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_surface_area"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_surface_area</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_temperature"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_temperature</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_theta_lower"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_theta_lower</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_theta_upper"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_theta_upper</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-photo_work_function"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>photo_work_function</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-projectors_string"></span>
+              character(len=maxlen),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>projectors_string</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-quad"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>quad</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-scissor_op"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>scissor_op</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-set_efermi_zero"></span>
+              logical,
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>set_efermi_zero</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-write_photo_output"></span>
+              character(len=20),
+            </td>
+              <td>public,</td>
+            <td>
+              save
+            </td>
+            <td>::</td>
+            <td><strong>write_photo_output</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+    <section>
+    <h2>Subroutines</h2>
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_dealloc"></span><h3>public  subroutine <a href='../proc/param_dealloc.html'>param_dealloc</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_dist"></span><h3>public  subroutine <a href='../proc/param_dist.html'>param_dist</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_read"></span><h3>public  subroutine <a href='../proc/param_read.html'>param_read</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  <p>change
+change
+change</p>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_write"></span><h3>public  subroutine <a href='../proc/param_write.html'>param_write</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_write_atomic_coord"></span><h3>public  subroutine <a href='../proc/param_write_atomic_coord.html'>param_write_atomic_coord</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+      <div class="panel panel-default">
+    <div class="panel-heading codesum"><span class="anchor" id="proc-param_write_header"></span><h3>public  subroutine <a href='../proc/param_write_header.html'>param_write_header</a>()  
+</h3></div>
+    <div class="panel-body">
+          
+  
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+    </section>
+    <br>
+
+
+
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2025 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>

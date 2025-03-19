@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Documentation for OptaDOS">
+    <meta name="author" content="The OptaDOS developers group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>photo_calculate &ndash; OptaDOS</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">OptaDOS </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>photo_calculate
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="row" id="info-bar">
+    <div class="col-lg-12">
+      <div class="well well-sm">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title=" 1.5% of total for procedures.">92 statements</a>
+          </li>
+
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/photo.f90"> Source File</a>
+            </li>
+        </ul>
+        <ol class="breadcrumb in-well text-right">
+              <li><a href='../sourcefile/photo.f90.html'>photo.f90</a></li>
+              <li><a href='../module/od_photo.html'>od_photo</a></li>
+          <li class="active">photo_calculate</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/photo_calculate.html#src">photo_calculate</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine photo_calculate()  
+</h2>
+        <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+          <li class="list-group-item">
+            <ul class="list-inline">
+                <li><a href='../module/od_pdos.html'>od_pdos</a></li>
+                <li><a href='../module/od_electronic.html'>od_electronic</a></li>
+                <li><a href='../module/od_comms.html'>od_comms</a></li>
+                <li><a href='../module/od_jdos_utils.html'>od_jdos_utils</a></li>
+                <li><a href='../module/od_io.html'>od_io</a></li>
+                <li><a href='../module/od_parameters.html'>od_parameters</a></li>
+                <li><a href='../module/od_dos_utils.html'>od_dos_utils</a></li>
+            </ul>
+          </li>
+          <li class="list-group-item">
+            <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~photo_calculate~~UsesGraph Pages: 1 -->
+<svg id="procphoto_calculateUsesGraph" width="641pt" height="186pt"
+ viewBox="0.00 0.00 641.00 185.97" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~photo_calculate~~UsesGraph" class="graph" transform="scale(0.79 0.79) rotate(0) translate(4 231)">
+<title>proc~~photo_calculate~~UsesGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-231 806,-231 806,4 -4,4"/>
+<!-- proc~photo_calculate -->
+<g id="proc~~photo_calculate~~UsesGraph_node1" class="node">
+<title>proc~photo_calculate</title>
+<polygon fill="none" stroke="black" points="802,-166 705,-166 705,-142 802,-142 802,-166"/>
+<text text-anchor="middle" x="753.5" y="-151.6" font-family="Helvetica,sans-Serif" font-size="10.50">photo_calculate</text>
+</g>
+<!-- module~od_pdos -->
+<g id="proc~~photo_calculate~~UsesGraph_node2" class="node">
+<title>module~od_pdos</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node2"><a xlink:href=".././module/od_pdos.html" xlink:title="od_pdos">
+<polygon fill="#337ab7" stroke="#337ab7" points="659,-145 602,-145 602,-121 659,-121 659,-145"/>
+<text text-anchor="middle" x="630.5" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_pdos</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_pdos -->
+<g id="proc~~photo_calculate~~UsesGraph_edge1" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_pdos</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M704.68,-145.7C692.84,-143.65 680.33,-141.47 669.06,-139.52"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="669.57,-136.06 659.12,-137.79 668.38,-142.95 669.57,-136.06"/>
+</g>
+<!-- module~od_electronic -->
+<g id="proc~~photo_calculate~~UsesGraph_node3" class="node">
+<title>module~od_electronic</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node3"><a xlink:href=".././module/od_electronic.html" xlink:title="od_electronic">
+<polygon fill="#337ab7" stroke="#337ab7" points="542,-227 458,-227 458,-203 542,-203 542,-227"/>
+<text text-anchor="middle" x="500" y="-212.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_electronic</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_electronic -->
+<g id="proc~~photo_calculate~~UsesGraph_edge5" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_electronic</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M733.41,-166.07C716.99,-175.83 692.33,-189.06 669,-196 630.88,-207.35 586.06,-212 552.3,-213.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="552.01,-210.39 542.2,-214.37 552.36,-217.38 552.01,-210.39"/>
+</g>
+<!-- module~od_jdos_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_node4" class="node">
+<title>module~od_jdos_utils</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node4"><a xlink:href=".././module/od_jdos_utils.html" xlink:title="od_jdos_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="401,-63 321,-63 321,-39 401,-39 401,-63"/>
+<text text-anchor="middle" x="361" y="-48.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_jdos_utils</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_jdos_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_edge2" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_jdos_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499,-93C463.65,-90.34 425.2,-77.63 398.06,-66.88"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="399.18,-63.56 388.6,-63.03 396.55,-70.04 399.18,-63.56"/>
+</g>
+<!-- module~od_io -->
+<g id="proc~~photo_calculate~~UsesGraph_node5" class="node">
+<title>module~od_io</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node5"><a xlink:href=".././module/od_io.html" xlink:title="od_io">
+<polygon fill="#337ab7" stroke="#337ab7" points="172,-145 118,-145 118,-121 172,-121 172,-145"/>
+<text text-anchor="middle" x="145" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_io</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_io -->
+<g id="proc~~photo_calculate~~UsesGraph_edge3" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499,-93C457.74,-88.52 448.9,-106.93 408,-114 335.69,-126.49 317.12,-126.85 244,-133"/>
+</g>
+<!-- module~od_comms -->
+<g id="proc~~photo_calculate~~UsesGraph_node6" class="node">
+<title>module~od_comms</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node6"><a xlink:href=".././module/od_comms.html" xlink:title="od_comms">
+<polygon fill="#337ab7" stroke="#337ab7" points="278,-24 208,-24 208,0 278,0 278,-24"/>
+<text text-anchor="middle" x="243" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_comms</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_comms -->
+<g id="proc~~photo_calculate~~UsesGraph_edge4" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_comms</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M733.41,-141.93C716.99,-132.17 692.33,-118.94 669,-112 596.98,-90.56 575.93,-98.63 501,-93"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499,-93C450.15,-87.26 454.08,-47.21 408,-30 369.21,-15.51 321.94,-11.65 288.13,-11.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="288.13,-7.53 278.1,-10.93 288.06,-14.53 288.13,-7.53"/>
+</g>
+<!-- module~od_parameters -->
+<g id="proc~~photo_calculate~~UsesGraph_node7" class="node">
+<title>module~od_parameters</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node7"><a xlink:href=".././module/od_parameters.html" xlink:title="od_parameters">
+<polygon fill="#337ab7" stroke="#337ab7" points="408,-105 314,-105 314,-81 408,-81 408,-105"/>
+<text text-anchor="middle" x="361" y="-90.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_parameters</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_parameters -->
+<g id="proc~~photo_calculate~~UsesGraph_edge6" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499,-93C472.54,-91.01 443.12,-90.76 418.35,-91.1"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="417.98,-87.61 408.04,-91.28 418.1,-94.61 417.98,-87.61"/>
+</g>
+<!-- module~od_dos_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_node8" class="node">
+<title>module~od_dos_utils</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node8"><a xlink:href=".././module/od_dos_utils.html" xlink:title="od_dos_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="669,-187 592,-187 592,-163 669,-163 669,-187"/>
+<text text-anchor="middle" x="630.5" y="-172.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_dos_utils</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;module~od_dos_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_edge7" class="edge">
+<title>proc~photo_calculate&#45;&gt;module~od_dos_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M704.68,-162.3C696.32,-163.75 687.62,-165.26 679.26,-166.71"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="678.54,-163.28 669.28,-168.44 679.73,-170.18 678.54,-163.28"/>
+</g>
+<!-- module~od_projection_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_node9" class="node">
+<title>module~od_projection_utils</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node9"><a xlink:href=".././module/od_projection_utils.html" xlink:title="od_projection_utils">
+<polygon fill="#337ab7" stroke="#337ab7" points="556,-145 444,-145 444,-121 556,-121 556,-145"/>
+<text text-anchor="middle" x="500" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_projection_utils</text>
+</a>
+</g>
+</g>
+<!-- module~od_pdos&#45;&gt;module~od_projection_utils -->
+<g id="proc~~photo_calculate~~UsesGraph_edge8" class="edge">
+<title>module~od_pdos&#45;&gt;module~od_projection_utils</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M601.93,-133C591.34,-133 578.75,-133 566.12,-133"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="566.01,-129.5 556.01,-133 566.01,-136.5 566.01,-129.5"/>
+</g>
+<!-- module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_node11" class="node">
+<title>module~od_constants</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node11"><a xlink:href=".././module/od_constants.html" xlink:title="od_constants">
+<polygon fill="#337ab7" stroke="#337ab7" points="82,-145 0,-145 0,-121 82,-121 82,-145"/>
+<text text-anchor="middle" x="41" y="-130.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_constants</text>
+</a>
+</g>
+</g>
+<!-- module~od_pdos&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge9" class="edge">
+<title>module~od_pdos&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M601.86,-143.75C576.12,-153.34 536.5,-167.07 501,-175"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M499,-175C437.1,-188.83 425.27,-210.47 362,-215"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M360,-215C263.65,-221.9 238.4,-205.17 146,-177"/>
+</g>
+<!-- module~od_electronic&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge10" class="edge">
+<title>module~od_electronic&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ffda00" stroke-dasharray="5,2" d="M457.88,-213.47C430.64,-212.83 394.15,-212.7 362,-215"/>
+</g>
+<!-- module~od_jdos_utils&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge11" class="edge">
+<title>module~od_jdos_utils&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M320.74,-53.57C298.25,-54.56 269.5,-55.04 244,-53"/>
+<path fill="none" stroke="#48ff00" stroke-dasharray="5,2" d="M242,-53C199.47,-49.6 186.37,-39.19 146,-53"/>
+</g>
+<!-- module~od_io&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge12" class="edge">
+<title>module~od_io&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ff91" stroke-dasharray="5,2" d="M118,-133C110.19,-133 101.35,-133 92.52,-133"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="92.24,-129.5 82.24,-133 92.24,-136.5 92.24,-129.5"/>
+</g>
+<!-- module~od_comms&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge13" class="edge">
+<title>module~od_comms&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M216.73,-24.01C197.6,-32.8 170.52,-44.61 146,-53"/>
+<path fill="none" stroke="#0091ff" stroke-dasharray="5,2" d="M144,-53C109.56,-64.78 77.93,-93.6 59.3,-113.23"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="56.57,-111.03 52.37,-120.76 61.72,-115.77 56.57,-111.03"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_io -->
+<g id="proc~~photo_calculate~~UsesGraph_edge15" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M336.33,-105.06C313.41,-115.79 277.33,-130.2 244,-133"/>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M242,-133C222.29,-134.66 200.21,-134.78 182.21,-134.43"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="182.21,-130.93 172.13,-134.18 182.04,-137.93 182.21,-130.93"/>
+</g>
+<!-- module~od_cell -->
+<g id="proc~~photo_calculate~~UsesGraph_node10" class="node">
+<title>module~od_cell</title>
+<g id="a_proc~~photo_calculate~~UsesGraph_node10"><a xlink:href=".././module/od_cell.html" xlink:title="od_cell">
+<polygon fill="#337ab7" stroke="#337ab7" points="270,-105 216,-105 216,-81 270,-81 270,-105"/>
+<text text-anchor="middle" x="243" y="-90.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">od_cell</text>
+</a>
+</g>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_cell -->
+<g id="proc~~photo_calculate~~UsesGraph_edge14" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_cell</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M313.82,-93C302.73,-93 291.04,-93 280.47,-93"/>
+<polygon fill="#4800ff" stroke="#4800ff" points="280.32,-89.5 270.32,-93 280.32,-96.5 280.32,-89.5"/>
+</g>
+<!-- module~od_parameters&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge16" class="edge">
+<title>module~od_parameters&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#4800ff" stroke-dasharray="5,2" d="M330.46,-80.92C302.05,-69.64 260.99,-54.36 244,-53"/>
+</g>
+<!-- module~od_dos_utils&#45;&gt;module~od_electronic -->
+<g id="proc~~photo_calculate~~UsesGraph_edge17" class="edge">
+<title>module~od_dos_utils&#45;&gt;module~od_electronic</title>
+<path fill="none" stroke="#ff00da" stroke-dasharray="5,2" d="M591.99,-186.68C578.63,-190.84 563.39,-195.58 549.25,-199.98"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="548.18,-196.65 539.68,-202.96 550.26,-203.33 548.18,-196.65"/>
+</g>
+<!-- module~od_dos_utils&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge18" class="edge">
+<title>module~od_dos_utils&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff00da" stroke-dasharray="5,2" d="M591.91,-170.72C566.04,-168.81 531.05,-168.29 501,-175"/>
+</g>
+<!-- module~od_projection_utils&#45;&gt;module~od_io -->
+<g id="proc~~photo_calculate~~UsesGraph_edge20" class="edge">
+<title>module~od_projection_utils&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M464.95,-145.09C416.23,-160.96 323.7,-185.84 244,-177"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M242,-177C216.24,-174.91 189.75,-161.79 171.14,-150.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="172.99,-147.44 162.67,-145.02 169.23,-153.35 172.99,-147.44"/>
+</g>
+<!-- module~od_projection_utils&#45;&gt;module~od_parameters -->
+<g id="proc~~photo_calculate~~UsesGraph_edge19" class="edge">
+<title>module~od_projection_utils&#45;&gt;module~od_parameters</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M457.9,-121C443.94,-116.92 428.16,-112.32 413.49,-108.03"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="414.13,-104.57 403.55,-105.13 412.17,-111.29 414.13,-104.57"/>
+</g>
+<!-- module~od_projection_utils&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge21" class="edge">
+<title>module~od_projection_utils&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M242,-177C199.47,-173.56 186.81,-189.44 146,-177"/>
+<path fill="none" stroke="#ff0000" stroke-dasharray="5,2" d="M144,-177C120.22,-169.75 94.53,-158.65 74.87,-149.41"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="76.28,-146.2 65.75,-145.05 73.26,-152.52 76.28,-146.2"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_io -->
+<g id="proc~~photo_calculate~~UsesGraph_edge22" class="edge">
+<title>module~od_cell&#45;&gt;module~od_io</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M215.77,-103.93C205.18,-108.34 192.81,-113.5 181.45,-118.23"/>
+<polygon fill="#00ff00" stroke="#00ff00" points="180.09,-115.01 172.2,-122.08 182.78,-121.47 180.09,-115.01"/>
+</g>
+<!-- module~od_cell&#45;&gt;module~od_constants -->
+<g id="proc~~photo_calculate~~UsesGraph_edge23" class="edge">
+<title>module~od_cell&#45;&gt;module~od_constants</title>
+<path fill="none" stroke="#00ff00" stroke-dasharray="5,2" d="M221.69,-80.81C198.09,-67.3 160.52,-48.03 146,-53"/>
+</g>
+</g>
+</svg>
+</div><script>var panprocphoto_calculateUsesGraph = svgPanZoom('#procphoto_calculateUsesGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="518pt" height="32pt"
+ viewBox="0.00 0.00 517.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 513.5,-28 513.5,4 -4,4"/>
+<!-- Module -->
+<g id="node1" class="node">
+<title>Module</title>
+<polygon fill="#337ab7" stroke="#337ab7" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Module</text>
+</g>
+<!-- Submodule -->
+<g id="node2" class="node">
+<title>Submodule</title>
+<polygon fill="#5bc0de" stroke="#5bc0de" points="145.5,-24 72.5,-24 72.5,0 145.5,0 145.5,-24"/>
+<text text-anchor="middle" x="109" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Submodule</text>
+</g>
+<!-- Subroutine -->
+<g id="node3" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="234,-24 164,-24 164,0 234,0 234,-24"/>
+<text text-anchor="middle" x="199" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node4" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="310,-24 252,-24 252,0 310,0 310,-24"/>
+<text text-anchor="middle" x="281" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="386,-24 328,-24 328,0 386,0 386,-24"/>
+<text text-anchor="middle" x="357" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="509.5,-24 404.5,-24 404.5,0 509.5,0 509.5,-24"/>
+<text text-anchor="middle" x="457" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+          </li>
+      </ul>
+    </div>
+
+
+
+    <h3>Arguments</h3>
+    <em>None</em>
+    <br>
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~photo_calculate~~CallsGraph Pages: 1 -->
+<svg id="procphoto_calculateCallsGraph" width="641pt" height="547pt"
+ viewBox="0.00 0.00 641.00 546.76" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~photo_calculate~~CallsGraph" class="graph" transform="scale(0.65 0.65) rotate(0) translate(4 838.74)">
+<title>proc~~photo_calculate~~CallsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-838.74 984,-838.74 984,4 -4,4"/>
+<!-- proc~photo_calculate -->
+<g id="proc~~photo_calculate~~CallsGraph_node1" class="node">
+<title>proc~photo_calculate</title>
+<polygon fill="none" stroke="black" points="97,-678 0,-678 0,-654 97,-654 97,-678"/>
+<text text-anchor="middle" x="48.5" y="-663.6" font-family="Helvetica,sans-Serif" font-size="10.50">photo_calculate</text>
+</g>
+<!-- proc~dos_utils_set_efermi -->
+<g id="proc~~photo_calculate~~CallsGraph_node2" class="node">
+<title>proc~dos_utils_set_efermi</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node2"><a xlink:href=".././proc/dos_utils_set_efermi.html" xlink:title="dos_utils_set_efermi">
+<polygon fill="#d9534f" stroke="#d9534f" points="253,-186 133,-186 133,-162 253,-162 253,-186"/>
+<text text-anchor="middle" x="193" y="-171.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_set_efermi</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~dos_utils_set_efermi -->
+<g id="proc~~photo_calculate~~CallsGraph_edge1" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~dos_utils_set_efermi</title>
+<path fill="none" stroke="#ff0000" d="M53.02,-653.84C71.89,-588.7 161.04,-280.91 185.68,-195.83"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="189.05,-196.76 188.47,-186.18 182.33,-194.81 189.05,-196.76"/>
+</g>
+<!-- proc~elec_dealloc_pdos -->
+<g id="proc~~photo_calculate~~CallsGraph_node3" class="node">
+<title>proc~elec_dealloc_pdos</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node3"><a xlink:href=".././proc/elec_dealloc_pdos.html" xlink:title="elec_dealloc_pdos">
+<polygon fill="#d9534f" stroke="#d9534f" points="400,-795 290,-795 290,-771 400,-771 400,-795"/>
+<text text-anchor="middle" x="345" y="-780.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_dealloc_pdos</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~elec_dealloc_pdos -->
+<g id="proc~~photo_calculate~~CallsGraph_edge3" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~elec_dealloc_pdos</title>
+<path fill="none" stroke="#ff0000" d="M55.54,-678.09C67.15,-699.87 94.86,-745.26 133,-765 178.04,-788.31 235.8,-791.73 279.5,-789.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="279.92,-793.4 289.73,-789.39 279.56,-786.41 279.92,-793.4"/>
+</g>
+<!-- proc~dos_utils_deallocate -->
+<g id="proc~~photo_calculate~~CallsGraph_node4" class="node">
+<title>proc~dos_utils_deallocate</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node4"><a xlink:href=".././proc/dos_utils_deallocate.html" xlink:title="dos_utils_deallocate">
+<polygon fill="#d9534f" stroke="#d9534f" points="253,-756 133,-756 133,-732 253,-732 253,-756"/>
+<text text-anchor="middle" x="193" y="-741.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_deallocate</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~dos_utils_deallocate -->
+<g id="proc~~photo_calculate~~CallsGraph_edge5" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~dos_utils_deallocate</title>
+<path fill="none" stroke="#ff0000" d="M67.31,-678.12C83.92,-689.18 109.59,-705.64 133,-718 139.46,-721.42 146.47,-724.78 153.32,-727.9"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="151.94,-731.11 162.5,-731.98 154.78,-724.72 151.94,-731.11"/>
+</g>
+<!-- proc~elec_pdos_read -->
+<g id="proc~~photo_calculate~~CallsGraph_node5" class="node">
+<title>proc~elec_pdos_read</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node5"><a xlink:href=".././proc/elec_pdos_read.html" xlink:title="elec_pdos_read">
+<polygon fill="#d9534f" stroke="#d9534f" points="558,-108 463,-108 463,-84 558,-84 558,-108"/>
+<text text-anchor="middle" x="510.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_pdos_read</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~elec_pdos_read -->
+<g id="proc~~photo_calculate~~CallsGraph_edge4" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~elec_pdos_read</title>
+<path fill="none" stroke="#ff0000" d="M49.62,-653.92C50.58,-583.46 59.06,-226.13 133,-153 217.94,-68.99 370.58,-75.19 453,-86.09"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="452.55,-89.56 462.94,-87.48 453.52,-82.63 452.55,-89.56"/>
+</g>
+<!-- proc~elec_read_optical_mat -->
+<g id="proc~~photo_calculate~~CallsGraph_node6" class="node">
+<title>proc~elec_read_optical_mat</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node6"><a xlink:href=".././proc/elec_read_optical_mat.html" xlink:title="elec_read_optical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="754,-520 622,-520 622,-496 754,-496 754,-520"/>
+<text text-anchor="middle" x="688" y="-505.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_optical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~elec_read_optical_mat -->
+<g id="proc~~photo_calculate~~CallsGraph_edge2" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~elec_read_optical_mat</title>
+<path fill="none" stroke="#ff0000" d="M97.16,-654.19C211.98,-625.73 503.7,-553.43 628.69,-522.45"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="629.61,-525.83 638.47,-520.03 627.93,-519.04 629.61,-525.83"/>
+</g>
+<!-- proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_node7" class="node">
+<title>proc~io_time</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node7"><a xlink:href=".././proc/io_time.html" xlink:title="io_time">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="868,-646 814,-646 814,-622 868,-622 868,-646"/>
+<text text-anchor="middle" x="841" y="-631.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_time</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_edge6" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff0000" d="M86.97,-678.02C101.24,-682.15 117.74,-686.38 133,-689 225.66,-704.89 249.99,-704 344,-704 344,-704 344,-704 511.5,-704 619.82,-704 743.9,-667.15 803.84,-646.92"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="805.25,-650.13 813.58,-643.59 802.99,-643.51 805.25,-650.13"/>
+</g>
+<!-- proc~elec_read_foptical_mat -->
+<g id="proc~~photo_calculate~~CallsGraph_node8" class="node">
+<title>proc~elec_read_foptical_mat</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node8"><a xlink:href=".././proc/elec_read_foptical_mat.html" xlink:title="elec_read_foptical_mat">
+<polygon fill="#d9534f" stroke="#d9534f" points="756,-600 620,-600 620,-576 756,-576 756,-600"/>
+<text text-anchor="middle" x="688" y="-585.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_foptical_mat</text>
+</a>
+</g>
+</g>
+<!-- proc~photo_calculate&#45;&gt;proc~elec_read_foptical_mat -->
+<g id="proc~~photo_calculate~~CallsGraph_edge7" class="edge">
+<title>proc~photo_calculate&#45;&gt;proc~elec_read_foptical_mat</title>
+<path fill="none" stroke="#ff0000" d="M97.02,-670.67C191.66,-678.49 409.59,-689.12 584,-642 612.06,-634.42 641.13,-618.29 661.2,-605.62"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="663.26,-608.46 669.76,-600.09 659.46,-602.58 663.26,-608.46"/>
+</g>
+<!-- interface~comms_reduce -->
+<g id="proc~~photo_calculate~~CallsGraph_node9" class="node">
+<title>interface~comms_reduce</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node9"><a xlink:href=".././interface/comms_reduce.html" xlink:title="comms_reduce">
+<polygon fill="#a7506f" stroke="#a7506f" points="735,-204 641,-204 641,-180 735,-180 735,-204"/>
+<text text-anchor="middle" x="688" y="-189.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_reduce</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_set_efermi&#45;&gt;interface~comms_reduce -->
+<g id="proc~~photo_calculate~~CallsGraph_edge8" class="edge">
+<title>proc~dos_utils_set_efermi&#45;&gt;interface~comms_reduce</title>
+<path fill="none" stroke="#ff0000" d="M253.14,-163.92C264.98,-162.29 277.36,-160.85 289,-160 419.76,-150.42 454.37,-140.33 584,-160 605.28,-163.23 628.22,-170.01 647.04,-176.5"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="645.88,-179.81 656.47,-179.85 648.22,-173.21 645.88,-179.81"/>
+</g>
+<!-- proc~dos_utils_calculate -->
+<g id="proc~~photo_calculate~~CallsGraph_node10" class="node">
+<title>proc~dos_utils_calculate</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node10"><a xlink:href=".././proc/dos_utils_calculate.html" xlink:title="dos_utils_calculate">
+<polygon fill="#d9534f" stroke="#d9534f" points="401,-285 289,-285 289,-261 401,-261 401,-285"/>
+<text text-anchor="middle" x="345" y="-270.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_calculate</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_set_efermi&#45;&gt;proc~dos_utils_calculate -->
+<g id="proc~~photo_calculate~~CallsGraph_edge9" class="edge">
+<title>proc~dos_utils_set_efermi&#45;&gt;proc~dos_utils_calculate</title>
+<path fill="none" stroke="#ff0000" d="M212.39,-186.14C238.6,-203.43 286.84,-235.27 317.07,-255.23"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="315.18,-258.17 325.46,-260.76 319.04,-252.33 315.18,-258.17"/>
+</g>
+<!-- proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_node12" class="node">
+<title>proc~io_error</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node12"><a xlink:href=".././proc/io_error.html" xlink:title="io_error">
+<polygon fill="#d9534f" stroke="#d9534f" points="980,-444 926,-444 926,-420 980,-420 980,-444"/>
+<text text-anchor="middle" x="953" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_error</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_set_efermi&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge10" class="edge">
+<title>proc~dos_utils_set_efermi&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M205.61,-161.76C244.5,-122.16 375.33,0 509.5,0 509.5,0 509.5,0 689,0 786.7,0 829.61,-12.2 890,-89 929.69,-139.47 946.18,-341.92 950.66,-409.73"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="947.17,-410 951.3,-419.76 954.16,-409.56 947.17,-410"/>
+</g>
+<!-- interface~comms_bcast -->
+<g id="proc~~photo_calculate~~CallsGraph_node13" class="node">
+<title>interface~comms_bcast</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node13"><a xlink:href=".././interface/comms_bcast.html" xlink:title="comms_bcast">
+<polygon fill="#a7506f" stroke="#a7506f" points="730.5,-246 645.5,-246 645.5,-222 730.5,-222 730.5,-246"/>
+<text text-anchor="middle" x="688" y="-231.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_bcast</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_set_efermi&#45;&gt;interface~comms_bcast -->
+<g id="proc~~photo_calculate~~CallsGraph_edge11" class="edge">
+<title>proc~dos_utils_set_efermi&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ff0000" d="M253.16,-168.66C330.76,-163.5 470.41,-160.6 584,-193 601.6,-198.02 603.18,-205.78 620,-213 625.04,-215.16 630.38,-217.22 635.76,-219.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="634.82,-222.51 645.42,-222.41 637.08,-215.88 634.82,-222.51"/>
+</g>
+<!-- proc~elec_dealloc_pdos&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge12" class="edge">
+<title>proc~elec_dealloc_pdos&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ffda00" d="M383.68,-795.04C480.96,-823.55 743.17,-883.65 890,-756 935.66,-716.31 948.18,-521.45 951.16,-454.58"/>
+<polygon fill="#ffda00" stroke="#ffda00" points="954.67,-454.45 951.59,-444.31 947.68,-454.16 954.67,-454.45"/>
+</g>
+<!-- proc~dos_utils_deallocate&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge13" class="edge">
+<title>proc~dos_utils_deallocate&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#48ff00" d="M253.02,-743.4C316.41,-742.81 420.08,-742 509.5,-742 509.5,-742 509.5,-742 689,-742 786.34,-742 826.05,-728.39 890,-655 941.36,-596.05 950.46,-497.9 951.88,-454.18"/>
+<polygon fill="#48ff00" stroke="#48ff00" points="955.38,-454.14 952.09,-444.06 948.38,-453.99 955.38,-454.14"/>
+</g>
+<!-- proc~io_file_unit -->
+<g id="proc~~photo_calculate~~CallsGraph_node11" class="node">
+<title>proc~io_file_unit</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node11"><a xlink:href=".././proc/io_file_unit.html" xlink:title="io_file_unit">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="876,-444 806,-444 806,-420 876,-420 876,-444"/>
+<text text-anchor="middle" x="841" y="-429.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">io_file_unit</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;proc~io_file_unit -->
+<g id="proc~~photo_calculate~~CallsGraph_edge14" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#00ff91" d="M558.1,-97.61C621.3,-100.83 729.39,-110.33 756,-138 840.83,-226.21 718.45,-313.18 792,-411 793.58,-413.1 795.41,-414.99 797.42,-416.7"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="795.64,-419.72 805.89,-422.4 799.55,-413.91 795.64,-419.72"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge16" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#00ff91" d="M536.79,-83.84C583.17,-63.43 683.67,-28.05 756,-66 891.44,-137.05 937.01,-341.76 948.64,-409.75"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="945.22,-410.48 950.28,-419.79 952.12,-409.36 945.22,-410.48"/>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_bcast -->
+<g id="proc~~photo_calculate~~CallsGraph_edge18" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#00ff91" d="M527.53,-108.2C542.96,-120.38 566.47,-140.09 584,-160 602.82,-181.37 597.14,-196.02 620,-213 624.76,-216.54 630.14,-219.49 635.72,-221.95"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="634.65,-225.29 645.24,-225.65 637.18,-218.77 634.65,-225.29"/>
+</g>
+<!-- interface~comms_send -->
+<g id="proc~~photo_calculate~~CallsGraph_node14" class="node">
+<title>interface~comms_send</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node14"><a xlink:href=".././interface/comms_send.html" xlink:title="comms_send">
+<polygon fill="#a7506f" stroke="#a7506f" points="882,-486 800,-486 800,-462 882,-462 882,-486"/>
+<text text-anchor="middle" x="841" y="-471.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_send</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_send -->
+<g id="proc~~photo_calculate~~CallsGraph_edge15" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#00ff91" d="M545.07,-108.02C557.33,-112.42 571.29,-117.43 584,-122 600.01,-127.76 603.76,-129.93 620,-135 679.68,-153.64 714.79,-123.97 756,-171 839.27,-266.03 716.27,-351.86 792,-453 792.57,-453.76 793.18,-454.5 793.81,-455.21"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="791.73,-458.04 801.61,-461.86 796.27,-452.71 791.73,-458.04"/>
+</g>
+<!-- interface~comms_recv -->
+<g id="proc~~photo_calculate~~CallsGraph_node15" class="node">
+<title>interface~comms_recv</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node15"><a xlink:href=".././interface/comms_recv.html" xlink:title="comms_recv">
+<polygon fill="#a7506f" stroke="#a7506f" points="880.5,-402 801.5,-402 801.5,-378 880.5,-378 880.5,-402"/>
+<text text-anchor="middle" x="841" y="-387.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">comms_recv</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_pdos_read&#45;&gt;interface~comms_recv -->
+<g id="proc~~photo_calculate~~CallsGraph_edge17" class="edge">
+<title>proc~elec_pdos_read&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#00ff91" d="M549.48,-83.99C601.74,-70.01 696.13,-54.24 756,-100 799.52,-133.26 827.97,-305.49 836.95,-367.62"/>
+<polygon fill="#00ff91" stroke="#00ff91" points="833.53,-368.47 838.39,-377.88 840.46,-367.49 833.53,-368.47"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_edge19" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#0091ff" d="M703.48,-520.08C729.91,-542.13 786.12,-589.04 817.55,-615.27"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="815.42,-618.05 825.34,-621.77 819.91,-612.68 815.42,-618.05"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit -->
+<g id="proc~~photo_calculate~~CallsGraph_edge20" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#0091ff" d="M710.45,-495.92C731.11,-484.43 763.36,-466.88 792,-453 795.3,-451.4 798.76,-449.78 802.24,-448.19"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="803.72,-451.36 811.41,-444.07 800.85,-444.98 803.72,-451.36"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge21" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#0091ff" d="M754.32,-515.28C795.11,-517.1 847.71,-514.35 890,-495 909.99,-485.86 927.03,-467.22 938.15,-452.57"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="941.26,-454.24 944.29,-444.09 935.59,-450.14 941.26,-454.24"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_send -->
+<g id="proc~~photo_calculate~~CallsGraph_edge22" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#0091ff" d="M742.66,-495.92C757.95,-492.47 774.55,-488.74 789.64,-485.34"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="790.82,-488.66 799.8,-483.05 789.28,-481.83 790.82,-488.66"/>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;interface~comms_recv -->
+<g id="proc~~photo_calculate~~CallsGraph_edge24" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#0091ff" d="M699.34,-495.86C716.78,-475.98 753.88,-436.19 792,-411 794.27,-409.5 796.66,-408.06 799.12,-406.7"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="800.89,-409.73 808.2,-402.06 797.71,-403.49 800.89,-409.73"/>
+</g>
+<!-- proc~algor_dist_array -->
+<g id="proc~~photo_calculate~~CallsGraph_node16" class="node">
+<title>proc~algor_dist_array</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node16"><a xlink:href=".././proc/algor_dist_array.html" xlink:title="algor_dist_array">
+<polygon fill="#d9534f" stroke="#d9534f" points="890,-566 792,-566 792,-542 890,-542 890,-566"/>
+<text text-anchor="middle" x="841" y="-551.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">algor_dist_array</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~photo_calculate~~CallsGraph_edge23" class="edge">
+<title>proc~elec_read_optical_mat&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#0091ff" d="M728.67,-520.09C747.75,-525.9 770.79,-532.92 790.95,-539.06"/>
+<polygon fill="#0091ff" stroke="#0091ff" points="790.01,-542.43 800.59,-541.99 792.05,-535.73 790.01,-542.43"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_edge25" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff00da" d="M728.67,-600.09C752.12,-607.23 781.56,-616.2 804.28,-623.12"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="803.3,-626.48 813.88,-626.04 805.33,-619.78 803.3,-626.48"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_file_unit -->
+<g id="proc~~photo_calculate~~CallsGraph_edge26" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff00da" d="M706.46,-575.8C721.14,-564.86 741.92,-547.69 756,-529 778.49,-499.15 765.18,-479.03 792,-453 793.47,-451.57 795.05,-450.24 796.71,-448.98"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="798.98,-451.7 805.56,-443.4 795.24,-445.78 798.98,-451.7"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge27" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff00da" d="M753.05,-600.01C795.61,-604.37 850.68,-602.67 890,-575 929.99,-546.86 944.42,-487.2 949.44,-454.54"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="952.97,-454.59 950.85,-444.21 946.03,-453.64 952.97,-454.59"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;interface~comms_send -->
+<g id="proc~~photo_calculate~~CallsGraph_edge28" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff00da" d="M705.16,-575.8C731.73,-555.74 784.77,-515.7 815.82,-492.25"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="818.08,-494.93 823.96,-486.11 813.87,-489.34 818.08,-494.93"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;interface~comms_recv -->
+<g id="proc~~photo_calculate~~CallsGraph_edge30" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff00da" d="M707.77,-575.87C722.85,-565.21 743.49,-548.41 756,-529 785.7,-482.91 755.55,-451.96 792,-411 792.88,-410.01 793.82,-409.06 794.81,-408.15"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="797.15,-410.77 803.13,-402.02 793,-405.14 797.15,-410.77"/>
+</g>
+<!-- proc~elec_read_foptical_mat&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~photo_calculate~~CallsGraph_edge29" class="edge">
+<title>proc~elec_read_foptical_mat&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#ff00da" d="M742.66,-575.92C755.24,-573.09 768.7,-570.06 781.47,-567.18"/>
+<polygon fill="#ff00da" stroke="#ff00da" points="782.55,-570.52 791.54,-564.91 781.02,-563.69 782.55,-570.52"/>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_edge33" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ffbf00" d="M350.18,-285.3C369.69,-340.52 457.9,-565.94 620,-639 679.94,-666.02 758.71,-654.45 803.91,-643.97"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="804.94,-647.32 813.84,-641.55 803.29,-640.51 804.94,-647.32"/>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge31" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ffbf00" d="M401.25,-271.89C523.06,-270.42 810.22,-272.69 890,-324 920.71,-343.75 937.88,-384.44 946.01,-409.85"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="942.74,-411.12 948.96,-419.7 949.45,-409.11 942.74,-411.12"/>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;interface~comms_bcast -->
+<g id="proc~~photo_calculate~~CallsGraph_edge35" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ffbf00" d="M401.17,-266.69C465.8,-259.3 572.07,-247.14 635.22,-239.92"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="635.81,-243.38 645.35,-238.76 635.01,-236.42 635.81,-243.38"/>
+</g>
+<!-- proc~elec_read_band_gradient -->
+<g id="proc~~photo_calculate~~CallsGraph_node17" class="node">
+<title>proc~elec_read_band_gradient</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node17"><a xlink:href=".././proc/elec_read_band_gradient.html" xlink:title="elec_read_band_gradient">
+<polygon fill="#d9534f" stroke="#d9534f" points="584,-423 437,-423 437,-399 584,-399 584,-423"/>
+<text text-anchor="middle" x="510.5" y="-408.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_read_band_gradient</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;proc~elec_read_band_gradient -->
+<g id="proc~~photo_calculate~~CallsGraph_edge32" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;proc~elec_read_band_gradient</title>
+<path fill="none" stroke="#ffbf00" d="M360.22,-285.01C388.73,-309.07 453.04,-363.34 487.2,-392.18"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="485.29,-395.15 495.19,-398.92 489.81,-389.8 485.29,-395.15"/>
+</g>
+<!-- proc~dos_utils_merge -->
+<g id="proc~~photo_calculate~~CallsGraph_node18" class="node">
+<title>proc~dos_utils_merge</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node18"><a xlink:href=".././proc/dos_utils_merge.html" xlink:title="dos_utils_merge">
+<polygon fill="#d9534f" stroke="#d9534f" points="560,-226 461,-226 461,-202 560,-202 560,-226"/>
+<text text-anchor="middle" x="510.5" y="-211.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dos_utils_merge</text>
+</a>
+</g>
+</g>
+<!-- proc~dos_utils_calculate&#45;&gt;proc~dos_utils_merge -->
+<g id="proc~~photo_calculate~~CallsGraph_edge34" class="edge">
+<title>proc~dos_utils_calculate&#45;&gt;proc~dos_utils_merge</title>
+<path fill="none" stroke="#ffbf00" d="M379.27,-260.9C396.5,-254.65 417.87,-246.9 437,-240 446.53,-236.56 456.77,-232.88 466.46,-229.41"/>
+<polygon fill="#ffbf00" stroke="#ffbf00" points="467.69,-232.68 475.92,-226.01 465.33,-226.09 467.69,-232.68"/>
+</g>
+<!-- proc~algor_dist_array&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge36" class="edge">
+<title>proc~algor_dist_array&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff00bf" d="M869.98,-541.89C876.98,-538.07 884.16,-533.41 890,-528 913.25,-506.47 931.62,-474.44 942.15,-453.39"/>
+<polygon fill="#ff00bf" stroke="#ff00bf" points="945.35,-454.83 946.55,-444.3 939.05,-451.78 945.35,-454.83"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat -->
+<g id="proc~~photo_calculate~~CallsGraph_edge44" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_read_optical_mat</title>
+<path fill="none" stroke="#ff0000" d="M527.76,-423.2C548.42,-438.33 585.56,-464.3 620,-482 627.1,-485.65 634.84,-489.1 642.45,-492.22"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="641.38,-495.56 651.96,-495.99 643.96,-489.05 641.38,-495.56"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_time -->
+<g id="proc~~photo_calculate~~CallsGraph_edge38" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_time</title>
+<path fill="none" stroke="#ff0000" d="M516.38,-423.08C532.51,-462.39 585.1,-585.56 620,-609 675.48,-646.25 757.07,-644.44 803.72,-639.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="804.15,-642.91 813.67,-638.26 803.33,-635.96 804.15,-642.91"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit -->
+<g id="proc~~photo_calculate~~CallsGraph_edge39" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_file_unit</title>
+<path fill="none" stroke="#ff0000" d="M584.4,-415.66C649.09,-419.8 741.48,-425.7 795.65,-429.16"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="795.75,-432.68 805.95,-429.82 796.2,-425.69 795.75,-432.68"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge40" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M522.71,-398.77C540.94,-379.89 579.09,-344.45 620,-331 677.42,-312.12 695.63,-328.08 756,-331 815.77,-333.89 838.28,-313.91 890,-344 915.82,-359.02 933.57,-389.59 943.26,-410.44"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="940.14,-412.04 947.37,-419.78 946.55,-409.22 940.14,-412.04"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast -->
+<g id="proc~~photo_calculate~~CallsGraph_edge37" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_bcast</title>
+<path fill="none" stroke="#ff0000" d="M522.74,-398.96C542.25,-378.12 583.8,-334.11 620,-298 635.42,-282.62 653.28,-265.6 666.68,-252.98"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="669.1,-255.5 674,-246.11 664.31,-250.4 669.1,-255.5"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_send -->
+<g id="proc~~photo_calculate~~CallsGraph_edge42" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_send</title>
+<path fill="none" stroke="#ff0000" d="M558.61,-423.03C577.61,-427.69 599.79,-432.88 620,-437 677.92,-448.8 744.97,-459.68 789.68,-466.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="789.29,-470.02 799.7,-468.07 790.34,-463.1 789.29,-470.02"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;interface~comms_recv -->
+<g id="proc~~photo_calculate~~CallsGraph_edge43" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;interface~comms_recv</title>
+<path fill="none" stroke="#ff0000" d="M584.4,-406.34C647.27,-402.32 736.3,-396.63 790.99,-393.13"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="791.36,-396.62 801.12,-392.49 790.92,-389.63 791.36,-396.62"/>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array -->
+<g id="proc~~photo_calculate~~CallsGraph_edge41" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~algor_dist_array</title>
+<path fill="none" stroke="#ff0000" d="M518.57,-423.33C533.61,-448.25 571.37,-504.29 620,-529 670.34,-554.58 735.34,-559.04 781.61,-558.19"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="781.87,-561.68 791.77,-557.91 781.68,-554.69 781.87,-561.68"/>
+</g>
+<!-- proc~elec_dealloc_optical -->
+<g id="proc~~photo_calculate~~CallsGraph_node19" class="node">
+<title>proc~elec_dealloc_optical</title>
+<g id="a_proc~~photo_calculate~~CallsGraph_node19"><a xlink:href=".././proc/elec_dealloc_optical.html" xlink:title="elec_dealloc_optical">
+<polygon fill="#d9534f" stroke="#d9534f" points="748.5,-364 627.5,-364 627.5,-340 748.5,-340 748.5,-364"/>
+<text text-anchor="middle" x="688" y="-349.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">elec_dealloc_optical</text>
+</a>
+</g>
+</g>
+<!-- proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical -->
+<g id="proc~~photo_calculate~~CallsGraph_edge45" class="edge">
+<title>proc~elec_read_band_gradient&#45;&gt;proc~elec_dealloc_optical</title>
+<path fill="none" stroke="#ff0000" d="M547.44,-398.92C574.65,-389.77 612.21,-377.14 641.52,-367.29"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="642.75,-370.57 651.11,-364.07 640.52,-363.93 642.75,-370.57"/>
+</g>
+<!-- proc~dos_utils_merge&#45;&gt;interface~comms_reduce -->
+<g id="proc~~photo_calculate~~CallsGraph_edge46" class="edge">
+<title>proc~dos_utils_merge&#45;&gt;interface~comms_reduce</title>
+<path fill="none" stroke="#00ffff" d="M560.39,-207.87C582.2,-205.14 608.03,-201.9 630.65,-199.06"/>
+<polygon fill="#00ffff" stroke="#00ffff" points="631.3,-202.51 640.79,-197.79 630.43,-195.56 631.3,-202.51"/>
+</g>
+<!-- proc~elec_dealloc_optical&#45;&gt;proc~io_error -->
+<g id="proc~~photo_calculate~~CallsGraph_edge47" class="edge">
+<title>proc~elec_dealloc_optical&#45;&gt;proc~io_error</title>
+<path fill="none" stroke="#ff0000" d="M748.52,-346.46C790.06,-345.06 845.78,-348.24 890,-369 909.9,-378.34 926.95,-396.96 938.1,-411.54"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="935.53,-413.97 944.25,-419.98 941.19,-409.84 935.53,-413.97"/>
+</g>
+</g>
+</svg>
+</div><script>var panprocphoto_calculateCallsGraph = svgPanZoom('#procphoto_calculateCallsGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: proc~~photo_calculate~~CalledByGraph Pages: 1 -->
+<svg id="procphoto_calculateCalledByGraph" width="196pt" height="32pt"
+ viewBox="0.00 0.00 196.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="proc~~photo_calculate~~CalledByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>proc~~photo_calculate~~CalledByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 192,-28 192,4 -4,4"/>
+<!-- proc~photo_calculate -->
+<g id="proc~~photo_calculate~~CalledByGraph_node1" class="node">
+<title>proc~photo_calculate</title>
+<polygon fill="none" stroke="black" points="188,-24 91,-24 91,0 188,0 188,-24"/>
+<text text-anchor="middle" x="139.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">photo_calculate</text>
+</g>
+<!-- program~optados -->
+<g id="proc~~photo_calculate~~CalledByGraph_node2" class="node">
+<title>program~optados</title>
+<g id="a_proc~~photo_calculate~~CalledByGraph_node2"><a xlink:href=".././program/optados.html" xlink:title="optados">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="55,-24 0,-24 0,0 55,0 55,-24"/>
+<text text-anchor="middle" x="27.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">optados</text>
+</a>
+</g>
+</g>
+<!-- program~optados&#45;&gt;proc~photo_calculate -->
+<g id="proc~~photo_calculate~~CalledByGraph_edge1" class="edge">
+<title>program~optados&#45;&gt;proc~photo_calculate</title>
+<path fill="none" stroke="#ff0000" d="M55.13,-12C62.89,-12 71.69,-12 80.59,-12"/>
+<polygon fill="#ff0000" stroke="#ff0000" points="80.63,-15.5 90.63,-12 80.63,-8.5 80.63,-15.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="597pt" height="32pt"
+ viewBox="0.00 0.00 596.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 592.5,-28 592.5,4 -4,4"/>
+<!-- Subroutine -->
+<g id="node1" class="node">
+<title>Subroutine</title>
+<polygon fill="#d9534f" stroke="#d9534f" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Subroutine</text>
+</g>
+<!-- Function -->
+<g id="node2" class="node">
+<title>Function</title>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="146,-24 88,-24 88,0 146,0 146,-24"/>
+<text text-anchor="middle" x="117" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Function</text>
+</g>
+<!-- Interface -->
+<g id="node3" class="node">
+<title>Interface</title>
+<polygon fill="#a7506f" stroke="#a7506f" points="225.5,-24 164.5,-24 164.5,0 225.5,0 225.5,-24"/>
+<text text-anchor="middle" x="195" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Interface</text>
+</g>
+<!-- Unknown Procedure Type -->
+<g id="node4" class="node">
+<title>Unknown Procedure Type</title>
+<polygon fill="#777777" stroke="#777777" points="388.5,-24 243.5,-24 243.5,0 388.5,0 388.5,-24"/>
+<text text-anchor="middle" x="316" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Unknown Procedure Type</text>
+</g>
+<!-- Program -->
+<g id="node5" class="node">
+<title>Program</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="465,-24 407,-24 407,0 465,0 465,-24"/>
+<text text-anchor="middle" x="436" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Program</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node6" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="588.5,-24 483.5,-24 483.5,0 588.5,0 588.5,-24"/>
+<text text-anchor="middle" x="536" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module. Where possible, edges connecting nodes are given different colours to make them easier to distinguish in large graphs.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+        <h3>Contents</h3>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="panel panel-primary">
+      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/photo_calculate.html#src">photo_calculate</a>
+      </div>
+    </div>
+
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    
+    
+
+    
+    
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="highlight"><pre><span></span><span class="w">  </span><span class="k">subroutine </span><span class="n">photo_calculate</span><span class="w"></span>
+<span class="w">    </span><span class="c">!</span>
+<span class="w">    </span><span class="c">!  Program to calculate the photoemission</span>
+<span class="w">    </span><span class="c">!</span>
+
+<span class="w">    </span><span class="k">use </span><span class="n">od_electronic</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">elec_dealloc_optical</span><span class="p">,</span><span class="w"> </span><span class="n">elec_pdos_read</span><span class="p">,</span><span class="w"> </span><span class="n">elec_read_optical_mat</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span><span class="w"></span>
+<span class="w">    </span><span class="p">&amp;</span><span class="w"> </span><span class="n">efermi</span><span class="p">,</span><span class="w"> </span><span class="n">efermi_set</span><span class="p">,</span><span class="w"> </span><span class="n">elec_read_foptical_mat</span><span class="p">,</span><span class="w"> </span><span class="n">elec_dealloc_pdos</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_jdos_utils</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">jdos_utils_calculate</span><span class="p">,</span><span class="w"> </span><span class="n">setup_energy_scale</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_comms</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">on_root</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_parameters</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">photo_work_function</span><span class="p">,</span><span class="w"> </span><span class="n">photo_model</span><span class="p">,</span><span class="w"> </span><span class="n">photo_elec_field</span><span class="p">,</span><span class="w"> </span><span class="n">write_photo_output</span><span class="p">,</span><span class="w"> </span><span class="n">photo_photon_sweep</span><span class="p">,&amp;</span><span class="w"></span>
+<span class="w">                            </span><span class="p">&amp;</span><span class="n">photo_photon_min</span><span class="p">,</span><span class="w"> </span><span class="n">jdos_spacing</span><span class="p">,</span><span class="w"> </span><span class="n">photo_photon_energy</span><span class="p">,</span><span class="w"> </span><span class="n">iprint</span><span class="p">,</span><span class="w"> </span><span class="n">devel_flag</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_dos_utils</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">dos_utils_set_efermi</span><span class="p">,</span><span class="w"> </span><span class="n">dos_utils_calculate_at_e</span><span class="p">,</span><span class="w"> </span><span class="n">dos_utils_deallocate</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_io</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="n">io_error</span><span class="p">,</span><span class="w"> </span><span class="n">io_time</span><span class="w"></span>
+<span class="w">    </span><span class="k">use </span><span class="n">od_pdos</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">pdos_calculate</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">implicit none</span>
+
+<span class="k">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+                             Photoemission Calculation                      +&#39;</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+============================================================================+&#39;</span><span class="w"></span>
+<span class="w">      </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;|                                                                            |&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">devel_flag</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;geom_analysis&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+           Only performing the analysis of the supplied geometry!           +&#39;</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">calc_layers</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span>
+<span class="k">    end if</span>
+
+<span class="k">    if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="n">efermi_set</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      call </span><span class="n">dos_utils_set_efermi</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">dos_utils_deallocate</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">!Identify layers</span>
+
+<span class="w">    </span><span class="k">call </span><span class="n">calc_layers</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">calc_band_info</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">call </span><span class="n">elec_read_optical_mat</span><span class="w"></span>
+<span class="w">    </span><span class="c">!THIS PART COMES FROM THE PDOS MODULE</span>
+<span class="w">    </span><span class="c">! read in the pdos weights</span>
+<span class="w">    </span><span class="k">call </span><span class="n">elec_pdos_read</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">make_pdos_weights_atoms</span><span class="w"></span>
+<span class="w">    </span><span class="k">call </span><span class="n">elec_dealloc_pdos</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">! Calculate the optical properties of the slab</span>
+<span class="w">    </span><span class="k">call </span><span class="n">calc_photo_optics</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">call </span><span class="n">calc_absorp_layer</span><span class="w"></span>
+
+<span class="w">    </span><span class="c">!Electric field and field emission</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">photo_elec_field</span><span class="w"> </span><span class="p">.</span><span class="n">gt</span><span class="p">.</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      call </span><span class="n">effect_wf</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">calc_field_emission</span><span class="w"></span>
+<span class="w">    </span><span class="k">else</span>
+<span class="k">      </span><span class="n">evacuum_eff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">efermi</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">photo_work_function</span><span class="w"></span>
+<span class="w">      </span><span class="n">work_function_eff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">photo_work_function</span><span class="w"></span>
+<span class="w">    </span><span class="k">end if</span>
+
+<span class="k">    if</span><span class="w"> </span><span class="p">(</span><span class="n">photo_photon_sweep</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">      do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">number_energies</span><span class="w"></span>
+<span class="w">        </span><span class="n">time_a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="n">temp_photon_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">photo_photon_min</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">jdos_spacing</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a50,f8.4,a20)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+--------------- Starting Photoemission Sweep with&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">temp_photon_energy</span><span class="p">,&amp;</span><span class="w"></span>
+<span class="w">                </span><span class="p">&amp;</span><span class="s1">&#39; eV ---------------+&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="n">current_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="w"></span>
+<span class="w">        </span><span class="n">current_energy_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">index_energy</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="c">!Calculate the photoemission angles theta/phi and transverse energy</span>
+<span class="w">        </span><span class="k">call </span><span class="n">calc_angle</span><span class="w"></span>
+
+<span class="w">        </span><span class="c">!Calculate the electron escape length</span>
+<span class="w">        </span><span class="k">call </span><span class="n">calc_electron_esc</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">call </span><span class="n">bulk_emission</span><span class="w"></span>
+
+<span class="w">        </span><span class="c">!Calculate the QE</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">photo_model</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;3step&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="c">!Three-step-model</span>
+<span class="w">          </span><span class="k">call </span><span class="n">calc_three_step_model</span><span class="w"></span>
+<span class="w">        </span><span class="n">elseif</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">photo_model</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;1step&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="c">!One-step-model</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">foptical_matrix_weights</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">elec_read_foptical_mat</span><span class="w"> </span><span class="c">!Read the one-step matrix elements</span>
+<span class="w">          </span><span class="k">call </span><span class="n">make_foptical_weights</span><span class="w"> </span><span class="c">!Calculate the one-step optical matrix</span>
+<span class="w">          </span><span class="k">call </span><span class="n">calc_one_step_model</span><span class="w"> </span><span class="c">!Calculate QE</span>
+<span class="w">        </span><span class="k">end if</span><span class="w"></span>
+
+<span class="w">        </span><span class="c">!Weight the contribution of each electron</span>
+<span class="w">        </span><span class="c">!to the transverse energy spread according to their QE</span>
+<span class="w">        </span><span class="k">call </span><span class="n">weighted_mean_te</span><span class="w"></span>
+
+<span class="w">        </span><span class="k">call </span><span class="n">write_qe_data</span><span class="w"></span>
+<span class="w">        </span><span class="c">! Only call the binding energy gaussian broadening and file printing if necessary</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">write_photo_output</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;off&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">          </span><span class="c">!Broaden ouputs using a gaussian function</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">write_photo_output</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;e_bind&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">binding_energy_spread</span><span class="w"></span>
+<span class="w">          </span><span class="c">!Write either a binding energy output with after Gaussian broadening or the reduced QE tensor</span>
+<span class="w">          </span><span class="k">call </span><span class="n">write_qe_output_files</span><span class="w"></span>
+<span class="w">        </span><span class="k">end if</span>
+<span class="k">        </span><span class="n">time_b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">io_time</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">iprint</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">          write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a44,15x,f11.3,a8)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;+ Time to calculate Photoemission sweep step&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">time_b</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">time_a</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; (sec) +&#39;</span><span class="w"></span>
+<span class="w">        </span><span class="k">end if</span>
+<span class="k">      end do</span>
+<span class="k">    else</span>
+<span class="k">      </span><span class="n">temp_photon_energy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">photo_photon_energy</span><span class="w"></span>
+<span class="w">      </span><span class="n">current_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">      </span><span class="n">current_energy_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">index_energy</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="c">!Calculate the photoemission angles theta/phi and transverse energy</span>
+<span class="w">      </span><span class="k">call </span><span class="n">calc_angle</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">!Calculate the electron escape length</span>
+<span class="w">      </span><span class="k">call </span><span class="n">calc_electron_esc</span><span class="w"></span>
+
+<span class="w">      </span><span class="k">call </span><span class="n">bulk_emission</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">!Calculate the QE</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">photo_model</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;3step&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="c">!Three-step-model</span>
+<span class="w">        </span><span class="k">call </span><span class="n">calc_three_step_model</span><span class="w"></span>
+<span class="w">      </span><span class="n">elseif</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">photo_model</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;1step&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="c">!One-step-model</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">allocated</span><span class="p">(</span><span class="n">foptical_matrix_weights</span><span class="p">))</span><span class="w"> </span><span class="k">call </span><span class="n">elec_read_foptical_mat</span><span class="w"> </span><span class="c">!Read the one-step matrix elements</span>
+<span class="w">        </span><span class="k">call </span><span class="n">make_foptical_weights</span><span class="w"> </span><span class="c">!Calculate the one-step optical matrix</span>
+<span class="w">        </span><span class="k">call </span><span class="n">calc_one_step_model</span><span class="w"> </span><span class="c">!Calculate QE</span>
+<span class="w">      </span><span class="k">end if</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">!Weight the contribution of each electron</span>
+<span class="w">      </span><span class="c">!to the transverse energy spread according to their QE</span>
+<span class="w">      </span><span class="k">call </span><span class="n">weighted_mean_te</span><span class="w"></span>
+<span class="w">      </span><span class="k">call </span><span class="n">write_qe_data</span><span class="w"></span>
+
+<span class="w">      </span><span class="c">! Only call the binding energy gaussian broadening and file printing if necessary</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(.</span><span class="nb">not</span><span class="p">.</span><span class="w"> </span><span class="nb">index</span><span class="p">(</span><span class="n">write_photo_output</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;off&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span><span class="w"></span>
+<span class="w">        </span><span class="c">!Broaden ouputs using a gaussian function</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">index</span><span class="p">(</span><span class="n">write_photo_output</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;e_bind&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">call </span><span class="n">binding_energy_spread</span><span class="w"></span>
+<span class="w">        </span><span class="c">!Write either a binding energy output with after Gaussian broadening</span>
+<span class="w">        </span><span class="k">call </span><span class="n">write_qe_output_files</span><span class="w"></span>
+<span class="w">      </span><span class="k">end if</span>
+
+<span class="k">    end if</span><span class="w"></span>
+<span class="w">    </span><span class="c">! Deallocate the rest that was needed for the photoemission calcs</span>
+<span class="w">    </span><span class="k">call </span><span class="n">photo_deallocate</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">on_root</span><span class="p">)</span><span class="w"> </span><span class="k">write</span><span class="w"> </span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;(1x,a78)&#39;</span><span class="p">)</span><span class="w"> </span><span class="s1">&#39;| End of Photoemission Calculation                                           |&#39;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">end subroutine </span><span class="n">photo_calculate</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>OptaDOS was developed by The OptaDOS developers group<br>&copy; 2025 
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>
