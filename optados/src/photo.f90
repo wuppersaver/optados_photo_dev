@@ -442,6 +442,7 @@ contains
       atoms_per_box(i) = counter
     end do
     max_atoms = sum(atoms_per_box)
+    box_atom(max_atoms + 1) = num_boxes + 1
     if (on_root) then
       if (iprint .gt. 1) then
         write (stdout, 420) '+', 'box height [Ang] = ', box_height, ',', '# of boxes = ', num_boxes, '+'
