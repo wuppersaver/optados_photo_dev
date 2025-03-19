@@ -456,7 +456,7 @@ contains
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Box     |         Atom Z-Coordinate (Ang)          |'
 
       do atom = 1, num_atoms
-        if (box_atom(atom) .gt. 0) then
+        if (box_atom(atom) .gt. 0 .and. (box_atom(atom) .ne. num_boxes + 1)) then
           write (stdout, '(1x,a3,a2,8x,i3,11x,i3,18x,F12.7,a18)') "|  ", trim(atoms_label_tmp(atom_order(atom))), &
             atom_order(atom), box_atom(atom), atoms_pos_cart_photo(3, atom_order(atom)), "|"
         end if
