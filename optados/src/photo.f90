@@ -46,9 +46,6 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :) :: refract
   real(kind=dp), allocatable, dimension(:)  :: reflect
   real(kind=dp), allocatable, dimension(:) :: absorp
-  ! real(kind=dp), dimension(:), allocatable :: thickness_atom
-  ! real(kind=dp), dimension(:), allocatable :: thickness_layer
-  ! real(kind=dp), dimension(:), allocatable :: volume_atom
   real(kind=dp)                            :: box_height
   real(kind=dp)                            :: box_volume
   integer, dimension(:), allocatable       :: box_atom
@@ -59,7 +56,6 @@ module od_photo
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   real(kind=dp), dimension(:, :, :), allocatable :: band_imfp
-  ! integer :: first_atom_second_l, last_atom_secondlast_l
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
   real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_arpes
@@ -78,16 +74,13 @@ module od_photo
   real(kind=dp) :: total_qe
   real(kind=dp), allocatable, dimension(:) :: layer_qe
   integer, dimension(:), allocatable :: atom_order
-  ! integer, dimension(:), allocatable :: atoms_per_layer
   real(kind=dp) :: work_function_eff
   real(kind=dp) :: evacuum
   real(kind=dp) :: evacuum_eff
   real(kind=dp) :: total_field_emission
   real(kind=dp), allocatable, dimension(:, :, :) :: field_emission
-  ! integer, allocatable, dimension(:) :: layer
   integer :: N_geom
   integer :: max_atoms
-  ! integer :: max_layer
   real(kind=dp) :: q_weight
   ! Added by Felix Mildner, 12/2022 and later
   integer, allocatable, dimension(:)  :: index_energy
@@ -100,9 +93,8 @@ module od_photo
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
-  ! logical                             :: new_geom_choice = .True. ! hard coded choice of geometry definition
   ! Allowing debug output makes the calculation a lot slower since a very hot if statement is not optimised out druing compilation.
-  logical                             :: enable_debug_output = .True. ! hard coded extra printing
+  logical                             :: enable_debug_output = .False. ! hard coded extra printing
 contains
 
   subroutine photo_calculate
@@ -466,6 +458,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
+      write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
     226   format(1x, a23, I12, 1x, a25, 1x, I12, a4)
     ! This is the older code to define layers and sort atoms into their respective layers
@@ -497,7 +490,7 @@ contains
 !       write (stdout, 226) '|  Max number of atoms:', max_atoms, '   Max  number of layers:', max_layer, '   |'
 
 
-!       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+!       
 !     end if
 
     ! allocate (thickness_atom(max_atoms), stat=ierr)
