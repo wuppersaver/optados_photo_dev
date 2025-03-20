@@ -2738,27 +2738,15 @@ contains
               else
                 vacuum_gauss = 1.0_dp
               end if
-              if (new_geom_choice) then
-                temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
-                                   *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
-                                   *(electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
-                                   *electrons_per_state*kpoint_weight(N_k) &
-                                   *(I_layer(box_atom(atom), current_photo_energy_index)) &
-                                   *transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k) &
-                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
-                                  *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
-              else
-                temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
-                                   *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
-                                   *(electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
-                                   *electrons_per_state*kpoint_weight(N_k) &
-                                   *(I_layer(box_atom(atom), current_photo_energy_index)) &
-                                   *transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k) &
-                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
-                                  *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
-              end if
+              temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+                                  *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                  *(electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
+                                  *electrons_per_state*kpoint_weight(N_k) &
+                                  *(I_layer(box_atom(atom), current_photo_energy_index)) &
+                                  *transverse_gauss*vacuum_gauss*fermi_dirac(n_eigen, N_spin, N_k) &
+                                  *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
