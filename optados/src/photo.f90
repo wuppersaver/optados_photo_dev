@@ -3912,6 +3912,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     real(kind=dp) :: time0, time1, total_weighted, qe_norm
+    character(len=100)                          :: out_string
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
@@ -4050,9 +4051,11 @@ contains
         write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - photo_work_function)
         write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
         &'| Contributions from: atom1 | atom2 | ... | bulk |'
+        write (out_string, '(a,I0,"(1x,",a,")")') "1x,ES25.6E2,", max_atoms + 2, "ES25.12E3"
 
         do e_scale = 1, max_energy
-          write (binding_unit, '(1x,ES13.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))') t_energy(e_scale), &
+          ! write (binding_unit, '(1x,ES25.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))')
+          write (binding_unit, '('//trim(out_string)//')') t_energy(e_scale), &
             sum(qe_atom(1:max_atoms + 1, e_scale)), qe_atom(1:max_atoms + 1, e_scale)
         end do
 
