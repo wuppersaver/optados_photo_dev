@@ -1983,6 +1983,12 @@ contains
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
               ! do most of the calculation
+              temp_contribution = qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+              *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
+              *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
+              *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+              *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+              *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
                 !! this could be checked if it has an impact on the final value
                 ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
@@ -2001,24 +2007,14 @@ contains
                       electrons_per_state*kpoint_weight(N_k)
                   end if
                 else
-                  temp_contribution = qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                  *photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) & 
-                  *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                  *transverse_gauss(gdx, n_eigen_init, N_spin, N_k) &
-                *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
-                *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
-                *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
-                *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                   ! do the specfn_dependent calculations
-                  ! spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) & 
-                  !                   *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                  !                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                  spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) & 
+                                    *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                   qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
-                                                                           + temp_contribution ! *spectral_factor
+                                                                           + temp_contribution*spectral_factor
                   te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
-                                                  + (temp_contribution & ! *spectral_factor
-                                                  *E_transverse(gdx, n_eigen_init, N_spin, N_k))
+                                                  + temp_contribution*spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
                 end if
                 if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                   write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
@@ -2047,12 +2043,8 @@ contains
         do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
           final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
           do n_eigen_init = 1, n_eigen_final - 1
-            do gdx = 1, photo_sf_max_vectors
-              temp_contribution = &
+            temp_contribution = &
                     (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                    *photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k) &
-                    *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                     *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                     *transmit_prob(n_eigen_final, N_spin, N_k) &
                     *electrons_per_state*kpoint_weight(N_k) &
@@ -2060,13 +2052,14 @@ contains
                     *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                     *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
-              ! spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-              !                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k) &
-              !                   *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1)
+            do gdx = 1, photo_sf_max_vectors
+              spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
+                                *transverse_gauss(gdx, n_eigen_init, N_spin, N_k) &
+                                *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1)
               qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) + temp_contribution !*spectral_factor
+                qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) + temp_contribution*spectral_factor
               te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
-                                                        + (temp_contribution &! *spectral_factor &
+                                                        + (temp_contribution*spectral_factor &
                                                         *E_transverse(gdx, n_eigen_init, N_spin, N_k))
             end do
           end do
