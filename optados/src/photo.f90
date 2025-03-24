@@ -734,48 +734,9 @@ contains
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
 
-    if (index(devel_flag, 'output_ome_itof') > 0 .and. on_root) then
-      call io_date(cdate, ctime)
-      do N_k = 1, size(kpoint_r, 2)
-        if (all(abs(kpoint_r(:, N_k)) < 1.0E-10_dp)) then
-          is = N_k
-          exit
-        end if
-      end do
-      write (stdout, *) 'The gamma point was determined to be - ', is
-      i = index(devel_flag, 'output_ome_itof')
-      read (devel_flag(i + 16:i + 20), *) initial
-      write (initial_s, '(I4)') initial
-      write (stdout, '(1x,a27,I4,a32)') 'Outputting OMEs for band # ', initial, ' to the bands above it at Gamma.'
-      open (unit=ome_unit, action='write', file=trim(seedname)//'_OMEs_from_band_'//trim(adjustl(initial_s))//'.dat')
-      write (ome_unit, '(1x,a28)') '############################'
-      write (ome_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
-      write (ome_unit, '(1x,a16,1x,a99)') '# OM weights for', seedname
-      write (ome_unit, '(1x,a23,1x,I4)') '# Initial Band Choice :', initial
-      write (ome_unit, '(1x,a23,1x,F15.7)') '# Band Energy        : ', (band_energy(initial, 1, is) - efermi)
-      write (ome_unit, '(1x,a28)') '############################'
-      do n_eigen = initial + 1, nbands
-        write (ome_unit, '(1x,a6,I4,1x,E20.12E3,1x,F15.7)') 'Band #', n_eigen, matrix_weights(initial, n_eigen, is, 1, 1),&
-        & (band_energy(n_eigen, 1, is) - efermi)
-      end do
-      close (unit=ome_unit)
-      return
-    end if
-
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-      write (stdout, '(1x,a78)') '+-------------------------- Printing Matrix Weights -------------------------+'
-      write (stdout, 126) shape(matrix_weights)
-      write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-      write (stdout, '(9999(es15.8))') (((((matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), N2=1, N_geom), &
-                                           N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
-                                         n_eigen_final=1, nbands), n_eigen=1, nbands)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
-    allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
-
     if (.not. index(photo_model, 'ds_like_pe') > 0) then
+      allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
       do box = 1, num_boxes                           ! Loop over boxes
         !
         if (iprint > 1 .and. on_root) then
