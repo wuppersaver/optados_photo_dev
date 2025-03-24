@@ -284,7 +284,7 @@ contains
     use od_comms, only: on_root
     use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, iprint
     implicit none
-    integer :: ierr, atom, counter, i, ic !, atom_1, atom_2,  atom_index, temp, firstS
+    integer :: ierr, atom, counter, i, ic, atom_index, first, temp, atom_1, atom_2
     real(kind=dp)                            :: diff_temp, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     integer, dimension(2)                    :: indices_top_bottom
     real(kind=dp), dimension(2)              :: mean_heights = 0.0_dp
@@ -306,6 +306,22 @@ contains
     if (real_lattice(3, 1) .gt. 0.000001_dp .and. real_lattice(3, 2) .gt. 0.000001_dp) then
       call io_error('ERROR: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
     end if
+
+    do atom_1 = 1, num_atoms - 1
+      first = atom_order(atom_1)
+      do atom_2 = atom_1 + 1, num_atoms
+        atom_index = atom_1
+        if (atoms_pos_cart_photo(3, atom_order(atom_2)) .gt. atoms_pos_cart_photo(3, first)) then
+          first = atom_order(atom_2)
+          atom_index = atom_2
+        end if
+        if (atom_index /= atom_1) then
+          temp = atom_order(atom_1)
+          atom_order(atom_1) = atom_order(atom_index)
+          atom_order(atom_index) = temp
+        end if
+      end do
+    end do
 
     ! Capitalise the first letter of the atomic label for later
     do atom = 1, num_atoms
@@ -544,11 +560,9 @@ contains
     pdos_weights_atoms = 0.0_dp
     pdos_weights_k_band = 0.0_dp
 
-    ! if (new_geom_choice) then
-      allocate (pdos_weights_boxes(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_boxes), stat=ierr)
-      if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
-      pdos_weights_boxes = 0.0_dp
-    ! end if
+    allocate (pdos_weights_boxes(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_boxes), stat=ierr)
+    if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
+    pdos_weights_boxes = 0.0_dp
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
