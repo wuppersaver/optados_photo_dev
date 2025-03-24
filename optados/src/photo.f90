@@ -815,9 +815,9 @@ contains
           if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of weighted_dos_at_e failed')
           dos_at_e = 0.0_dp
           weighted_dos_at_e = 0.0_dp
-          do N_k = 1, size(matrix_weights, 5)
-            do N2 = 1, nbands
-              dos_matrix_weights(N_k, N2, :, :) = matrix_weights(N2, N2, :, :, N_k)
+          do N_geom = 1, size(matrix_weights, 5)
+            do n_eigen = 1, nbands
+              dos_matrix_weights(N_geom, n_eigen, :, :) = matrix_weights(n_eigen, n_eigen, :, :, N_geom)
             end do
           end do
           call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
