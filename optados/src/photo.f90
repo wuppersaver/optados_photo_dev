@@ -1066,10 +1066,9 @@ contains
           barrier_height = photo_work_function - (band_energy(n_eigen, N_spin, N_k) - efermi)
           field_energy(n_eigen, N_spin, N_k) = abs(evacuum - band_energy(n_eigen, N_spin, N_k))
           argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
-          ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a exponential value of ~1E+/-250
-          ! and this cutoff condition saves us from running into arithmetic
-          ! issues when computing fermi_dirac due to possible underflow.
+          ! This is a bit of an arbitrary condition, but exp(+-575) ~ 1E(+-250)
+          ! so this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible under/over-flow.
           if (argument .gt. 575.0_dp) then
             fermi_dirac = 0.0_dp
           elseif (argument .lt. -575.0_dp) then
@@ -1689,10 +1688,9 @@ contains
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
           argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
-          ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a an exponent value of ~1E+/-250
-          ! and this cutoff condition saves us from running into arithmetic
-          ! issues when computing fermi_dirac due to possible underflow.
+          ! This is a bit of an arbitrary condition, but exp(+-575) ~ 1E(+-250)
+          ! so this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible under/over-flow.
           if (argument .gt. 575.0_dp) then
             fermi_dirac(n_eigen, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -575.0_dp) then
@@ -1925,10 +1923,9 @@ contains
       do N_spin = 1, nspins
         do n_eigen_init = 1, nbands
           argument = (band_energy(n_eigen_init, N_spin, N_k) - efermi)/(kB*photo_temperature)
-          ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a an exponent value of ~1E+/-250
-          ! and this cutoff condition saves us from running into arithmetic
-          ! issues when computing fermi_dirac due to possible underflow.
+          ! This is a bit of an arbitrary condition, but exp(+-575) ~ 1E(+-250)
+          ! so this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible under/over-flow.
           if (argument .gt. 575.0_dp) then
             fermi_dirac(n_eigen_init, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -575.0_dp) then
@@ -2677,10 +2674,9 @@ contains
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
           argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
-          ! This is a bit of an arbitrary condition, but it turns out
-          ! that this corresponds to a an exponent value of ~1E+/-100
-          ! and this cutoff condition saves us from running into arithmetic
-          ! issues when computing fermi_dirac due to possible underflow.
+          ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
+          ! so this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible under/over-flow.
           if (argument .gt. 230.0_dp) then
             fermi_dirac(n_eigen, N_spin, N_k) = 0.0_dp
           elseif (argument .lt. -230.0_dp) then
@@ -3084,10 +3080,9 @@ contains
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
             argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
-            ! This is a bit of an arbitrary condition, but it turns out
-            ! that this corresponds to a an exponent value of ~1E+/-100
-            ! and this cutoff condition saves us from running into arithmetic
-            ! issues when computing fermi_dirac due to possible underflow.
+          ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
+          ! so this cutoff condition saves us from running into arithmetic
+          ! issues when computing fermi_dirac due to possible under/over-flow.
             if (argument .gt. 230.0_dp) then
               fermi_dirac(1, n_eigen, N_spin, N_k) = 0.0_dp
             elseif (argument .lt. -230.0_dp) then
@@ -3230,10 +3225,9 @@ contains
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
             argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
-            ! This is a bit of an arbitrary condition, but it turns out
-            ! that this corresponds to a an exponent value of ~1E+/-100
-            ! and this cutoff condition saves us from running into arithmetic
-            ! issues when computing fermi_dirac due to possible underflow.
+            ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
+            ! so this cutoff condition saves us from running into arithmetic
+            ! issues when computing fermi_dirac due to possible under/over-flow.
             if (argument .gt. 230.0_dp) then
               fermi_dirac(1, n_eigen, N_spin, N_k) = 0.0_dp
             elseif (argument .lt. -230.0_dp) then
