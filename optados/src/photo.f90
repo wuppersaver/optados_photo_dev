@@ -1946,8 +1946,10 @@ contains
             fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp
           else
             fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
-          end if          
-          
+          end if      
+
+          ! The vacuum gauss represents the necessary condition: is the final state above E_vacuum?
+          ! The transverse gauss represents the sufficient condition:  after "emission", do we have enough energy for E_ortho > 0?
           ! Is the final state energy above the vauum level?
           if (band_energy(n_eigen_init, N_spin, N_k) .lt. evacuum_eff) then
             vacuum_gauss(n_eigen_init, N_spin, N_k) = gaussian(band_energy(n_eigen_init, N_spin, N_k) + &
@@ -1955,11 +1957,11 @@ contains
           else
             vacuum_gauss(n_eigen_init, N_spin, N_k) = 1.0_dp
           end if
-
+          ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step 
+          ! (workfunction), evacuum_eff = efermi + work_function_eff
           do gdx = 1, photo_sf_max_vectors
-            ! evacuum_eff = efermi + photo_work_function
             ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
-            ! Is the final kinetic energy > 0?
+            ! Is the final kinetic energy ortho > 0?
             ekin_temp = temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)
             if (ekin_temp .le. work_function_eff) then
               transverse_gauss(gdx, n_eigen_init, N_spin, N_k) = gaussian(ekin_temp, width, work_function_eff)/norm_vac
@@ -2636,7 +2638,7 @@ contains
     integer :: N_k, N_spin, n_eigen, atom, ierr, i, gdx, kpt_total, inode, token, qe_unit
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
-    real(kind=dp) :: temp_contribution, ekin_temp, efinal_temp
+    real(kind=dp) :: temp_contribution, ekin_temp, e_ortho_kin_temp, efinal_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
@@ -2711,17 +2713,22 @@ contains
             fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
           end if
 
-          efinal_temp = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy
+          ! The vacuum gauss represents the necessary condition: is the final state above E_vacuum?
+          ! The transverse gauss represents the sufficient condition:  after "emission", do we have energy for E_ortho > 0?
+
+          ! Is the final total energy of the electron (E_initial + scissor + hw) above the vacuum level?
+          efinal_temp = band_energy(n_eigen, N_spin, N_k) + scissor_op + temp_photon_energy
           if (efinal_temp .lt. evacuum_eff) then
-            vacuum_gauss(n_eigen, N_spin, N_k) = gaussian(efinal_temp + scissor_op, width, evacuum_eff)/norm_vac
+            vacuum_gauss(n_eigen, N_spin, N_k) = gaussian(efinal_temp, width, evacuum_eff)/norm_vac
           else
             vacuum_gauss(n_eigen, N_spin, N_k) = 1.0_dp
           end if
 
+          ! is the photon energy large enough to allow an emission at this kpoint/k+G
           do gdx = 1, photo_sf_max_vectors
-            ekin_temp = temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)
-            if (ekin_temp .le. work_function_eff) then
-              transverse_gauss(gdx, n_eigen, N_spin, N_k) = gaussian(ekin_temp, width, work_function_eff)/norm_vac
+            e_ortho_kin_temp = temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)
+            if (e_ortho_kin_temp .le. work_function_eff) then
+              transverse_gauss(gdx, n_eigen, N_spin, N_k) = gaussian(e_ortho_kin_temp, width, work_function_eff)/norm_vac
             else
               transverse_gauss(gdx, n_eigen, N_spin, N_k) = 1.0_dp
             end if
