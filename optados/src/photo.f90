@@ -32,6 +32,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_atoms
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: pdos_weights_boxes
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
+  real(kind=dp), allocatable, public, dimension(:, :, :, :) :: photo_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: projected_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
@@ -933,11 +934,21 @@ contains
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
+    if (index(photo_model,'3step') > 0 .or. index(photo_model,'ds_like_pe')) then
+      ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
+      allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
 
-    if (index(photo_model, '1step') > 0) then
-      deallocate (matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
+      do N_spin = 1, nspins
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          photo_matrix_weights(:,:,N_spin,N_k) = matrix_weights(:,:,N_k,N_spin,1)
+        end do
+      end do
     end if
+    ! get rid of the old, now unnecessary array - either because we have the 1step model, 
+    ! or we have transferred the relevant data to photo_matrix_weights
+    deallocate (matrix_weights, stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
@@ -1872,14 +1883,12 @@ contains
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
-      write (stdout, '(5(1x,I4))') shape(matrix_weights)
-      write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-      do N2 = 1, N_geom
+      write (stdout, '(5(1x,I4))') shape(photo_matrix_weights)
+      write (stdout, '(5(1x,I4))') nbands, nbands, nspins, num_kpoints_on_node(my_node_id), N_geom
+      do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') ((matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, N2), &
-                                                n_eigen_final=1, nbands), n_eigen_init=1, nbands)
-          end do
+          write (stdout, '(99999(es15.8))') ((photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k), &
+                                              n_eigen_final=1, nbands), n_eigen_init=1, nbands)
         end do
       end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
@@ -1909,7 +1918,7 @@ contains
       i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
       write (stdout, '(14(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'spectral_func', &
-        'matrix_weights', &
+        'photo_matrix_weights', &
         'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
         'pdos_weights_atoms', 'pdos_weights_k_band'
       write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
@@ -1972,21 +1981,21 @@ contains
                 if (enable_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
                   if (index(devel_flag, 'projected_pe') > 0) then
                     qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                      matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                      photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k, 1)* &
                       delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
                       electrons_per_state*kpoint_weight(N_k)* &
                       (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
                        pdos_weights_k_band(n_eigen_init, N_spin, N_k))
                   else
                     qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                      matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1)* &
+                      photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k, 1)* &
                       delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
                       electrons_per_state*kpoint_weight(N_k)
                   end if
                 else
                   temp_contribution = &
                     qe_factor*photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-                    *matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
+                    *photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k, 1) &
                     *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                     *transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -2007,7 +2016,7 @@ contains
                   write (stdout, '(18(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
                     band_energy(n_eigen_init, N_spin, N_k), &
                     band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k), &
-                    matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1), &
+                    photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k, 1), &
                     delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
                     transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), &
                     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, initial_fd, final_fd, &
@@ -2043,7 +2052,7 @@ contains
               end if
               temp_contribution = &
                     (qe_factor*photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-                    *matrix_weights(n_eigen_init, n_eigen_final, N_k, N_spin, 1) &
+                    *photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k, 1) &
                     *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                     *transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -3132,7 +3141,7 @@ contains
                       end if
                       temp_contribution = &
                         qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
-                        *matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
+                        *photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k, 1) &
                         *delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
                         *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                         *transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -3190,7 +3199,7 @@ contains
 
                     temp_contribution = &
                       (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
-                       *matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1) &
+                       *photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k, 1) &
                        *delta_temp(n_eigen, n_eigen_final, N_spin, N_k) &
                        *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                        *transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -3763,9 +3772,9 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate reflect')
     end if
 
-    if (allocated(matrix_weights)) then
-      deallocate (matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
+    if (allocated(photo_matrix_weights)) then
+      deallocate (photo_matrix_weights, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
     end if
 
     if (allocated(E_transverse)) then
