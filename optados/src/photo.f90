@@ -71,6 +71,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
   real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: spectral_weight
   real(kind=dp) :: mean_te
   real(kind=dp) :: total_qe
   real(kind=dp), allocatable, dimension(:) :: layer_qe
@@ -762,16 +763,18 @@ contains
           end do                                    ! Loop over kpoints
         end do
 
-        if (enable_debug_output .and. index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
-          write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, &
-            '-------------------------------------+'
-          write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
-          write (stdout, 126) shape(projected_matrix_weights)
-          write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), &
-                                                N2=1, N_geom), N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
-                                              n_eigen_final=1, nbands), n_eigen=1, nbands)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+        if (enable_debug_output) then
+          if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root) then
+            write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', atom, &
+              '-------------------------------------+'
+            write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
+            write (stdout, 126) shape(projected_matrix_weights)
+            write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
+            write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), &
+                                                  N2=1, N_geom), N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
+                                                n_eigen_final=1, nbands), n_eigen=1, nbands)
+            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+          end if
         end if
 
         ! Send matrix element to jDOS routine and get weighted jDOS back
@@ -1198,9 +1201,17 @@ contains
 
     if (index(photo_momentum, 'specfn') > 0) then
       call elec_read_spec_function(sf_maxvec)
+      if (.not. allocated(spectral_weight)) then
+        allocate (spectral_weight(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed') 
+      end if
+      spectral_weight(1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)) = & 
+        photo_spectral_func(3,1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id))
     else
       if (.not. allocated(photo_spectral_func)) then
-        allocate (photo_spectral_func(3, 1, nbands, nspins, num_kpoints_on_node(my_node_id)))
+        allocate (photo_spectral_func(3, 1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_angle - allocation of photo_spectral_func failed')
+
         photo_spectral_func = 1.0_dp
       end if
     end if
@@ -1831,7 +1842,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: width, norm_vac, qe_factor, argument, ekin_temp,&
-                     time0, time1, final_fd, initial_fd, temp_contribution, spectral_factor
+                     time0, time1, final_fd, initial_fd, temp_contribution, spectral_factor, te_spec_factor
     integer :: N_k, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, gdx, qe_unit, token, inode
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
@@ -1994,43 +2005,49 @@ contains
               do gdx = 1, photo_sf_max_vectors
                 !! this could be checked if it has an impact on the final value
                 ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
-                if (enable_debug_output .and. index(devel_flag, 'reduced_pe') > 0) then
-                  if (index(devel_flag, 'projected_pe') > 0) then
-                    qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                      photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                      delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                      electrons_per_state*kpoint_weight(N_k)* &
-                      (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
-                       pdos_weights_k_band(n_eigen_init, N_spin, N_k))
-                  else
-                    qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                      photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                      delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                      electrons_per_state*kpoint_weight(N_k)
-                  end if
-                else
+                ! if (enable_debug_output) then
+                !   if (index(devel_flag, 'reduced_pe') > 0) then
+                !     if (index(devel_flag, 'projected_pe') > 0) then
+                !       qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                !         photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                !         delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                !         electrons_per_state*kpoint_weight(N_k)* &
+                !         (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
+                !         pdos_weights_k_band(n_eigen_init, N_spin, N_k))
+                !     else
+                !       qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
+                !         photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                !         delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
+                !         electrons_per_state*kpoint_weight(N_k)
+                !     end if
+                !   end if
+                ! else
                   ! do the specfn_dependent calculations
-                  spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) & 
+                  spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) & 
                                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                                     *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                  te_spec_factor = spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
                   qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
                                                                            + temp_contribution*spectral_factor
                   te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
-                                                  + temp_contribution*spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
-                end if
-                if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-                  write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
-                  write (stdout, '(18(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
-                    band_energy(n_eigen_init, N_spin, N_k), &
-                    band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k), &
-                    photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k), &
-                    delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
-                    transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), &
-                    I_layer(box_atom(atom), current_photo_energy_index), &
-                    transverse_gauss(gdx, n_eigen_init, N_spin, N_k), vacuum_gauss(n_eigen_final, N_spin, N_k), &
-                    initial_fd, final_fd, &
-                    pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen_init, N_spin, N_k)
-                end if
+                                                  + temp_contribution*te_spec_factor
+                ! end if
+                ! if (enable_debug_output) then 
+                !   if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                !     write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
+                !     write (stdout, '(18(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
+                !       band_energy(n_eigen_init, N_spin, N_k), &
+                !       band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k), &
+                !       photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k), &
+                !       delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
+                !       transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), &
+                !       I_layer(box_atom(atom), current_photo_energy_index), &
+                !       transverse_gauss(gdx, n_eigen_init, N_spin, N_k), vacuum_gauss(n_eigen_final, N_spin, N_k), &
+                !       initial_fd, final_fd, &
+                !       pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), & 
+                !       pdos_weights_k_band(n_eigen_init, N_spin, N_k)
+                !   end if
+                ! end if
               end do
             end do
           end do
@@ -2096,6 +2113,11 @@ contains
     if (allocated(transmit_prob) .and. index(photo_output, 'e_bind') .eq. 0) then
       deallocate (transmit_prob, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
+    end if
+
+    if (allocated(spectral_weight) .and. index(photo_output, 'e_bind') .eq. 0) then
+      deallocate (spectral_weight, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate spectral_weight') 
     end if
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) then
@@ -2639,6 +2661,7 @@ contains
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
     real(kind=dp) :: temp_contribution, ekin_temp, e_ortho_kin_temp, efinal_temp
+    real(kind=dp) :: spectral_factor, te_spec_factor
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
@@ -2752,31 +2775,36 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
-            do gdx = 1, photo_sf_max_vectors
-              temp_contribution = (qe_factor*photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
+            temp_contribution = (qe_factor &
                                   *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
-                                  *(electron_esc(gdx, n_eigen, N_spin, N_k, atom)) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *(I_layer(box_atom(atom), current_photo_energy_index)) &                                  
-                                  *transverse_gauss(gdx,n_eigen, N_spin, N_k)*vacuum_gauss(n_eigen, N_spin, N_k) &
+                                  *vacuum_gauss(n_eigen, N_spin, N_k) &
                                   *fermi_dirac(n_eigen, N_spin, N_k) &
                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+            do gdx = 1, photo_sf_max_vectors
+              spectral_factor = spectral_weight(gdx, n_eigen, N_spin, N_k) &
+                                *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                                *transverse_gauss(gdx,n_eigen, N_spin, N_k)
+              te_spec_factor =  spectral_factor*E_transverse(gdx, n_eigen, N_spin, N_k)
               qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom) &
-                                                   + temp_contribution
+                                                   + temp_contribution*spectral_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
-                                                   + temp_contribution*E_transverse(gdx, n_eigen, N_spin, N_k)
+                                                   + temp_contribution*te_spec_factor
             end do
-            if (enable_debug_output .and. index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-              write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
-              write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
-                foptical_matrix_weights(n_eigen, N_k, N_spin, 1), &
-                electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-                I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
-                fermi_dirac(n_eigen, N_spin, N_k), &
-                pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
-            end if
+            ! if (enable_debug_output) then
+            !   if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+            !     write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
+            !     write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
+            !       foptical_matrix_weights(n_eigen, N_k, N_spin, 1), &
+            !       electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+            !       I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
+            !       fermi_dirac(n_eigen, N_spin, N_k), &
+            !       pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
+            !   end if
+            ! end if
           end do
         end do
       end do
@@ -3291,6 +3319,11 @@ contains
       if (allocated(transmit_prob)) then
         deallocate (transmit_prob, stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate transmit_prob')
+      end if
+
+      if (allocated(spectral_weight)) then
+        deallocate (spectral_weight, stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate spectral_weight')
       end if
 
     elseif (index(photo_model, '1step') > 0) then
