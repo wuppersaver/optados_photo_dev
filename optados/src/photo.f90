@@ -122,15 +122,6 @@ contains
       write (stdout, '(1x,a78)') '|                                                                            |'
     end if
 
-    if (index(devel_flag, 'geom_analysis') > 0) then
-      write (stdout, '(1x,a78)') '+           Only performing the analysis of the supplied geometry!           +'
-      call analyse_geometry
-      call elec_pdos_read
-      call make_pdos_weights_atoms
-      call elec_dealloc_pdos
-      return
-    end if
-
     if (.not. efermi_set) then
       call dos_utils_set_efermi
       call dos_utils_deallocate
@@ -151,8 +142,6 @@ contains
 
       ! Calculate the optical properties of the slab
       call calc_photo_optics
-      if (index(devel_flag, 'output_ome_itof') > 0) return
-
       call calc_absorp_layer
     end if
 
@@ -525,7 +514,7 @@ contains
           call io_error('Error: calc_photon_energies - given photon sweep min/max values do not give integer # of photon steps')
       end if
       allocate (index_energy(number_energies), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
+      if (ierr /= 0) call io_error('Error: calc_photon_energies - allocation of index_energy failed')
       do i = 1, number_energies
         temp = (i - 1)*jdos_spacing + photo_photon_min
         ! Account for E = 0.0
@@ -534,7 +523,7 @@ contains
     else
       number_energies = 1
       allocate (index_energy(number_energies), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of index_energy failed')
+      if (ierr /= 0) call io_error('Error: calc_photon_energies - allocation of index_energy failed')
       ! Account for E = 0.0
       index_energy(number_energies) = int(photo_photon_energy/jdos_spacing) + 1
     end if
