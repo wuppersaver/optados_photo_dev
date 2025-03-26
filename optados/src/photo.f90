@@ -718,6 +718,50 @@ contains
     allocate (reflect_photo(num_boxes, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
 
+    if (index(devel_flag, 'optics_restart') > 0) then
+      call setup_energy_scale(E)
+      if (on_root) then
+        if (.not. allocated(absorp)) then
+          allocate(absorp(jdos_nbins), stat=ierr)
+          if (ierr /= 0) call io_error("Error: calc_photo_optics cannot allocate absorp")
+        end if
+        if (.not. allocated(reflect)) then
+          allocate(reflect(jdos_nbins), stat=ierr)
+          if (ierr /= 0) call io_error("Error: calc_photo_optics cannot allocate reflect")
+        end if
+        call read_absorp_file
+        call read_reflect_file
+      end if
+      call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
+      call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
+      
+      time1 = io_time()
+      if (on_root .and. iprint > 1) then
+        write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to read Photoemission Optical Properties', time1 - time0, ' (sec) +'
+      end if
+
+      call make_weights(matrix_weights)
+      call elec_dealloc_optical
+
+      if (index(photo_model,'3step') > 0 .or. index(photo_model,'ds_like_pe') > 0) then
+        ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
+        allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
+        if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
+  
+        do N_spin = 1, nspins
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            photo_matrix_weights(:,:,N_spin,N_k) = matrix_weights(:,:,N_k,N_spin,1)
+          end do
+        end do
+      end if
+      ! get rid of the old, now unnecessary array - either because we have the 1step model, 
+      ! or we have transferred the relevant data to photo_matrix_weights
+      deallocate (matrix_weights, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
+
+      return
+    end if
+
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
@@ -845,10 +889,10 @@ contains
           call calc_reflect
 
           if (iprint .gt. 2) then
-            call write_epsilon(box + 100, photo_at_e=dos_at_e, photo_volume=box_volume)
-            call write_refract(box + 100, photo_volume=box_volume)
-            call write_absorp(box + 100, photo_volume=box_volume)
-            call write_reflect(box + 100, photo_volume=box_volume)
+            call write_epsilon(box, photo_at_e=dos_at_e, photo_volume=box_volume)
+            call write_refract(box, photo_volume=box_volume)
+            call write_absorp(box, photo_volume=box_volume)
+            call write_reflect(box, photo_volume=box_volume)
           end if
 
           do energy = 1, number_energies
@@ -945,6 +989,92 @@ contains
     end if
 
   end subroutine calc_photo_optics
+
+  subroutine read_absorp_file
+    ! This subroutine reads in a series of absorption coefficient curves
+    ! from a number of appropriately named files. This way the relevant
+    ! optical data for photoemission can be read as a checkpoint. This can
+    ! be used to for example calculate the photoemission for a set of 
+    ! k-points along a bandstructure path with the optical properties of 
+    ! a MP grid like k-point distribution, as that is expected to have better
+    ! convergence.
+    ! Written by F Mildner, Mar 2025
+    use od_optics, only: absorp
+    use od_cell, only: nkpoints, cell_volume
+    use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format
+    use od_electronic, only: nbands, num_electrons, nspins
+    use od_jdos_utils, only: jdos_nbins, E
+    use od_io, only: seedname, io_file_unit, stdout, io_error
+
+    integer :: absorp_unit, box, i, N, ierr, energy
+    character(len=3) :: box_char
+    character(len=100) :: dummya, dummyb
+    absorp_unit = io_file_unit()
+    
+    do box = 1, num_boxes
+      
+      write (box_char, '(I0.3)') box
+      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat',stat=ierr)
+      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
+      ! skip header
+      do i = 1, 50
+        read (absorp_unit, *) dummya
+        if (index(dummya,'#') .eq. 0) exit
+      end do
+      do N = 2, jdos_nbins
+        read (absorp_unit, '(1x,a37,1x,es37.30)') dummya, absorp(N)
+      end do
+      close (unit=absorp_unit)
+      
+      do energy = 1, number_energies
+        absorp_photo(box, energy) = absorp(index_energy(energy))
+      end do
+    
+    end do
+  end subroutine read_absorp_file
+
+  subroutine read_reflect_file
+    ! This subroutine reads in a series of reflection coefficient curves
+    ! from a number of appropriately named files. This way the relevant
+    ! optical data for photoemission can be read as a checkpoint. This can
+    ! be used to for example calculate the photoemission for a set of 
+    ! k-points along a bandstructure path with the optical properties of 
+    ! a MP grid like k-point distribution, as that is expected to have better
+    ! convergence.
+    ! Written by F Mildner, Mar 2025
+    use od_optics, only: reflect
+    use od_cell, only: nkpoints, cell_volume
+    use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format
+    use od_electronic, only: nbands, num_electrons, nspins
+    use od_jdos_utils, only: jdos_nbins, E
+    use od_io, only: seedname, io_file_unit, stdout
+
+    integer :: reflect_unit, box, i, N, ierr, energy
+    character(len=3) :: box_char
+    character(len=100) :: dummya, dummyb
+
+    reflect_unit = io_file_unit()
+    
+    do box = 1, num_boxes
+      write (box_char, '(I0.3)') box
+      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat',stat=ierr)
+      if (ierr /= 0) call io_error('Error: Could not open reflection curve .dat file for box #'//trim(adjustl(box_char)))
+      ! skip header
+      do i = 1, 50
+        read (reflect_unit, *)dummya
+        if (index(dummya,'#') .eq. 0) exit
+      end do
+      do N = 2, jdos_nbins
+        read (reflect_unit, '(1x,a37,1x,es37.30)') dummya, reflect(N)
+      end do
+      close (unit=reflect_unit)
+      
+      do energy = 1, number_energies
+        reflect_photo(box, energy) = reflect(index_energy(energy))
+      end do
+
+    end do
+  end subroutine read_reflect_file
 
   subroutine calc_absorp_layer
     !!This subroutine calculates the absorption coefficient for a specific layer

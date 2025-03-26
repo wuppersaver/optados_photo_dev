@@ -152,7 +152,6 @@ contains
         call write_refract
         call write_absorp
         call write_reflect
-        end if
       end if
     end if
 
@@ -887,8 +886,8 @@ contains
 
     type(graph_labels) :: label
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
-      label%name = "epsilon_atom_"//trim(adjustl(box_char))
+      write (box_char, '(I0.3)') photo_box
+      label%name = "epsilon_photo_box_"//trim(adjustl(box_char))
     else
       label%name = "epsilon"
     end if
@@ -903,7 +902,7 @@ contains
     ! Open the output file
     epsilon_unit = io_file_unit()
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
+      write (box_char, '(I0.3)') photo_box
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
@@ -1237,8 +1236,8 @@ contains
 
     type(graph_labels) :: label
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
-      label%name = "refractive_index_atom_"//trim(adjustl(box_char))
+      write (box_char, '(I0.3)') photo_box
+      label%name = "refractive_index_photo_box_"//trim(adjustl(box_char))
     else
       label%name = "refractive_index"
     end if
@@ -1251,7 +1250,7 @@ contains
     ! Open the output file
     refract_unit = io_file_unit()
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
+      write (box_char, '(I0.3)') photo_box
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
@@ -1322,8 +1321,8 @@ contains
 
     type(graph_labels) :: label
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
-      label%name = "absorption_atom_"//trim(adjustl(box_char))
+      write (box_char, '(I0.3)') photo_box
+      label%name = "absorption_photo_box_"//trim(adjustl(box_char))
     else
       label%name = "absorption"
     end if
@@ -1335,7 +1334,7 @@ contains
     ! Open the output file
     absorp_unit = io_file_unit()
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
+      write (box_char, '(I0.3)') photo_box
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
@@ -1369,13 +1368,13 @@ contains
       write (absorp_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (absorp_unit, '(a1)') '#'
-    if (present(photo_box)) then 
+    if (.not. present(photo_box)) then 
       do N = 1, jdos_nbins
         write (absorp_unit, *) E(N), absorp(N)
       end do
     else
       do N = 1, jdos_nbins
-        write (absorp_unit, '(2(1x,e23.10))') E(N), absorp(N)
+        write (absorp_unit, '(2(1x,es37.30))') E(N), absorp(N)
       end do
     end if
 
@@ -1411,8 +1410,8 @@ contains
     type(graph_labels) :: label
 
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
-      label%name = "reflection_atom_"//trim(adjustl(box_char))
+      write (box_char, '(I0.3)') photo_box
+      label%name = "reflection_photo_box_"//trim(adjustl(box_char))
     else
       label%name = "reflection"
     end if
@@ -1424,7 +1423,7 @@ contains
     ! Open the output file
     reflect_unit = io_file_unit()
     if (present(photo_box)) then
-      write (box_char, '(I3)') photo_box
+      write (box_char, '(I0.3)') photo_box
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
@@ -1439,33 +1438,33 @@ contains
     write (reflect_unit, '(a1)') '#'
     write (reflect_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (reflect_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
+      write (reflect_unit, '(a23, f10.5)') '# Number of electrons: ', num_electrons(1)
     else
-      write (reflect_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (reflect_unit, '(a23, f10.5, 1x, f10.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
-    write (reflect_unit, '(a15,i7)') '# No of bands:', nbands
+    write (reflect_unit, '(a15,i7)') '# No of bands: ', nbands
     if (present(photo_volume)) then
       write (reflect_unit, '(a57,f12.5)') '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
     else
-      write (reflect_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3):', cell_volume
+      write (reflect_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3): ', cell_volume
     end if
     write (reflect_unit, '(a1)') '#'
     write (reflect_unit, '(a16,a20)') '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
-      write (reflect_unit, '(a12,3(1x,f12.5))') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
-      write (reflect_unit, '(a12,f23.10)') '# q_weight:', q_weight
+      write (reflect_unit, '(a12,3(1x,f12.5))') '# q-vector :', optics_qdir(1), optics_qdir(2), optics_qdir(3)
+      write (reflect_unit, '(a12,f23.10)') '# q_weight :', q_weight
     end if
     if (scissor_op > 0) then
       write (reflect_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (reflect_unit, '(a1)') '#'
-    if (present(photo_box)) then 
+    if (.not. present(photo_box)) then 
       do N = 1, jdos_nbins
         write (reflect_unit, *) E(N), reflect(N)
       end do
     else
       do N = 1, jdos_nbins
-        write (reflect_unit, '(2(1x,e23.10))') E(N), reflect(N)
+        write (reflect_unit, '(2(1x,es37.30))') E(N), reflect(N)
       end do
     end if
 
