@@ -78,7 +78,6 @@ module od_optics
   real(kind=dp) :: e_fermi
   integer :: N
   integer :: N2
-  real(kind=dp) :: slab_volume
 
 contains
 
@@ -132,14 +131,8 @@ contains
     call elec_dealloc_optical ! don't need this large array anymore
 
     if (on_root) then
-      if (index(devel_flag, 'slab_volume') > 0) then
-        slab_volume = (cell_volume/real_lattice(3, 3))*(photo_slab_max - photo_slab_min)
-        ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, slab_volume)
-      else
-        ! Calculate epsilon_2
-        call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
-      end if
+      ! Calculate epsilon_2
+      call calc_epsilon_2(weighted_jdos, weighted_dos_at_e)
       ! Calculate epsilon_1
       call calc_epsilon_1
       ! Calculate other optical properties
@@ -152,22 +145,13 @@ contains
       end if
 
       ! Write everything out
-      if (index(devel_flag, 'slab_volume') > 0) then
-        call write_epsilon(atom=0, photo_volume=slab_volume)
-      else
-        call write_epsilon(0)
-      end if
+      call write_epsilon
       if (.not. index(optics_geom, 'tensor') > 0) then
         call write_conduct
         call write_loss_fn
-        if (index(devel_flag, 'slab_volume') > 0) then
-          call write_refract(atom=0, photo_volume=slab_volume)
-          call write_absorp(atom=0, photo_volume=slab_volume)
-          call write_reflect(atom=0, photo_volume=slab_volume)
-        else
-          call write_refract(0)
-          call write_absorp(0)
-          call write_reflect(0)
+        call write_refract
+        call write_absorp
+        call write_reflect
         end if
       end if
     end if
@@ -902,7 +886,7 @@ contains
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       label%name = "epsilon_atom_"//trim(adjustl(atom_char))
     else
@@ -918,45 +902,45 @@ contains
 
     ! Open the output file
     epsilon_unit = io_file_unit()
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(adjustl(atom_char))//'.dat')
     else
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
     end if
     ! Write into the output file
-    write (epsilon_unit, *) '#*********************************************'
-    write (epsilon_unit, *) '#            Dielectric function                 '
-    write (epsilon_unit, *) '#*********************************************'
-    write (epsilon_unit, *) '#'
-    write (epsilon_unit, *) '# Number of k-points: ', nkpoints
+    write (epsilon_unit, '(a46)') '#*********************************************'
+    write (epsilon_unit, '(a32)') '#            Dielectric function'
+    write (epsilon_unit, '(a46)') '#*********************************************'
+    write (epsilon_unit, '(a1)') '#'
+    write (epsilon_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (epsilon_unit, *) '# Number of electrons:', num_electrons(1)
+      write (epsilon_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
     else
-      write (epsilon_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (epsilon_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
-    write (epsilon_unit, *) '# Number of bands:', nbands
+    write (epsilon_unit, '(a15,i7)') '# Number of bands:', nbands
     if (present(photo_volume)) then
-      write (epsilon_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+      write (epsilon_unit, '(a57,f12.5)') '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
     else
-      write (epsilon_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+      write (epsilon_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3):', cell_volume
     end if
-    write (epsilon_unit, *) '#'
-    write (epsilon_unit, '(1x,a,f10.6,1x,a,f10.6,1x,a)') &
+    write (epsilon_unit, '(a1)') '#'
+    write (epsilon_unit, '(a35,f10.6,1x,a5,f10.6,1x,a8)') &
          & '# Dielectric function calculated to', jdos_max_energy, 'eV in', dE, 'eV steps'
-    write (epsilon_unit, *) '#'
-    write (epsilon_unit, *) '# optics_geom:  ', optics_geom
+    write (epsilon_unit, '(a1)') '#'
+    write (epsilon_unit, '(a16,a20)') '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
-      write (epsilon_unit, '(1x,a,f10.3,f10.3,f10.3)') '# q-vector', &
+      write (epsilon_unit, '(a10,f10.3,f10.3,f10.3)') '# q-vector', &
            & optics_qdir(1), optics_qdir(2), optics_qdir(3)
-      write (epsilon_unit, *) '# q_weight:', q_weight
+      write (epsilon_unit, '(a12,f23.10)') '# q_weight:', q_weight
     end if
     if (scissor_op > 0) then
-      write (epsilon_unit, '(1x,a,f10.3,f10.3,f10.3)') '# Scissor operator:', scissor_op
+      write (epsilon_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
-    write (epsilon_unit, *) '#'
+    write (epsilon_unit, '(a1)') '#'
     if (optics_intraband) then
-      write (epsilon_unit, *) '# Calculation includes intraband term'
+      write (epsilon_unit, '(a37)') '# Calculation includes intraband term'
       if (present(photo_at_e)) then
         if (fixed) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(1, :)
         if (adaptive) write (epsilon_unit, *) '# DOS at Ef:', photo_at_e(2, :)
@@ -1252,7 +1236,7 @@ contains
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       label%name = "refractive_index_atom_"//trim(adjustl(atom_char))
     else
@@ -1266,7 +1250,7 @@ contains
 
     ! Open the output file
     refract_unit = io_file_unit()
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom_'//trim(adjustl(atom_char))//'.dat')
     else
@@ -1274,34 +1258,34 @@ contains
     end if
 
     ! Write into the output file
-    write (refract_unit, *) '#*********************************************'
-    write (refract_unit, *) '#             Refractive index                 '
-    write (refract_unit, *) '#*********************************************'
-    write (refract_unit, *) '#'
-    write (refract_unit, *) '# N=n+ik'
-    write (refract_unit, *) '#'
-    write (refract_unit, *) '# Number of k-points: ', nkpoints
+    write (refract_unit, '(a46)') '#*********************************************'
+    write (refract_unit, '(a30)') '#             Refractive index'
+    write (refract_unit, '(a46)') '#*********************************************'
+    write (refract_unit, '(a1)') '#'
+    write (refract_unit, '(a8)') '# N=n+ik'
+    write (refract_unit, '(a1)') '#'
+    write (refract_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (refract_unit, *) '# Number of electrons:', num_electrons(1)
+      write (refract_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
     else
-      write (refract_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (refract_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
-    write (refract_unit, *) '# No of bands:', nbands
+    write (refract_unit, '(a15,i7)') '# No of bands:', nbands
     if (present(photo_volume)) then
-      write (refract_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+      write (refract_unit, '(a57,f12.5)') '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
     else
-      write (refract_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+      write (refract_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3):', cell_volume
     end if
-    write (refract_unit, *) '#'
-    write (refract_unit, *) '# optics_geom:  ', optics_geom
+    write (refract_unit, '(a1)') '#'
+    write (refract_unit, '(a16,a20)') '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
-      write (refract_unit, '(1x,a,f10.3,f10.3,f10.3)') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
-      write (refract_unit, *) '# q_weight:', q_weight
+      write (refract_unit, '(a12,3(1x,f12.5))') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
+      write (refract_unit, '(a12,f23.10)') '# q_weight:', q_weight
     end if
     if (scissor_op > 0) then
-      write (refract_unit, '(1x,a,f10.3,f10.3,f10.3)') '# Scissor operator:', scissor_op
+      write (refract_unit, '(1x,a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
-    write (refract_unit, *) '#'
+    write (refract_unit, '(a1)') '#'
     do N = 1, jdos_nbins
       write (refract_unit, *) E(N), refract(N, 1), refract(N, 2)
     end do
@@ -1337,7 +1321,7 @@ contains
     character(len=3) :: atom_char
 
     type(graph_labels) :: label
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       label%name = "absorption_atom_"//trim(adjustl(atom_char))
     else
@@ -1350,7 +1334,7 @@ contains
 
     ! Open the output file
     absorp_unit = io_file_unit()
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom_'//trim(adjustl(atom_char))//'.dat')
     else
@@ -1358,33 +1342,33 @@ contains
     end if
 
     ! Write into the output file
-    write (absorp_unit, *) '#*********************************************'
-    write (absorp_unit, *) '#             Absorption coefficent                 '
-    write (absorp_unit, *) '#*********************************************'
-    write (absorp_unit, *) '#'
-    write (absorp_unit, *) '#'
-    write (absorp_unit, *) '# Number of k-points: ', nkpoints
+    write (absorp_unit, '(a46)') '#*********************************************'
+    write (absorp_unit, '(a35)') '#             Absorption coefficent'
+    write (absorp_unit, '(a46)') '#*********************************************'
+    write (absorp_unit, '(a1)')  '#'
+    write (absorp_unit, '(a1)')  '#'
+    write (absorp_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (absorp_unit, *) '# Number of electrons:', num_electrons(1)
+      write (absorp_unit, '(a23, i7)') '# Number of electrons: ', num_electrons(1)
     else
-      write (absorp_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (absorp_unit, '(a23, i7, 1x, i7)') '# Number of electrons: ', num_electrons(1), num_electrons(2)
     end if
-    write (absorp_unit, *) '# No of bands:', nbands
+    write (absorp_unit, '(a15,i7)') '# No of bands: ', nbands
     if (present(photo_volume)) then
-      write (absorp_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+      write (absorp_unit, '(a57,f12.5)') '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
     else
-      write (absorp_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+      write (absorp_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3): ', cell_volume
     end if
-    write (absorp_unit, *) '#'
-    write (absorp_unit, *) '# optics_geom:  ', optics_geom
+    write (absorp_unit, '(a1)') '#'
+    write (absorp_unit, '(a16,a20)') '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
-      write (absorp_unit, '(1x,a,f10.3,f10.3,f10.3)') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
-      write (absorp_unit, *) '# q_weight:', q_weight
+      write (absorp_unit, '(a12,3(1x,f12.5))') '# q-vector :', optics_qdir(1), optics_qdir(2), optics_qdir(3)
+      write (absorp_unit, '(a12,f23.10)') '# q_weight :', q_weight
     end if
     if (scissor_op > 0) then
-      write (absorp_unit, '(1x,a,f10.3,f10.3,f10.3)') '# Scissor operator:', scissor_op
+      write (absorp_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
-    write (absorp_unit, *) '#'
+    write (absorp_unit, '(a1)') '#'
     do N = 1, jdos_nbins
       write (absorp_unit, *) E(N), absorp(N)
     end do
@@ -1420,7 +1404,7 @@ contains
     character(len=3) :: atom_char
     type(graph_labels) :: label
 
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       label%name = "reflection_atom_"//trim(adjustl(atom_char))
     else
@@ -1433,7 +1417,7 @@ contains
 
     ! Open the output file
     reflect_unit = io_file_unit()
-    if (atom .gt. 0) then
+    if (present(atom)) then
       write (atom_char, '(I3)') atom
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom_'//trim(adjustl(atom_char))//'.dat')
     else
@@ -1441,34 +1425,34 @@ contains
     end if
 
     ! Write into the output file
-    write (reflect_unit, *) '#*********************************************'
-    write (reflect_unit, *) '#           Reflection coefficient                '
-    write (reflect_unit, *) '#*********************************************'
-    write (reflect_unit, *) '#'
-    write (reflect_unit, *) '# N=n+ik'
-    write (reflect_unit, *) '#'
-    write (reflect_unit, *) '# Number of k-points: ', nkpoints
+    write (reflect_unit, '(a46)') '#*********************************************'
+    write (reflect_unit, '(a34)') '#           Reflection coefficient'
+    write (reflect_unit, '(a46)') '#*********************************************'
+    write (reflect_unit, '(a1)') '#'
+    write (reflect_unit, '(a8)') '# N=n+ik'
+    write (reflect_unit, '(a1)') '#'
+    write (reflect_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (reflect_unit, *) '# Number of electrons:', num_electrons(1)
+      write (reflect_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
     else
-      write (reflect_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (reflect_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
-    write (reflect_unit, *) '# No of bands:', nbands
+    write (reflect_unit, '(a15,i7)') '# No of bands:', nbands
     if (present(photo_volume)) then
-      write (reflect_unit, *) '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
+      write (reflect_unit, '(a57,f12.5)') '# Volume calculated for optics and photoemission (Ang^3):', photo_volume
     else
-      write (reflect_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
+      write (reflect_unit, '(a35, f23.10)') '# Volume of the unit cell (Ang^3):', cell_volume
     end if
-    write (reflect_unit, *) '#'
-    write (reflect_unit, *) '# optics_geom:  ', optics_geom
+    write (reflect_unit, '(a1)') '#'
+    write (reflect_unit, '(a16,a20)') '# optics_geom:  ', optics_geom
     if (index(optics_geom, 'polar') > 0) then
-      write (reflect_unit, '(1x,a,f10.3,f10.3,f10.3)') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
-      write (reflect_unit, *) '# q_weight:', q_weight
+      write (reflect_unit, '(a12,3(1x,f12.5))') '# q-vector', optics_qdir(1), optics_qdir(2), optics_qdir(3)
+      write (reflect_unit, '(a12,f23.10)') '# q_weight:', q_weight
     end if
     if (scissor_op > 0) then
-      write (reflect_unit, '(1x,a,f10.3,f10.3,f10.3)') '# Scissor operator:', scissor_op
+      write (reflect_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
-    write (reflect_unit, *) '#'
+    write (reflect_unit, '(a1)') '#'
     do N = 1, jdos_nbins
       write (reflect_unit, *) E(N), reflect(N)
     end do
