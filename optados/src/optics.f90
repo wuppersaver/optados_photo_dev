@@ -1349,9 +1349,9 @@ contains
     write (absorp_unit, '(a1)')  '#'
     write (absorp_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (absorp_unit, '(a23, i7)') '# Number of electrons: ', num_electrons(1)
+      write (absorp_unit, '(a23, f10.5)') '# Number of electrons: ', num_electrons(1)
     else
-      write (absorp_unit, '(a23, i7, 1x, i7)') '# Number of electrons: ', num_electrons(1), num_electrons(2)
+      write (absorp_unit, '(a23, f10.5, 1x, f10.5)') '# Number of electrons: ', num_electrons(1), num_electrons(2)
     end if
     write (absorp_unit, '(a15,i7)') '# No of bands: ', nbands
     if (present(photo_volume)) then
@@ -1369,9 +1369,15 @@ contains
       write (absorp_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (absorp_unit, '(a1)') '#'
-    do N = 1, jdos_nbins
-      write (absorp_unit, *) E(N), absorp(N)
-    end do
+    if (present(photo_box)) then 
+      do N = 1, jdos_nbins
+        write (absorp_unit, *) E(N), absorp(N)
+      end do
+    else
+      do N = 1, jdos_nbins
+        write (absorp_unit, '(2(1x,e23.10))') E(N), absorp(N)
+      end do
+    end if
 
     ! Close output file
     close (unit=absorp_unit)
@@ -1453,9 +1459,15 @@ contains
       write (reflect_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (reflect_unit, '(a1)') '#'
-    do N = 1, jdos_nbins
-      write (reflect_unit, *) E(N), reflect(N)
-    end do
+    if (present(photo_box)) then 
+      do N = 1, jdos_nbins
+        write (reflect_unit, *) E(N), reflect(N)
+      end do
+    else
+      do N = 1, jdos_nbins
+        write (reflect_unit, '(2(1x,e23.10))') E(N), reflect(N)
+      end do
+    end if
 
     ! Close output file
     close (unit=reflect_unit)
