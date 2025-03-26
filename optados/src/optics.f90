@@ -866,7 +866,7 @@ contains
   end subroutine calc_reflect
 
   !***************************************************************
-  subroutine write_epsilon(atom, photo_at_e, photo_volume)
+  subroutine write_epsilon(photo_box, photo_at_e, photo_volume)
     !***************************************************************
     ! This subroutine writes out the dielectric function
 
@@ -880,15 +880,15 @@ contains
     integer :: N, N2, N3
     real(kind=dp) ::dE
     integer :: epsilon_unit
-    integer, intent(in), optional :: atom
+    integer, intent(in), optional :: photo_box
     real(kind=dp), intent(in), dimension(:, :), optional :: photo_at_e
     real(kind=dp), intent(in), optional                  :: photo_volume
-    character(len=3) :: atom_char
+    character(len=3) :: box_char
 
     type(graph_labels) :: label
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      label%name = "epsilon_atom_"//trim(adjustl(atom_char))
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      label%name = "epsilon_atom_"//trim(adjustl(box_char))
     else
       label%name = "epsilon"
     end if
@@ -902,9 +902,9 @@ contains
 
     ! Open the output file
     epsilon_unit = io_file_unit()
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_atom_'//trim(adjustl(atom_char))//'.dat')
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=epsilon_unit, action='write', file=trim(seedname)//'_epsilon.dat')
     end if
@@ -1219,7 +1219,7 @@ contains
   end subroutine write_conduct
 
   !***************************************************************
-  subroutine write_refract(atom, photo_volume)
+  subroutine write_refract(photo_box, photo_volume)
     !***************************************************************
     ! This subroutine writes out the refractive index
 
@@ -1231,14 +1231,14 @@ contains
 
     integer :: N
     integer :: refract_unit
-    integer, intent(in), optional :: atom
+    integer, intent(in), optional :: photo_box
     real(kind=dp), intent(in), optional :: photo_volume
-    character(len=3) :: atom_char
+    character(len=3) :: box_char
 
     type(graph_labels) :: label
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      label%name = "refractive_index_atom_"//trim(adjustl(atom_char))
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      label%name = "refractive_index_atom_"//trim(adjustl(box_char))
     else
       label%name = "refractive_index"
     end if
@@ -1250,9 +1250,9 @@ contains
 
     ! Open the output file
     refract_unit = io_file_unit()
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_atom_'//trim(adjustl(atom_char))//'.dat')
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=refract_unit, action='write', file=trim(seedname)//'_refractive_index.dat')
     end if
@@ -1304,7 +1304,7 @@ contains
   end subroutine write_refract
 
   !***************************************************************
-  subroutine write_absorp(atom, photo_volume)
+  subroutine write_absorp(photo_box, photo_volume)
     !***************************************************************
     ! This subroutine writes out the absorption coefficient
 
@@ -1316,14 +1316,14 @@ contains
 
     integer :: N
     integer :: absorp_unit
-    integer, intent(in), optional :: atom
+    integer, intent(in), optional :: photo_box
     real(kind=dp), intent(in), optional :: photo_volume
-    character(len=3) :: atom_char
+    character(len=3) :: box_char
 
     type(graph_labels) :: label
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      label%name = "absorption_atom_"//trim(adjustl(atom_char))
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      label%name = "absorption_atom_"//trim(adjustl(box_char))
     else
       label%name = "absorption"
     end if
@@ -1334,9 +1334,9 @@ contains
 
     ! Open the output file
     absorp_unit = io_file_unit()
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_atom_'//trim(adjustl(atom_char))//'.dat')
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=absorp_unit, action='write', file=trim(seedname)//'_absorption.dat')
     end if
@@ -1387,7 +1387,7 @@ contains
   end subroutine write_absorp
 
   !***************************************************************
-  subroutine write_reflect(atom, photo_volume)
+  subroutine write_reflect(photo_box, photo_volume)
     !***************************************************************
     ! This subroutine writes out the reflection coefficient
 
@@ -1399,14 +1399,14 @@ contains
 
     integer :: N
     integer :: reflect_unit
-    integer, intent(in), optional :: atom
+    integer, intent(in), optional :: photo_box
     real(kind=dp), intent(in), optional :: photo_volume
-    character(len=3) :: atom_char
+    character(len=3) :: box_char
     type(graph_labels) :: label
 
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      label%name = "reflection_atom_"//trim(adjustl(atom_char))
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      label%name = "reflection_atom_"//trim(adjustl(box_char))
     else
       label%name = "reflection"
     end if
@@ -1417,9 +1417,9 @@ contains
 
     ! Open the output file
     reflect_unit = io_file_unit()
-    if (present(atom)) then
-      write (atom_char, '(I3)') atom
-      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_atom_'//trim(adjustl(atom_char))//'.dat')
+    if (present(photo_box)) then
+      write (box_char, '(I3)') photo_box
+      open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat')
     else
       open (unit=reflect_unit, action='write', file=trim(seedname)//'_reflection.dat')
     end if
