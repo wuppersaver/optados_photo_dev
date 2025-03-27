@@ -2160,14 +2160,14 @@ contains
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                     *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
             do gdx = 1, photo_sf_max_vectors
-              spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
+              spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
                                 *transverse_gauss(gdx, n_eigen_init, N_spin, N_k) &
                                 *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1)
+              te_spec_factor = spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
               qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
                 qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) + temp_contribution*spectral_factor
               te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
-                                                        + (temp_contribution*spectral_factor &
-                                                        *E_transverse(gdx, n_eigen_init, N_spin, N_k))
+                                                        + temp_contribution*te_spec_factor
             end do
           end do
         end do
