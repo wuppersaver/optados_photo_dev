@@ -1322,18 +1322,21 @@ contains
 
     if (index(photo_momentum, 'specfn') > 0) then
       call elec_read_spec_function(sf_maxvec)
+      
       if (.not. allocated(spectral_weight)) then
         allocate (spectral_weight(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed') 
       end if
+      
       spectral_weight(1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)) = & 
         photo_spectral_func(3,1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id))
+    
     else
-      if (.not. allocated(photo_spectral_func)) then
-        allocate (photo_spectral_func(3, 1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_angle - allocation of photo_spectral_func failed')
-
-        photo_spectral_func = 1.0_dp
+      
+      if (.not. allocated(spectral_weight)) then
+        allocate (spectral_weight(1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+        if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed')
+        spectral_weight = 1.0_dp
       end if
     end if
 
