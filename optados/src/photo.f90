@@ -64,7 +64,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
-  real(kind=dp), allocatable, dimension(:) :: t_energy
+  real(kind=dp), allocatable, dimension(:) :: bind_energy
   real(kind=dp), allocatable, dimension(:, :) :: weighted_temp_atom
   ! real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
@@ -3232,9 +3232,9 @@ contains
 
     if (max_energy .lt. 0) return
 
-    allocate (t_energy(max_energy), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of t_energy failed')
-    t_energy = 0.0_dp
+    allocate (bind_energy(max_energy), stat=ierr)
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of bind_energy failed')
+    bind_energy = 0.0_dp
 
     allocate (weighted_temp_atom(max_energy, max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp_atom failed')
@@ -3249,7 +3249,7 @@ contains
     arpes_mask = 0.00_dp
 
     do e_scale = 1, max_energy
-      t_energy(e_scale) = real(e_scale - 1, dp)/1000
+      bind_energy(e_scale) = real(e_scale - 1, dp)/1000
     end do
 
     do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
@@ -3260,7 +3260,7 @@ contains
           do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
           ! do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen_init, N_spin, N_k) = &
-              gaussian((efermi - band_energy(n_eigen_init, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
+              gaussian((efermi - band_energy(n_eigen_init, N_spin, N_k)), photo_bindenergy_broadening, bind_energy(e_scale))
           end do
         end do
       end do
@@ -3661,7 +3661,7 @@ contains
 
         do e_scale = 1, max_energy
           ! write (binding_unit, '(1x,ES25.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))')
-          write (binding_unit, '('//trim(out_string)//')') t_energy(e_scale), &
+          write (binding_unit, '('//trim(out_string)//')') bind_energy(e_scale), &
             sum(qe_atom(1:max_atoms + 1, e_scale)), qe_atom(1:max_atoms + 1, e_scale)
         end do
 
@@ -3679,9 +3679,9 @@ contains
       if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate qe_atom')
     end if
 
-    if (allocated(t_energy)) then
-      deallocate (t_energy, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate t_energy')
+    if (allocated(bind_energy)) then
+      deallocate (bind_energy, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate bind_energy')
     end if
 
     time1 = io_time()
