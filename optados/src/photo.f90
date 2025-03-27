@@ -1014,8 +1014,9 @@ contains
     do box = 1, num_boxes
       
       write (box_char, '(I0.3)') box
-      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat',stat=ierr)
-      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
+      write (*, *) trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat'
+      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', err=100)
+100 call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
       do i = 1, 50
         read (absorp_unit, *) dummya
@@ -1047,7 +1048,7 @@ contains
     use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format
     use od_electronic, only: nbands, num_electrons, nspins
     use od_jdos_utils, only: jdos_nbins, E
-    use od_io, only: seedname, io_file_unit, stdout
+    use od_io, only: seedname, io_file_unit, stdout, io_error
 
     integer :: reflect_unit, box, i, N, ierr, energy
     character(len=3) :: box_char
@@ -1057,8 +1058,9 @@ contains
     
     do box = 1, num_boxes
       write (box_char, '(I0.3)') box
-      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat',stat=ierr)
-      if (ierr /= 0) call io_error('Error: Could not open reflection curve .dat file for box #'//trim(adjustl(box_char)))
+      write (*, *) trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat'
+      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat', err=100)
+100 call io_error('Error: Could not open reflection curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
       do i = 1, 50
         read (reflect_unit, *)dummya
