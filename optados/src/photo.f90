@@ -1327,7 +1327,7 @@ contains
         allocate (spectral_weight(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed') 
       end if
-      
+      ! move the important spectral weight into the smaller array for later use
       spectral_weight(1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)) = & 
         photo_spectral_func(3,1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id))
     
@@ -1481,6 +1481,11 @@ contains
     if (allocated(kpoint_r_cart)) then
       deallocate (kpoint_r_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate kpoint_r_cart')
+    end if
+
+    if (allocated(photo_spectral_func)) then
+      deallocate (photo_spectral_func, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate photo_spectral_func')
     end if
 
     time1 = io_time()
@@ -1950,7 +1955,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-                             elec_read_band_curvature, transmit_prob, elec_read_transmit_prob, photo_spectral_func
+                             elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
                              exclude_bands, photo_model, photo_sf_max_vectors, photo_output
@@ -2734,7 +2739,7 @@ contains
 
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
-    & elec_read_band_curvature, photo_spectral_func
+    & elec_read_band_curvature
     use od_comms, only: my_node_id, num_nodes
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
                              iprint, photo_model, photo_sf_max_vectors
@@ -3180,7 +3185,7 @@ contains
     ! edited Felix Mildner, after August 2024
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
-    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, photo_spectral_func, transmit_prob
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint, num_exclude_bands, &
     & exclude_bands
