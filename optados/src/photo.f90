@@ -2592,7 +2592,7 @@ contains
     if (on_root .and. enable_debug_output) write (stdout, *) 'energy_index:', energy_index
 
     if (.not. allocated(foptical_matrix_weights)) then
-      allocate (foptical_matrix_weights(nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
+      allocate (foptical_matrix_weights(nbands, nspins, num_kpoints_on_node(my_node_id), N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
     end if
     foptical_matrix_weights = 0.0_dp
@@ -2636,7 +2636,7 @@ contains
               g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                        (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                        (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
-              foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
+              foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
                 0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
@@ -2651,8 +2651,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
-                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                   g(1) = 0.0_dp
                   ! Calculating foptical_matrix_weights contribution for qdir2
@@ -2665,8 +2665,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
-                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                 end do
               end do
@@ -2676,7 +2676,7 @@ contains
               g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N_k, N_spin)) + &
                        (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N_k, N_spin)) + &
                        (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N_k, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
+              foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
             else !begin polar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
@@ -2691,8 +2691,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight)
-                  foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_k, N_spin, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
                     (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
                 end do
               end do
@@ -2715,7 +2715,7 @@ contains
       do N2 = 1, N_geom
         do N_spin = 1, nspins
           do N_k = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_k, N_spin, N2), n_eigen=1, nbands)
+            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_spin, N_k, N2), n_eigen=1, nbands)
           end do
         end do
       end do
@@ -2864,7 +2864,7 @@ contains
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
             temp_contribution = (qe_factor &
-                                  *foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+                                  *foptical_matrix_weights(n_eigen, N_spin, N_k, 1) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *(I_layer(box_atom(atom), current_photo_energy_index)) &                                  
                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
@@ -3460,7 +3460,7 @@ contains
             do n_eigen = 1, nbands
               middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
               width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
-              temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
+              temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k, 1) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *I_layer(box_atom(atom), current_photo_energy_index) &
                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
@@ -3475,10 +3475,9 @@ contains
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                 ! do e_scale = 1, max_energy
-                  weighted_temp_atom(e_scale, atom) = &
-                                                                        weighted_temp_atom(e_scale, atom)&
-                                                                        +binding_temp(e_scale, n_eigen, N_spin, N_k) &
-                                                                        *temp_contribution*spectral_factor
+                  weighted_temp_atom(e_scale, atom) = weighted_temp_atom(e_scale, atom)&
+                                                +binding_temp(e_scale, n_eigen, N_spin, N_k) &
+                                                *temp_contribution*spectral_factor
                 end do
               end do
             end do
@@ -3899,9 +3898,9 @@ contains
         call comms_recv(token, 1, inode)
       end do
       ! - write root qe_matrix elements
-      do N_spin = 1, nspins
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N_k, N_spin, 1), n_eigen=1, nbands)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N_spin, N_k, 1), n_eigen=1, nbands)
         end do
       end do
       close (unit=matrix_unit)
