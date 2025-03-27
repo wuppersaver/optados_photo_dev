@@ -3227,17 +3227,19 @@ contains
 
     real(kind=dp) :: final_fd, initial_fd, ekin_temp
     integer :: N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
-    integer :: middle_idx, width_idx
+    integer :: middle_idx, width_idx, window_width
 
     real(kind=dp) :: temp_contribution, spectral_factor, norm_vac, qe_factor, width, argument
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
+    real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
 
     time0 = io_time()
     qe_factor = 1.0_dp/(cell_area)
     width = (1.0_dp/11604.45_dp)*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
+    window_width = 10
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3273,6 +3275,10 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of binding_temp failed')
     binding_temp = 0.0_dp
 
+    allocate(arpes_mask(photo_sf_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of arpes_mask failed')
+    arpes_mask = 0.00_dp
+
     do e_scale = 1, max_energy
       t_energy(e_scale) = real(e_scale - 1, dp)/1000
     end do
@@ -3281,9 +3287,9 @@ contains
       do N_spin = 1, nspins                    ! Loop over spins
         do n_eigen_init = 1, nbands
           middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-          width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
-          ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-          do e_scale = 1, max_energy
+          width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
+          do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+          ! do e_scale = 1, max_energy
             binding_temp(e_scale, n_eigen_init, N_spin, N_k) = &
               gaussian((efermi - band_energy(n_eigen_init, N_spin, N_k)), photo_bindenergy_broadening, t_energy(e_scale))
           end do
@@ -3327,6 +3333,13 @@ contains
             else
               transverse_gauss(gdx, n_eigen, N_spin, N_k) = 1.0_dp
             end if
+            if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
+                theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
+              if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
+                  phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then   
+                    arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
+                end if
+            end if
           end do
 
           end do
@@ -3347,7 +3360,7 @@ contains
               final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
               do n_eigen_init = 1, n_eigen_final - 1
                 middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-                width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+                width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
                 temp_contribution = &
                         qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
                         *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -3357,22 +3370,17 @@ contains
                           /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                         *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
                 do gdx = 1, photo_sf_max_vectors
-                  if (theta_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_theta_min .and. &
-                      theta_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_theta_max) then
-                    if (phi_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_phi_min .and. &
-                        phi_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_phi_max) then   
-                      spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-                                        *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                                        *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
-                      ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                      do e_scale = 1, max_energy
-                        weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) =  &
-                                                                    weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) &
-                                                                    + binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
-                                                                      *temp_contribution*spectral_factor
-                      end do
-                    end if
-                  end if
+                  spectral_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                                    *spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
+                                    *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
+                  do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                  ! do e_scale = 1, max_energy
+                    weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) =  &
+                                                                weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) &
+                                                                +binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
+                                                                *temp_contribution*spectral_factor
+                  end do
                 end do
               end do
             end do
@@ -3393,42 +3401,27 @@ contains
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
               middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-              width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
-              initial_fd = fermi_dirac(n_eigen_init, N_spin, N_k)
+              width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
               temp_contribution = &
                       (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
                        *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
                        *transmit_prob(n_eigen_final, N_spin, N_k) &
                        *electrons_per_state*kpoint_weight(N_k) &
-                       *vacuum_gauss(n_eigen_final, N_spin, N_k)*initial_fd*final_fd &
+                       *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                        *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                          /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                       *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
-                if (theta_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_theta_min .and. &
-                    theta_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_theta_max) then
-                  if (phi_arpes(gdx, n_eigen_final, N_spin, N_k) .ge. photo_phi_min .and. &
-                      phi_arpes(gdx, n_eigen_final, N_spin, N_k) .le. photo_phi_max) then
-                    ! evacuum_eff = efermi + photo_work_function
-                    ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
-                    ! Is the final kinetic energy > 0?
-                    ! if ((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-                    !   transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)), &
-                    !                               width, (evacuum_eff - efermi))/norm_vac
-                    ! else
-                    !   transverse_gauss = 1.0_dp
-                    ! end if
-                    spectral_factor = photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k) &
-                                      *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
-                                      *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                    ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                    do e_scale = 1, max_energy
-                      weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) = &
-                        weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) + &
-                        binding_temp(e_scale, n_eigen_init, N_spin, N_k)*temp_contribution*spectral_factor
-                    end do
-                  end if
-                end if
+                spectral_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                                  *spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
+                                  *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                                  *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                ! do e_scale = 1, max_energy
+                  weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) = &
+                    weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) + &
+                    binding_temp(e_scale, n_eigen_init, N_spin, N_k)*temp_contribution*spectral_factor
+                end do
               end do
             end do
           end do
@@ -3478,6 +3471,14 @@ contains
               else
                 transverse_gauss(gdx, n_eigen, N_spin, N_k) = 1.0_dp
               end if
+
+              if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
+                  theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
+                if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
+                    phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
+                      arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
+                  end if
+              end if
             end do
 
           end do
@@ -3489,7 +3490,7 @@ contains
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
-              width_idx = ceiling((photo_bindenergy_broadening*10)/0.001)
+              width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
               temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_k, N_spin, 1) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *I_layer(box_atom(atom), current_photo_energy_index) &
@@ -3499,33 +3500,26 @@ contains
                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
-                if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
-                    theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
-                  if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                      phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                    ! if ((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)) .le. (evacuum_eff - efermi)) then
-                    !   transverse_gauss = gaussian((temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)), &
-                    !                               width, (evacuum_eff - efermi))/norm_vac
-                    ! else
-                    !   transverse_gauss = 1.0_dp
-                    ! end if
-                    spectral_factor = photo_spectral_func(3, gdx, n_eigen, N_spin, N_k) &
-                                      *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
-                                      *transverse_gauss(gdx, n_eigen, N_spin, N_k)
-                    ! do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                    do e_scale = 1, max_energy
-                      weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) &
-                                                                           +binding_temp(e_scale, n_eigen, N_spin, N_k) &
-                                                                           *temp_contribution*spectral_factor
-                    end do
-                  end if
-                end if
+                spectral_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
+                                  *spectral_weight(gdx, n_eigen, N_spin, N_k) &
+                                  *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                                  *transverse_gauss(gdx, n_eigen, N_spin, N_k)
+                do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                ! do e_scale = 1, max_energy
+                  weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
+                                                                        weighted_temp(e_scale, n_eigen, N_spin, N_k, atom)&
+                                                                        +binding_temp(e_scale, n_eigen, N_spin, N_k) &
+                                                                        *temp_contribution*spectral_factor
+                end do
               end do
             end do
           end do
         end do
       end do
     end if
+
+    deallocate (arpes_mask, stat=ierr)
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate arpes_mask')
 
     deallocate (binding_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - failed to deallocate binding_temp')
