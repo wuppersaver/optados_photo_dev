@@ -65,7 +65,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: bind_energy
-  real(kind=dp), allocatable, dimension(:, :) :: weighted_temp_atom
+  real(kind=dp), allocatable, dimension(:, :, :) :: weighted_temp_atom
   ! real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
@@ -3236,7 +3236,7 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of bind_energy failed')
     bind_energy = 0.0_dp
 
-    allocate (weighted_temp_atom(max_energy, max_atoms + 1), stat=ierr)
+    allocate (weighted_temp_atom(max_energy, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp_atom failed')
     weighted_temp_atom = 0.0_dp
 
@@ -3345,10 +3345,9 @@ contains
                                     *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
                   do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                   ! do e_scale = 1, max_energy
-                    weighted_temp_atom(e_scale, atom) =  &
-                                                                weighted_temp_atom(e_scale, atom) &
-                                                                +binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
-                                                                *temp_contribution*spectral_factor
+                    weighted_temp_atom(e_scale, N_k, atom) =  weighted_temp_atom(e_scale, N_k, atom) &
+                                                        +binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
+                                                        *temp_contribution*spectral_factor
                   end do
                 end do
               end do
@@ -3387,9 +3386,9 @@ contains
                                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                 ! do e_scale = 1, max_energy
-                  weighted_temp_atom(e_scale, max_atoms + 1) = &
-                    weighted_temp_atom(e_scale, max_atoms + 1) + &
-                    binding_temp(e_scale, n_eigen_init, N_spin, N_k)*temp_contribution*spectral_factor
+                  weighted_temp_atom(e_scale, N_k, max_atoms + 1) = weighted_temp_atom(e_scale, N_k, max_atoms + 1) &
+                                                               +binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
+                                                               *temp_contribution*spectral_factor
                 end do
               end do
             end do
@@ -3475,7 +3474,7 @@ contains
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                 ! do e_scale = 1, max_energy
-                  weighted_temp_atom(e_scale, atom) = weighted_temp_atom(e_scale, atom)&
+                  weighted_temp_atom(e_scale, N_k, atom) = weighted_temp_atom(e_scale, N_k, atom)&
                                                 +binding_temp(e_scale, n_eigen, N_spin, N_k) &
                                                 *temp_contribution*spectral_factor
                 end do
@@ -3621,7 +3620,7 @@ contains
       qe_atom = 0.0_dp
       do e_scale = 1, max_energy !loop over binding energy
         do atom = 1, max_atoms + 1
-          qe_atom(atom, e_scale) = weighted_temp_atom(e_scale, atom)
+          qe_atom(atom, e_scale) = sum(weighted_temp_atom(e_scale, 1:num_kpoints_on_node(my_node_id), atom))
         end do
       end do
 
@@ -3629,15 +3628,16 @@ contains
 
       total_weighted = sum(qe_atom(:, :))
       call comms_reduce(total_weighted, 1, "SUM")
-      if (total_weighted .gt. 0.0_dp) then
-        qe_norm = total_qe/total_weighted
-      else
-        qe_norm = 1.0_dp
-      end if
-
-      qe_atom = qe_atom*qe_norm
 
       if (on_root) then
+        if (total_weighted .gt. 0.0_dp) then
+          qe_norm = total_qe/total_weighted
+        else
+          qe_norm = 1.0_dp
+        end if
+  
+        qe_atom = qe_atom*qe_norm
+
         binding_unit = io_file_unit()
         write (char_e, '(F7.3)') temp_photon_energy
         filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
@@ -3646,7 +3646,7 @@ contains
         call io_date(cdate, ctime)
         write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
         & cdate, ' at ', ctime
-        write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(adjustl(seedname))
+        write (binding_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
         write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
         write (binding_unit, '(1x, a35, f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
