@@ -2127,51 +2127,15 @@ contains
               *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
               *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
-                !! this could be checked if it has an impact on the final value
-                ! if (band_energy(n_eigen_final, N_spin, N_k) .lt. efermi) cycle
-                ! if (enable_debug_output) then
-                !   if (index(devel_flag, 'reduced_pe') > 0) then
-                !     if (index(devel_flag, 'projected_pe') > 0) then
-                !       qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                !         photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                !         delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                !         electrons_per_state*kpoint_weight(N_k)* &
-                !         (pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom))/ &
-                !         pdos_weights_k_band(n_eigen_init, N_spin, N_k))
-                !     else
-                !       qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = &
-                !         photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                !         delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)* &
-                !         electrons_per_state*kpoint_weight(N_k)
-                !     end if
-                !   end if
-                ! else
-                  ! do the specfn_dependent calculations
-                  spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) & 
-                                    *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                  te_spec_factor = spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
-                  qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
-                                                                           + temp_contribution*spectral_factor
-                  te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
-                                                  + temp_contribution*te_spec_factor
-                ! end if
-                ! if (enable_debug_output) then 
-                !   if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-                !     write (stdout, '(5(1x,I4))') n_eigen_init, n_eigen_final, N_spin, N_k, atom
-                !     write (stdout, '(18(1x,E17.9E3))') qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom), &
-                !       band_energy(n_eigen_init, N_spin, N_k), &
-                !       band_energy(n_eigen_final, N_spin, N_k), photo_spectral_func(3, gdx, n_eigen_init, N_spin, N_k), &
-                !       photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k), &
-                !       delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
-                !       transmit_prob(n_eigen_final, N_spin, N_k), kpoint_weight(N_k), &
-                !       I_layer(box_atom(atom), current_photo_energy_index), &
-                !       transverse_gauss(gdx, n_eigen_init, N_spin, N_k), vacuum_gauss(n_eigen_final, N_spin, N_k), &
-                !       initial_fd, final_fd, &
-                !       pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), & 
-                !       pdos_weights_k_band(n_eigen_init, N_spin, N_k)
-                !   end if
-                ! end if
+                ! do the specfn_dependent part
+                spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) & 
+                                  *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                  *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                te_spec_factor = spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
+                qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom) &
+                                                                          + temp_contribution*spectral_factor
+                te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
+                                                + temp_contribution*te_spec_factor
               end do
             end do
           end do
