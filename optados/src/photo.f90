@@ -65,7 +65,8 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: t_energy
-  real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
+  real(kind=dp), allocatable, dimension(:, :) :: weighted_temp_atom
+  ! real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
@@ -1015,8 +1016,8 @@ contains
       
       write (box_char, '(I0.3)') box
       write (*, *) trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat'
-      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', err=100)
-100 call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
+      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
+      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
       do i = 1, 50
         read (absorp_unit, *) dummya
@@ -1059,8 +1060,8 @@ contains
     do box = 1, num_boxes
       write (box_char, '(I0.3)') box
       write (*, *) trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat'
-      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat', err=100)
-100 call io_error('Error: Could not open reflection curve .dat file for box #'//trim(adjustl(box_char)))
+      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
+      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
       do i = 1, 50
         read (reflect_unit, *)dummya
@@ -1122,12 +1123,6 @@ contains
     if (allocated(reflect_photo)) then
       deallocate (reflect_photo, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate reflect_photo')
-    end if
-
-    if (on_root .and. iprint > 2) then
-      write (stdout, '(1x,a78)') '+----------------------- Printing Intensity per Layer -----------------------+'
-      write (stdout, '(9999(es15.8))') ((I_layer(num_layer, i), num_layer=1, num_boxes), i=1, number_energies)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
   end subroutine calc_absorp_layer
@@ -3241,9 +3236,9 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of t_energy failed')
     t_energy = 0.0_dp
 
-    allocate (weighted_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id), max_atoms + 1), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp failed')
-    weighted_temp = 0.0_dp
+    allocate (weighted_temp_atom(max_energy, max_atoms + 1), stat=ierr)
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp_atom failed')
+    weighted_temp_atom = 0.0_dp
 
     allocate (binding_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of binding_temp failed')
@@ -3350,8 +3345,8 @@ contains
                                     *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
                   do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                   ! do e_scale = 1, max_energy
-                    weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) =  &
-                                                                weighted_temp(e_scale, n_eigen_init, N_spin, N_k, atom) &
+                    weighted_temp_atom(e_scale, atom) =  &
+                                                                weighted_temp_atom(e_scale, atom) &
                                                                 +binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
                                                                 *temp_contribution*spectral_factor
                   end do
@@ -3392,8 +3387,8 @@ contains
                                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                 ! do e_scale = 1, max_energy
-                  weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) = &
-                    weighted_temp(e_scale, n_eigen_init, N_spin, N_k, max_atoms + 1) + &
+                  weighted_temp_atom(e_scale, max_atoms + 1) = &
+                    weighted_temp_atom(e_scale, max_atoms + 1) + &
                     binding_temp(e_scale, n_eigen_init, N_spin, N_k)*temp_contribution*spectral_factor
                 end do
               end do
@@ -3480,8 +3475,8 @@ contains
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                 ! do e_scale = 1, max_energy
-                  weighted_temp(e_scale, n_eigen, N_spin, N_k, atom) = &
-                                                                        weighted_temp(e_scale, n_eigen, N_spin, N_k, atom)&
+                  weighted_temp_atom(e_scale, atom) = &
+                                                                        weighted_temp_atom(e_scale, atom)&
                                                                         +binding_temp(e_scale, n_eigen, N_spin, N_k) &
                                                                         *temp_contribution*spectral_factor
                 end do
@@ -3517,7 +3512,7 @@ contains
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
     use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, &
-                             photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max
+                             photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max, photo_bindenergy_broadening
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
@@ -3627,8 +3622,7 @@ contains
       qe_atom = 0.0_dp
       do e_scale = 1, max_energy !loop over binding energy
         do atom = 1, max_atoms + 1
-          qe_atom(atom, e_scale) = &
-            sum(weighted_temp(e_scale, 1:nbands, 1:nspins, 1:num_kpoints_on_node(my_node_id), atom))
+          qe_atom(atom, e_scale) = weighted_temp_atom(e_scale, atom)
         end do
       end do
 
@@ -3653,9 +3647,10 @@ contains
         call io_date(cdate, ctime)
         write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
         & cdate, ' at ', ctime
-        write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(seedname)
+        write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(adjustl(seedname))
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
         write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
+        write (binding_unit, '1x, a35, f9.5') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
         write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
           photo_theta_min, photo_theta_max
         write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
@@ -3675,9 +3670,9 @@ contains
       end if
     end if
 
-    if (allocated(weighted_temp)) then
-      deallocate (weighted_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate weighted_temp')
+    if (allocated(weighted_temp_atom)) then
+      deallocate (weighted_temp_atom, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate weighted_temp_atom')
     end if
 
     if (allocated(qe_atom)) then
