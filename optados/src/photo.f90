@@ -3650,7 +3650,7 @@ contains
         write (binding_unit, '(1x,a13,a80)') '## Seedname: ', trim(adjustl(seedname))
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
         write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
-        write (binding_unit, '1x, a35, f9.5') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
+        write (binding_unit, '(1x, a35, f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
         write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
           photo_theta_min, photo_theta_max
         write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
