@@ -65,7 +65,8 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: bind_energy
-  real(kind=dp), allocatable, dimension(:, :) :: weighted_temp_atom
+  real(kind=dp), allocatable, dimension(:, :) :: weighted_be_atom
+  real(kind=dp)                               :: total_be_contribs
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
@@ -3208,6 +3209,8 @@ contains
     width = (1.0_dp/11604.45_dp)*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
     window_width = 12
+    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
+    total_be_contribs = 0.0_dp
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3227,7 +3230,6 @@ contains
     end if
     vacuum_gauss = 0.0_dp
 
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
 
     if (max_energy .lt. 0) return
 
@@ -3235,9 +3237,9 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of bind_energy failed')
     bind_energy = 0.0_dp
 
-    allocate (weighted_temp_atom(max_energy, max_atoms + 1), stat=ierr)
-    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_temp_atom failed')
-    weighted_temp_atom = 0.0_dp
+    allocate (weighted_be_atom(max_energy, max_atoms + 1), stat=ierr)
+    if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of weighted_be_atom failed')
+    weighted_be_atom = 0.0_dp
 
     allocate (binding_temp(max_energy, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of binding_temp failed')
@@ -3342,9 +3344,10 @@ contains
                                     *spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
                                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                                     *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
-                  do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                    weighted_temp_atom(e_scale, atom) =  &
-                                                        weighted_temp_atom(e_scale, atom) &
+                  total_be_contribs = total_be_contribs + (temp_contribution*spectral_factor)
+                do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                    weighted_be_atom(e_scale, atom) =  &
+                                                        weighted_be_atom(e_scale, atom) &
                                                         +(binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
                                                         *temp_contribution*spectral_factor)
                   end do
@@ -3383,9 +3386,10 @@ contains
                                   *spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
                                   *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                total_be_contribs = total_be_contribs + (temp_contribution*spectral_factor)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                  weighted_temp_atom(e_scale, max_atoms + 1) =  &
-                                                            weighted_temp_atom(e_scale, max_atoms + 1) &
+                  weighted_be_atom(e_scale, max_atoms + 1) =  &
+                                                            weighted_be_atom(e_scale, max_atoms + 1) &
                                                             +(binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
                                                             *temp_contribution*spectral_factor)
                 end do
@@ -3471,9 +3475,10 @@ contains
                                   *spectral_weight(gdx, n_eigen, N_spin, N_k) &
                                   *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
+                total_be_contribs = total_be_contribs + (temp_contribution*spectral_factor)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                  weighted_temp_atom(e_scale, atom) = & 
-                                                weighted_temp_atom(e_scale, atom) &
+                  weighted_be_atom(e_scale, atom) = & 
+                                                weighted_be_atom(e_scale, atom) &
                                                 +(binding_temp(e_scale, n_eigen, N_spin, N_k) &
                                                 *temp_contribution*spectral_factor)
                 end do
@@ -3619,7 +3624,7 @@ contains
       qe_atom = 0.0_dp
       do e_scale = 1, max_energy !loop over binding energy
         do atom = 1, max_atoms + 1
-          qe_atom(atom, e_scale) = weighted_temp_atom(e_scale, atom)
+          qe_atom(atom, e_scale) = weighted_be_atom(e_scale, atom)
         end do
       end do
 
@@ -3627,10 +3632,13 @@ contains
 
       total_weighted = sum(qe_atom(:, :))
       call comms_reduce(total_weighted, 1, "SUM")
+      call comms_reduce(total_be_contribs, 1, "SUM")
 
       if (on_root) then
+        ! Rescale the broadened contributions array 
+        ! to the sum of all individual contributions 
         if (total_weighted .gt. 0.0_dp) then
-          qe_norm = total_qe/total_weighted
+          qe_norm = total_be_contribs/total_weighted
         else
           qe_norm = 1.0_dp
         end if
@@ -3667,9 +3675,9 @@ contains
       end if
     end if
 
-    if (allocated(weighted_temp_atom)) then
-      deallocate (weighted_temp_atom, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate weighted_temp_atom')
+    if (allocated(weighted_be_atom)) then
+      deallocate (weighted_be_atom, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_output_files - failed to deallocate weighted_be_atom')
     end if
 
     if (allocated(qe_atom)) then
