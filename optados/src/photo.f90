@@ -66,7 +66,6 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: bind_energy
   real(kind=dp), allocatable, dimension(:, :) :: weighted_temp_atom
-  ! real(kind=dp), allocatable, dimension(:, :, :, :, :) :: weighted_temp
   integer :: max_energy = -1
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
@@ -3208,7 +3207,7 @@ contains
     qe_factor = 1.0_dp/(cell_area)
     width = (1.0_dp/11604.45_dp)*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
-    window_width = 10
+    window_width = 12
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3344,7 +3343,6 @@ contains
                                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                                     *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
                   do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                  ! do e_scale = 1, max_energy
                     weighted_temp_atom(e_scale, atom) =  &
                                                         weighted_temp_atom(e_scale, atom) &
                                                         +(binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
@@ -3386,7 +3384,6 @@ contains
                                   *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                ! do e_scale = 1, max_energy
                   weighted_temp_atom(e_scale, max_atoms + 1) =  &
                                                             weighted_temp_atom(e_scale, max_atoms + 1) &
                                                             +(binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
@@ -3475,7 +3472,6 @@ contains
                                   *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                ! do e_scale = 1, max_energy
                   weighted_temp_atom(e_scale, atom) = & 
                                                 weighted_temp_atom(e_scale, atom) &
                                                 +(binding_temp(e_scale, n_eigen, N_spin, N_k) &
@@ -3663,7 +3659,6 @@ contains
         write (out_string, '(a,I0,"(1x,",a,")")') "1x,ES25.6E2,", max_atoms + 2, "ES25.12E3"
 
         do e_scale = 1, max_energy
-          ! write (binding_unit, '(1x,ES25.6E2,2x,ES25.12E3,1x,999(1x,ES25.12E3))')
           write (binding_unit, '('//trim(out_string)//')') bind_energy(e_scale), &
             sum(qe_atom(1:max_atoms + 1, e_scale)), qe_atom(1:max_atoms + 1, e_scale)
         end do
