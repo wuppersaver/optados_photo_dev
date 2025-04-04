@@ -266,8 +266,8 @@ contains
   end subroutine photo_calculate
 
   subroutine analyse_geometry
-    !* This subroutine identifies and defines a set of boxes, 
-    ! that represent layers, with a height = interlayer distance 
+    !* This subroutine identifies and defines a set of boxes,
+    ! that represent layers, with a height = interlayer distance
     ! at the middle of the slab. All atoms are then sorted into
     ! these boxes for later use.
     use od_constants, only: dp, periodic_table_name, periodic_table_vdw, deg_to_rad
@@ -633,7 +633,7 @@ contains
         end do
       end do
       close (unit=pdos_unit)
-      
+
       open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
       write (pdos_unit, '(1x,a28)') '############################'
       write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
@@ -735,7 +735,7 @@ contains
       end if
       call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
       call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
-      
+
       time1 = io_time()
       if (on_root .and. iprint > 1) then
         write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to read Photoemission Optical Properties', time1 - time0, ' (sec) +'
@@ -748,14 +748,14 @@ contains
         ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
         allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
         if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
-  
+
         do N_spin = 1, nspins
           do N_k = 1, num_kpoints_on_node(my_node_id)
             photo_matrix_weights(:,:,N_spin,N_k) = matrix_weights(:,:,N_k,N_spin,1)
           end do
         end do
       end if
-      ! get rid of the old, now unnecessary array - either because we have the 1step model, 
+      ! get rid of the old, now unnecessary array - either because we have the 1step model,
       ! or we have transferred the relevant data to photo_matrix_weights
       deallocate (matrix_weights, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
@@ -979,7 +979,7 @@ contains
         end do
       end do
     end if
-    ! get rid of the old, now unnecessary array - either because we have the 1step model, 
+    ! get rid of the old, now unnecessary array - either because we have the 1step model,
     ! or we have transferred the relevant data to photo_matrix_weights
     deallocate (matrix_weights, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
@@ -995,8 +995,8 @@ contains
     ! This subroutine reads in a series of absorption coefficient curves
     ! from a number of appropriately named files. This way the relevant
     ! optical data for photoemission can be read as a checkpoint. This can
-    ! be used to for example calculate the photoemission for a set of 
-    ! k-points along a bandstructure path with the optical properties of 
+    ! be used to for example calculate the photoemission for a set of
+    ! k-points along a bandstructure path with the optical properties of
     ! a MP grid like k-point distribution, as that is expected to have better
     ! convergence.
     ! Written by F Mildner, Mar 2025
@@ -1011,9 +1011,9 @@ contains
     character(len=3) :: box_char
     character(len=100) :: dummya, dummyb
     absorp_unit = io_file_unit()
-    
+
     do box = 1, num_boxes
-      
+
       write (box_char, '(I0.3)') box
       write (*, *) trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat'
       open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
@@ -1027,11 +1027,11 @@ contains
         read (absorp_unit, '(1x,a37,1x,es37.30)') dummya, absorp(N)
       end do
       close (unit=absorp_unit)
-      
+
       do energy = 1, number_energies
         absorp_photo(box, energy) = absorp(index_energy(energy))
       end do
-    
+
     end do
   end subroutine read_absorp_file
 
@@ -1039,8 +1039,8 @@ contains
     ! This subroutine reads in a series of reflection coefficient curves
     ! from a number of appropriately named files. This way the relevant
     ! optical data for photoemission can be read as a checkpoint. This can
-    ! be used to for example calculate the photoemission for a set of 
-    ! k-points along a bandstructure path with the optical properties of 
+    ! be used to for example calculate the photoemission for a set of
+    ! k-points along a bandstructure path with the optical properties of
     ! a MP grid like k-point distribution, as that is expected to have better
     ! convergence.
     ! Written by F Mildner, Mar 2025
@@ -1056,7 +1056,7 @@ contains
     character(len=100) :: dummya, dummyb
 
     reflect_unit = io_file_unit()
-    
+
     do box = 1, num_boxes
       write (box_char, '(I0.3)') box
       write (*, *) trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat'
@@ -1071,7 +1071,7 @@ contains
         read (reflect_unit, '(1x,a37,1x,es37.30)') dummya, reflect(N)
       end do
       close (unit=reflect_unit)
-      
+
       do energy = 1, number_energies
         reflect_photo(box, energy) = reflect(index_energy(energy))
       end do
@@ -1317,17 +1317,17 @@ contains
 
     if (index(photo_momentum, 'specfn') > 0) then
       call elec_read_spec_function(sf_maxvec)
-      
+
       if (.not. allocated(spectral_weight)) then
         allocate (spectral_weight(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-        if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed') 
+        if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed')
       end if
       ! move the important spectral weight into the smaller array for later use
-      spectral_weight(1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)) = & 
+      spectral_weight(1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id)) = &
         photo_spectral_func(3,1:sf_maxvec,1:nbands,1:nspins,1:num_kpoints_on_node(my_node_id))
-    
+
     else
-      
+
       if (.not. allocated(spectral_weight)) then
         allocate (spectral_weight(1, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_angle - allocation of spectral_weight failed')
@@ -2002,13 +2002,13 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
-    
+
     if (.not. allocated(vacuum_gauss)) then
       allocate (vacuum_gauss(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
     end if
     vacuum_gauss = 0.0_dp
-    
+
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(photo_sf_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of fermi_dirac failed')
@@ -2081,7 +2081,7 @@ contains
             fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp
           else
             fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
-          end if      
+          end if
 
           ! The vacuum gauss represents the necessary condition: is the final state above E_vacuum?
           ! The transverse gauss represents the sufficient condition:  after "emission", do we have enough energy for E_ortho > 0?
@@ -2092,7 +2092,7 @@ contains
           else
             vacuum_gauss(n_eigen_init, N_spin, N_k) = 1.0_dp
           end if
-          ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step 
+          ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step
           ! (workfunction), evacuum_eff = efermi + work_function_eff
           do gdx = 1, photo_sf_max_vectors
             ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
@@ -2128,7 +2128,7 @@ contains
               *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
                 ! do the specfn_dependent part
-                spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) & 
+                spectral_factor = spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
                                   *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                                   *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                 te_spec_factor = spectral_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
@@ -2205,7 +2205,7 @@ contains
 
     if (allocated(spectral_weight) .and. index(photo_output, 'e_bind') .eq. 0) then
       deallocate (spectral_weight, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate spectral_weight') 
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate spectral_weight')
     end if
 
     if (enable_debug_output .and. index(devel_flag, 'print_qe_matrix_full') > 0 .and. on_root) then
@@ -2544,21 +2544,21 @@ contains
     ! Are the jdos_step and energy_step compatible?
     ! Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
     ! reached using the input step
-    if (jdos_spacing .lt. energy_step) then
+    if (photo_photon_sweep .and. jdos_spacing .lt. energy_step) then
       if (on_root) then
         write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
         write (stdout, *) 'The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!'
+        call io_error('The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!')
       end if
-      call io_error('The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!')
     end if
     ! If energy_step is lt jdos_spacing - is the mod==0?
-    if (energy_step .lt. jdos_spacing) then
+    if (photo_photon_sweep .and. energy_step .lt. jdos_spacing) then
       if (abs(modulo(jdos_spacing, energy_step)) .gt. tolerance) then
         if (on_root) then
           write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
           write (stdout, *) 'The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!'
+          call io_error('The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!')
         end if
-        call io_error('The jdos_spacing and energy_step for 1step OMEs are not a multiple of each other!')
       end if
     end if
     ! Is the current photon_energy within the bounds of the energy_min and energy_max values?
@@ -2567,24 +2567,24 @@ contains
         write (stdout, *) 'current E_photon = ', temp_photon_energy, 'energy bounds for 1step OMEs:' &
           , energy_min, '->', energy_max
         write (stdout, *) 'The current photon energy is out of the min->max range of the 1step OMEs!'
+        call io_error('The current photon energy is out of the min->max range of the 1step OMEs!')
       end if
-      call io_error('The current photon energy is out of the min->max range of the 1step OMEs!')
     end if
     ! Is the fermi_energy within error?
     if (abs(energy_fermi - efermi) .gt. tolerance) then
       if (on_root) then
         write (stdout, *) 'optados E_fermi:', efermi, '1step OME E_fermi:', energy_fermi
         write (stdout, *) 'The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!'
+        call io_error('The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
       end if
-      call io_error('The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
     end if
     ! Is the energy_workfct within error?
     if (abs(energy_workfct - photo_work_function) .gt. tolerance) then
       if (on_root) then
         write (stdout, *) 'optados workfct:', photo_work_function, '1step OME workfct:', energy_workfct
         write (stdout, *) 'The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!'
+        call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
       end if
-      call io_error('The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
     end if
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
@@ -2790,7 +2790,7 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of vacuum_gauss failed')
     end if
     vacuum_gauss = 1.0_dp
-    
+
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(photo_sf_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of transverse_gauss failed')
@@ -2866,7 +2866,7 @@ contains
             temp_contribution = (qe_factor &
                                   *foptical_matrix_weights(n_eigen, N_spin, N_k, 1) &
                                   *electrons_per_state*kpoint_weight(N_k) &
-                                  *(I_layer(box_atom(atom), current_photo_energy_index)) &                                  
+                                  *(I_layer(box_atom(atom), current_photo_energy_index)) &
                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
                                   *fermi_dirac(n_eigen, N_spin, N_k) &
                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
@@ -3292,7 +3292,7 @@ contains
           else
             vacuum_gauss(n_eigen, N_spin, N_k) = 1.0_dp
           end if
-          ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step 
+          ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step
           ! (workfunction), evacuum_eff = efermi + work_function_eff
           do gdx = 1, photo_sf_max_vectors
             ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
@@ -3306,7 +3306,7 @@ contains
             if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
                 theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
               if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                  phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then   
+                  phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
                     arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
                 end if
             end if
@@ -3343,7 +3343,7 @@ contains
                   spectral_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                                     *spectral_weight(gdx, n_eigen_init, N_spin, N_k) &
                                     *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
-                                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)                   
+                                    *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                   total_be_contribs = total_be_contribs + (temp_contribution*spectral_factor)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                     weighted_be_atom(e_scale, atom) =  &
@@ -3431,7 +3431,7 @@ contains
             else
               vacuum_gauss(n_eigen, N_spin, N_k) = 1.0_dp
             end if
-            
+
             do gdx = 1, photo_sf_max_vectors
               ! evacuum_eff = efermi + photo_work_function
               ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
@@ -3477,7 +3477,7 @@ contains
                                   *transverse_gauss(gdx, n_eigen, N_spin, N_k)
                 total_be_contribs = total_be_contribs + (temp_contribution*spectral_factor)
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-                  weighted_be_atom(e_scale, atom) = & 
+                  weighted_be_atom(e_scale, atom) = &
                                                 weighted_be_atom(e_scale, atom) &
                                                 +(binding_temp(e_scale, n_eigen, N_spin, N_k) &
                                                 *temp_contribution*spectral_factor)
@@ -3635,14 +3635,14 @@ contains
       call comms_reduce(total_be_contribs, 1, "SUM")
 
       if (on_root) then
-        ! Rescale the broadened contributions array 
-        ! to the sum of all individual contributions 
+        ! Rescale the broadened contributions array
+        ! to the sum of all individual contributions
         if (total_weighted .gt. 0.0_dp) then
           qe_norm = total_be_contribs/total_weighted
         else
           qe_norm = 1.0_dp
         end if
-  
+
         qe_atom = qe_atom*qe_norm
 
         binding_unit = io_file_unit()
