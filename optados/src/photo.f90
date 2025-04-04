@@ -34,7 +34,7 @@ module od_photo
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :) :: photo_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :, :, :) :: projected_matrix_weights
-  real(kind=dp), allocatable, public, dimension(:, :, :, :) :: foptical_matrix_weights
+  real(kind=dp), allocatable, public, dimension(:, :, :) :: foptical_matrix_weights
   real(kind=dp), allocatable, public, dimension(:, :, :) :: weighted_jdos
   real(kind=dp), allocatable, public, dimension(:, :) :: absorp_layer
   real(kind=dp), allocatable, public, dimension(:, :, :) :: pdos_weights_k_band
@@ -759,7 +759,7 @@ contains
       ! or we have transferred the relevant data to photo_matrix_weights
       deallocate (matrix_weights, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
-
+      N_geom = 1
       return
     end if
 
@@ -1015,7 +1015,6 @@ contains
     do box = 1, num_boxes
 
       write (box_char, '(I0.3)') box
-      write (*, *) trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat'
       open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
       if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
@@ -1059,7 +1058,6 @@ contains
 
     do box = 1, num_boxes
       write (box_char, '(I0.3)') box
-      write (*, *) trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat'
       open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
       if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
       ! skip header
@@ -2592,7 +2590,7 @@ contains
     if (on_root .and. enable_debug_output) write (stdout, *) 'energy_index:', energy_index
 
     if (.not. allocated(foptical_matrix_weights)) then
-      allocate (foptical_matrix_weights(nbands, nspins, num_kpoints_on_node(my_node_id), N_geom), stat=ierr)
+      allocate (foptical_matrix_weights(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: make_foptical_weights - allocation of foptical_matrix_weights failed')
     end if
     foptical_matrix_weights = 0.0_dp
@@ -2636,7 +2634,7 @@ contains
               g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                        (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                        (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
-              foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
+              foptical_matrix_weights(n_eigen, N_spin, N_k) = &
                 0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
@@ -2651,8 +2649,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
-                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                   g(1) = 0.0_dp
                   ! Calculating foptical_matrix_weights contribution for qdir2
@@ -2665,8 +2663,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
-                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k) + &
                     (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
                 end do
               end do
@@ -2676,7 +2674,7 @@ contains
               g(1) = (((qdir(1)*foptical_mat(n_eigen, nbands + 1, 1, N_k, N_spin)) + &
                        (qdir(2)*foptical_mat(n_eigen, nbands + 1, 2, N_k, N_spin)) + &
                        (qdir(3)*foptical_mat(n_eigen, nbands + 1, 3, N_k, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = factor*real(g(1)*conjg(g(1)), dp)
+              foptical_matrix_weights(n_eigen, N_spin, N_k) = factor*real(g(1)*conjg(g(1)), dp)
             else !begin polar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
@@ -2691,8 +2689,8 @@ contains
                   g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
                            (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
                            (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight)
-                  foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) = &
-                    foptical_matrix_weights(n_eigen, N_spin, N_k, N_geom) + &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k) = &
+                    foptical_matrix_weights(n_eigen, N_spin, N_k) + &
                     (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
                 end do
               end do
@@ -2712,13 +2710,11 @@ contains
       write (stdout, 126) shape(foptical_matrix_weights)
       write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
 126   format(5(1x, I4))
-      do N2 = 1, N_geom
         do N_spin = 1, nspins
           do N_k = 1, num_kpoints_on_node(my_node_id)
-            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_spin, N_k, N2), n_eigen=1, nbands)
+            write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_spin, N_k), n_eigen=1, nbands)
           end do
         end do
-      end do
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
@@ -2864,7 +2860,7 @@ contains
         do N_spin = 1, nspins                    ! Loop over spins
           do n_eigen = 1, nbands
             temp_contribution = (qe_factor &
-                                  *foptical_matrix_weights(n_eigen, N_spin, N_k, 1) &
+                                  *foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *(I_layer(box_atom(atom), current_photo_energy_index)) &
                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
@@ -2886,7 +2882,7 @@ contains
             !   if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
             !     write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
             !     write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
-            !       foptical_matrix_weights(n_eigen, N_k, N_spin, 1), &
+            !       foptical_matrix_weights(n_eigen, N_k, N_spin), &
             !       electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
             !       I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
             !       fermi_dirac(n_eigen, N_spin, N_k), &
@@ -3462,7 +3458,7 @@ contains
             do n_eigen = 1, nbands
               middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
               width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
-              temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k, 1) &
+              temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *I_layer(box_atom(atom), current_photo_energy_index) &
                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
@@ -3884,7 +3880,7 @@ contains
       ! - wait for the token
       call comms_recv(token, 1, 0)
       ! - send the respective qe_matrix for that specific atom
-      call comms_send(foptical_matrix_weights(1, 1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
+      call comms_send(foptical_matrix_weights(1, 1, 1), nbands*nspins*num_kpoints_on_node(my_node_id), 0)
       ! - send token back to root node
       call comms_send(token, 1, 0)
       ! On root node
@@ -3906,7 +3902,7 @@ contains
       ! - write root qe_matrix elements
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
-          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N_spin, N_k, 1), n_eigen=1, nbands)
+          write (matrix_unit, '(9999(ES16.8E3))') (foptical_matrix_weights(n_eigen, N_spin, N_k), n_eigen=1, nbands)
         end do
       end do
       close (unit=matrix_unit)
