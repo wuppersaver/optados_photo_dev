@@ -1344,8 +1344,8 @@ contains
     write (absorp_unit, '(a46)') '#*********************************************'
     write (absorp_unit, '(a35)') '#             Absorption coefficent'
     write (absorp_unit, '(a46)') '#*********************************************'
-    write (absorp_unit, '(a1)')  '#'
-    write (absorp_unit, '(a1)')  '#'
+    write (absorp_unit, '(a1)') '#'
+    write (absorp_unit, '(a1)') '#'
     write (absorp_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
       write (absorp_unit, '(a23, f10.5)') '# Number of electrons: ', num_electrons(1)
@@ -1368,7 +1368,7 @@ contains
       write (absorp_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (absorp_unit, '(a1)') '#'
-    if (.not. present(photo_box)) then 
+    if (.not. present(photo_box)) then
       do N = 1, jdos_nbins
         write (absorp_unit, *) E(N), absorp(N)
       end do
@@ -1458,7 +1458,7 @@ contains
       write (reflect_unit, '(a19,3(1x,f12.5))') '# Scissor operator:', scissor_op
     end if
     write (reflect_unit, '(a1)') '#'
-    if (.not. present(photo_box)) then 
+    if (.not. present(photo_box)) then
       do N = 1, jdos_nbins
         write (reflect_unit, *) E(N), reflect(N)
       end do

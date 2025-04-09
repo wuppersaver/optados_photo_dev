@@ -441,7 +441,7 @@ contains
     if (LAI_lorentzian_offset .lt. 0.0_dp) call io_error('Error: LAI_lorentzian_offset must be positive')
 
     ! Photoemission parameters - V.Chang Nov-2020, F.Mildner Nov-2022/Mar-2025
-    if (photo .and. index(optics_geom, 'tensor') > 0) then 
+    if (photo .and. index(optics_geom, 'tensor') > 0) then
       call io_error('Error: optics_geom tensor requested, but this does not currently work with photoemission')
     end if
     photo_model = '1step'
