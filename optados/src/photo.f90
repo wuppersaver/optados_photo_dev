@@ -2107,12 +2107,12 @@ contains
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
               ! do most of the calculation
-              temp_contribution = qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+              temp_contribution = (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
                                   *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
                                   *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
                                   *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
-                                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
                 ! do the specfn_dependent part
