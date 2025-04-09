@@ -21,11 +21,15 @@ def parse(fname):
 
     with open(fname) as f:
         lines = f.readlines()
+    i = 0
+    while True:
+        if '##' not in lines[i]:
+            break
+        else:
+            i += 1
 
-    for lno, l in enumerate(lines):
-        if '##' not in l:
-            retdict["matrix"].append([float(a) for a in l.split()])
-            continue
+    for l in lines[i:]:
+        retdict["matrix"] += [float(a) for a in l.split()[1:]]
         ###############################################################
 
 
