@@ -2108,11 +2108,11 @@ contains
             do n_eigen_init = 1, n_eigen_final - 1
               ! do most of the calculation
               temp_contribution = (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                                  *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
-                                  *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
-                                  *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
-                                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                                   *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
+                                   *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
+                                   *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
+                                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_sf_max_vectors
                 ! do the specfn_dependent part
@@ -2127,9 +2127,9 @@ contains
 
                 ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
                 !   write (stdout, '(6(1x,I4))') gdx,n_eigen, n_eigen2, N_spin, N, atom
-                !   write (stdout, '(15(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N),&
-                !     band_energy(n_eigen2, N_spin, N), spectral_weight(gdx, n_eigen_init, N_spin, N_k), &
-                !     matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                !   write (stdout, '(15(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom),
+                !     band_energy(n_eigen, N_spin, N), band_energy(n_eigen2, N_spin, N),
+                !     spectral_weight(gdx, n_eigen_init, N_spin, N_k), matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
                 !     delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
                 !     kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, &
                 !     fermi_dirac(n_eigen_init, N_spin, N_k), final_fd,&
@@ -2878,16 +2878,16 @@ contains
                                                    + temp_contribution*spectral_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*te_spec_factor
+              ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+              !   write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
+              !   write (stdout, '(12(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), band_energy(n_eigen, N_spin, N_k), &
+              !     spectral_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_k, N_spin), &
+              !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+              !     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
+              !     fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+              !     pdos_weights_k_band(n_eigen, N_spin, N_k)
+              ! end if
             end do
-            ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-            !   write (stdout, '(4(1x,I4))') n_eigen, N_spin, N_k, atom
-            !   write (stdout, '(11(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), band_energy(n_eigen, N_spin, N_k), &
-            !     foptical_matrix_weights(n_eigen, N_k, N_spin), &
-            !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-            !     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
-            !     fermi_dirac(n_eigen, N_spin, N_k), &
-            !     pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
-            ! end if
           end do
         end do
       end do
