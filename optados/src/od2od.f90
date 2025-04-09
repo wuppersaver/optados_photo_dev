@@ -579,7 +579,7 @@ contains
     end if
     ! ! Total number of elements of tmprob
     ! write(stdout,*) 'nbands', nbands
-    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
     ! write(stdout,*) string
 
     ! write(string,'(a)') trim(format_precision)
@@ -617,7 +617,7 @@ contains
 
     open (unit=specfn_unit, form='formatted', file=trim(outseedname)//".specfn_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
     ! write(stdout, *) string
 
     write (stdout, '(a80)') photo_specfn_file_header
