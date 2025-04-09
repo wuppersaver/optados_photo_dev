@@ -268,13 +268,13 @@ contains
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, foptical_mat
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string, string2
+    character(len=100):: string
     integer :: ik, is, ib, i, jb, energy_count, ierr, fem_unit = 6
 
     write (stdout, *) " Read a formatted .fem file. "
@@ -319,9 +319,9 @@ contains
   subroutine write_fem_fmt()
     !! Write a formatted ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, foptical_mat
     use od_constants, only: bohr2ang, H2eV
     implicit none
@@ -376,9 +376,9 @@ contains
   subroutine write_fem_bin()
     !! Write a binary ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, foptical_mat
     use od_constants, only: bohr2ang, H2eV
     implicit none
@@ -423,14 +423,14 @@ contains
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, transmit_prob
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string, string2
-    integer :: ik, is, ib, i, jb, energy_count, ierr, tmcoeff_unit = 6
+    character(len=100):: string
+    integer :: ik, is, ib, ierr, tmcoeff_unit = 6
 
     write (stdout, *) " Read a formatted .tmprob file. "
 
@@ -467,16 +467,16 @@ contains
   subroutine write_tmprob_fmt()
     !! Write a formatted ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, transmit_prob
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, tmcoeff_unit = 6
+    integer :: ik, is, ib, tmcoeff_unit = 6
 
     write (stdout, *) " Write a formatted .tmprob file. "
 
@@ -516,16 +516,14 @@ contains
   subroutine write_tmprob_bin()
     !! Write a binary ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
-         & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, transmit_prob
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string
-    integer :: ik, is, ib, i, jb, energy_count, tmcoeff_unit = 6
+    integer :: ik, is, ib, tmcoeff_unit = 6
 
     write (stdout, *) " Write a binary tmprob file."
 
@@ -557,14 +555,14 @@ contains
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
-    use od_electronic, only: nspins, nbands, transmit_prob, photo_spectral_func
+    use od_cell, only: nkpoints
+    use od_electronic, only: nspins, nbands, photo_spectral_func
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string, string2
-    integer :: ik, is, ib, i, jb, gdx, energy_count, ierr, specfn_unit = 6
+    character(len=100):: string
+    integer :: ik, is, ib, i, gdx, ierr, specfn_unit = 6
 
     write (stdout, *) " Read a formatted .specfn_fmt file. "
 
@@ -602,16 +600,16 @@ contains
   subroutine write_specfn_fmt()
     !! Write a formatted ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, photo_spectral_func, photo_specfn_file_header
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, jb, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, specfn_unit = 6
 
     write (stdout, *) " Write a formatted .specfn file. "
 
@@ -652,16 +650,14 @@ contains
   subroutine write_specfn_bin()
     !! Write a binary ome file.
     use od_constants, only: dp, bohr2ang, H2eV
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
-         & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, photo_spectral_func, photo_specfn_file_header
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string
-    integer :: ik, is, ib, i, gdx, jb, energy_count, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, specfn_unit = 6
 
     write (stdout, *) " Write a binary specfn file."
 
@@ -692,14 +688,14 @@ contains
     use od_constants, only: dp
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Read a formatted dome file. "
 
@@ -734,16 +730,16 @@ contains
   subroutine write_dome_fmt()
     !! Write a diagonal ome formatted file.
     use od_constants, only: dp
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
+    use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Write a formatted ome file."
 
@@ -780,16 +776,15 @@ contains
   subroutine write_dome_bin()
     !! Write a diagonal ome file.
     use od_constants, only: dp
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
-         & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints
+    use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
+    use od_cell, only: nkpoints
     use od_electronic, only: nspins, nbands, band_gradient
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
 
-    integer :: ik, is, ib, i, jb, dome_unit = 6
+    integer :: ik, is, ib, i, dome_unit = 6
 
     write (stdout, *) " Write a binary dome file."
 

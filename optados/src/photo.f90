@@ -107,7 +107,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
     use od_parameters, only: photo_work_function, photo_model, photo_elec_field, photo_output, photo_photon_sweep, &
-                             photo_photon_min, jdos_spacing, photo_photon_energy, iprint, devel_flag
+                             photo_photon_min, jdos_spacing, photo_photon_energy, iprint
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
     use od_pdos, only: pdos_calculate
@@ -696,7 +696,7 @@ contains
     use od_io, only: stdout, io_error, io_time, seedname, io_date
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
                              nbands, nspins, band_energy
-    use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
+    use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, devel_flag, iprint, jdos_max_energy, photo_model
@@ -1001,15 +1001,12 @@ contains
     ! convergence.
     ! Written by F Mildner, Mar 2025
     use od_optics, only: absorp
-    use od_cell, only: nkpoints, cell_volume
-    use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format
-    use od_electronic, only: nbands, num_electrons, nspins
-    use od_jdos_utils, only: jdos_nbins, E
-    use od_io, only: seedname, io_file_unit, stdout, io_error
+    use od_jdos_utils, only: jdos_nbins
+    use od_io, only: seedname, io_file_unit, io_error
 
     integer :: absorp_unit, box, i, N, ierr, energy
     character(len=3) :: box_char
-    character(len=100) :: dummya, dummyb
+    character(len=100) :: dummya
     absorp_unit = io_file_unit()
 
     do box = 1, num_boxes
@@ -1044,15 +1041,12 @@ contains
     ! convergence.
     ! Written by F Mildner, Mar 2025
     use od_optics, only: reflect
-    use od_cell, only: nkpoints, cell_volume
-    use od_parameters, only: optics_geom, optics_qdir, jdos_max_energy, scissor_op, output_format
-    use od_electronic, only: nbands, num_electrons, nspins
-    use od_jdos_utils, only: jdos_nbins, E
-    use od_io, only: seedname, io_file_unit, stdout, io_error
+    use od_jdos_utils, only: jdos_nbins
+    use od_io, only: seedname, io_file_unit, io_error
 
     integer :: reflect_unit, box, i, N, ierr, energy
     character(len=3) :: box_char
-    character(len=100) :: dummya, dummyb
+    character(len=100) :: dummya
 
     reflect_unit = io_file_unit()
 
@@ -1081,12 +1075,10 @@ contains
     !!This subroutine calculates the absorption coefficient for a specific layer
     ! use od_cell, only: atoms_pos_cart_photo
     ! use od_jdos_utils, only: jdos_nbins
-    use od_parameters, only: iprint
-    use od_io, only: stdout, io_error
-    use od_comms, only: on_root
+    use od_io, only: io_error
     implicit none
     real(kind=dp) :: I_0
-    integer :: box, i, ierr, num_layer
+    integer :: box, i, ierr
 
     allocate (I_layer(num_boxes + 1, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_absorp_layer - allocation of I_layer failed')
@@ -1950,8 +1942,8 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
                              elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, num_exclude_bands, &
-                             exclude_bands, photo_model, photo_sf_max_vectors, photo_output
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, &
+                             photo_model, photo_sf_max_vectors, photo_output
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
@@ -1964,7 +1956,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
     real(kind=dp), allocatable, dimension(:) :: qe_k_temp
     real(kind=dp) :: width, norm_vac, qe_factor, argument, ekin_temp,&
-                     time0, time1, final_fd, initial_fd, temp_contribution, spectral_factor, te_spec_factor
+                     time0, time1, final_fd, temp_contribution, spectral_factor, te_spec_factor
     integer :: N_k, N_spin, n_eigen_init, n_eigen_final, atom, ierr, i, gdx, qe_unit, token, inode
     character(len=10)                           :: char_e
     character(len=99)                           :: filename
@@ -2744,7 +2736,7 @@ contains
     integer :: N_k, N_spin, n_eigen, atom, ierr, i, gdx, kpt_total, inode, token, qe_unit
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
-    real(kind=dp) :: temp_contribution, ekin_temp, e_ortho_kin_temp, efinal_temp
+    real(kind=dp) :: temp_contribution, e_ortho_kin_temp, efinal_temp
     real(kind=dp) :: spectral_factor, te_spec_factor
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
@@ -3178,8 +3170,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
-    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint, num_exclude_bands, &
-    & exclude_bands
+    & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_sf_max_vectors, scissor_op, iprint
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time
@@ -3190,7 +3181,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp) :: time0, time1
 
-    real(kind=dp) :: final_fd, initial_fd, ekin_temp
+    real(kind=dp) :: final_fd, ekin_temp
     integer :: N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx, window_width
 
