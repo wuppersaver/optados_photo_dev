@@ -2044,16 +2044,16 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) &
-      then
-      i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
-      write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-      write (stdout, '(14(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'spectral_func', &
-        'photo_matrix_weights', &
-        'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
-        'pdos_weights_atoms', 'pdos_weights_k_band'
-      write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
-    end if
+    ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) &
+    !   then
+    !   i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+    !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
+    !   write (stdout, '(14(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'spectral_func', &
+    !     'photo_matrix_weights', &
+    !     'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
+    !     'pdos_weights_atoms', 'pdos_weights_k_band'
+    !   write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
+    ! end if
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -2124,6 +2124,17 @@ contains
                                                                          + temp_contribution*spectral_factor
                 te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
                                                           + temp_contribution*te_spec_factor
+
+                ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+                !   write (stdout, '(6(1x,I4))') gdx,n_eigen, n_eigen2, N_spin, N, atom
+                !   write (stdout, '(15(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen2, N_spin, N, atom), band_energy(n_eigen, N_spin, N),&
+                !     band_energy(n_eigen2, N_spin, N), spectral_weight(gdx, n_eigen_init, N_spin, N_k), &
+                !     matrix_weights(n_eigen, n_eigen2, N, N_spin, 1), &
+                !     delta_temp(n_eigen, n_eigen2, N_spin, N), electron_esc(n_eigen, N_spin, N, atom), &
+                !     kpoint_weight(N), I_layer(layer(atom), current_photo_energy_index), transverse_g, vac_g, &
+                !     fermi_dirac(n_eigen_init, N_spin, N_k), final_fd,&
+                !     pdos_weights_atoms(n_eigen, N_spin, N, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N)
+                ! end if
               end do
             end do
           end do
