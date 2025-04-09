@@ -2846,13 +2846,13 @@ contains
       end do
     end do
 
-    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-      i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
-      write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-      write (stdout, '(10(1x,a17))') 'calced_qe_value', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
-      & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
-      write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
-    end if
+    ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    !   i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+    !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
+    !   write (stdout, '(11(1x,a17))') 'calced_qe_value', 'band_energy', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
+    !   & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
+    !   write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
+    ! end if
     do atom = 1, max_atoms + 1
       ! if (iprint > 2 .and. on_root .and. (atom .le. max_atoms)) then
       !   write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
@@ -2879,16 +2879,14 @@ contains
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*te_spec_factor
             end do
-            ! if (enable_debug_output) then
-            !   if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-            !     write (stdout, '(4(1x,I4))') atom, n_eigen, N_spin, N_k
-            !     write (stdout, '(10(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), &
-            !       foptical_matrix_weights(n_eigen, N_k, N_spin), &
-            !       electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-            !       I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
-            !       fermi_dirac(n_eigen, N_spin, N_k), &
-            !       pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
-            !   end if
+            ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
+            !   write (stdout, '(4(1x,I4))') n_eigen, N_spin, N_k, atom
+            !   write (stdout, '(11(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), band_energy(n_eigen, N_spin, N_k), &
+            !     foptical_matrix_weights(n_eigen, N_k, N_spin), &
+            !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+            !     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
+            !     fermi_dirac(n_eigen, N_spin, N_k), &
+            !     pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
             ! end if
           end do
         end do
