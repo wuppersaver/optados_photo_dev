@@ -96,7 +96,6 @@ module od_photo
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   integer                             :: energy_count
   real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
-  ! Allowing debug output makes the calculation a lot slower since a very hot if statement is not optimised out druing compilation.
 contains
 
   subroutine photo_calculate
