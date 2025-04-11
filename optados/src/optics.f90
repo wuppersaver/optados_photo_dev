@@ -914,9 +914,9 @@ contains
     write (epsilon_unit, '(a1)') '#'
     write (epsilon_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (epsilon_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
+      write (epsilon_unit, '(a23, f12.5)') '# Number of electrons:', num_electrons(1)
     else
-      write (epsilon_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (epsilon_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (epsilon_unit, '(a15,i7)') '# Number of bands:', nbands
     if (present(photo_volume)) then
@@ -1265,9 +1265,9 @@ contains
     write (refract_unit, '(a1)') '#'
     write (refract_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (refract_unit, '(a23, i7)') '# Number of electrons:', num_electrons(1)
+      write (refract_unit, '(a23, f12.5)') '# Number of electrons:', num_electrons(1)
     else
-      write (refract_unit, '(a23, i7, 1x, i7)') '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (refract_unit, '(a23, i12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (refract_unit, '(a15,i7)') '# No of bands:', nbands
     if (present(photo_volume)) then
