@@ -2587,7 +2587,7 @@ contains
 
     ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
     energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if (on_root .and. iprint .gt. 3) write (stdout, *) 'energy_index:', energy_index
+    if (on_root .and. iprint .gt. 2) write (stdout, *) 'energy_index:', energy_index
 
     if (.not. allocated(foptical_matrix_weights)) then
       allocate (foptical_matrix_weights(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -2845,13 +2845,15 @@ contains
       end do
     end do
 
-    ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
-    !   i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
-    !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-    !   write (stdout, '(11(1x,a17))') 'calced_qe_value', 'band_energy', 'foptical_matrix_weights', 'electron_esc', 'kpoint_weight',&
-    !   & 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', 'pdos_weights_k_band'
-    !   write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
-    ! end if
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+      i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
+      write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
+      write (stdout, '(13(7x,a17))') 'calced_qe_value', 'contribution', 'band_energy', 'spectral_weight', &
+       'foptical_matrix_weights', &
+      & 'electron_esc', 'kpoint_weight', 'I_layer', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', 'pdos_weights_atoms', &
+      'pdos_weights_k_band'
+      write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
+    end if
     do atom = 1, max_atoms + 1
       ! if (iprint > 2 .and. on_root .and. (atom .le. max_atoms)) then
       !   write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, "<-- QE-1S |"
@@ -2877,15 +2879,18 @@ contains
                                                    + temp_contribution*spectral_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*te_spec_factor
-              ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root) then
-              !   write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
-              !   write (stdout, '(12(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), band_energy(n_eigen, N_spin, N_k), &
-              !     spectral_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_k, N_spin), &
-              !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-              !     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss, vacuum_gauss, &
-              !     fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
-              !     pdos_weights_k_band(n_eigen, N_spin, N_k)
-              ! end if
+              if ((temp_contribution*spectral_factor) .gt. 0.0_dp .and. index(devel_flag, 'print_qe_formula_values') > 0 &
+              .and. on_root) then
+                write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
+                write (stdout, '(13(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*spectral_factor, &
+                  band_energy(n_eigen, N_spin, N_k), &
+                  spectral_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_k, N_spin), &
+                  electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+                  I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss(gdx, n_eigen, N_spin, N_k), &
+                  vacuum_gauss(n_eigen, N_spin, N_k), &
+                  fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+                  pdos_weights_k_band(n_eigen, N_spin, N_k)
+              end if
             end do
           end do
         end do
@@ -3506,7 +3511,8 @@ contains
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
     use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, &
-                             photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max, photo_bindenergy_broadening
+                             photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max, photo_bindenergy_broadening, &
+                             optics_qdir
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
@@ -3646,9 +3652,10 @@ contains
         write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
         & cdate, ' at ', ctime
         write (binding_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
-        write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(photo_model)
+        write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
         write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
-        write (binding_unit, '(1x, a35, f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
+        write (binding_unit, '(1x,a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
+        write (binding_unit, '(1x,a35,f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
         write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
           photo_theta_min, photo_theta_max
         write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
