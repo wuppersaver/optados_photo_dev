@@ -1073,9 +1073,9 @@ contains
     write (loss_fn_unit, *) '#'
     write (loss_fn_unit, *) '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (loss_fn_unit, *) '# Number of electrons:', num_electrons(1)
+      write (loss_fn_unit, '(a23, f12.5)') '# Number of electrons:', num_electrons(1)
     else
-      write (loss_fn_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (loss_fn_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (loss_fn_unit, *) '# No of bands:', nbands
     write (loss_fn_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
@@ -1181,9 +1181,9 @@ contains
     write (conduct_unit, *) '#'
     write (conduct_unit, *) '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (conduct_unit, *) '# Number of electrons:', num_electrons(1)
+      write (conduct_unit, '(a23, f12.5)') '# Number of electrons:', num_electrons(1)
     else
-      write (conduct_unit, *) '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (conduct_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (conduct_unit, *) '# No of bands:', nbands
     write (conduct_unit, *) '# Volume of the unit cell (Ang^3):', cell_volume
@@ -1267,7 +1267,7 @@ contains
     if (nspins == 1) then
       write (refract_unit, '(a23, f12.5)') '# Number of electrons:', num_electrons(1)
     else
-      write (refract_unit, '(a23, i12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (refract_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (refract_unit, '(a15,i7)') '# No of bands:', nbands
     if (present(photo_volume)) then
@@ -1348,9 +1348,9 @@ contains
     write (absorp_unit, '(a1)') '#'
     write (absorp_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (absorp_unit, '(a23, f10.5)') '# Number of electrons: ', num_electrons(1)
+      write (absorp_unit, '(a23, f12.5)') '# Number of electrons: ', num_electrons(1)
     else
-      write (absorp_unit, '(a23, f10.5, 1x, f10.5)') '# Number of electrons: ', num_electrons(1), num_electrons(2)
+      write (absorp_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons: ', num_electrons(1), num_electrons(2)
     end if
     write (absorp_unit, '(a15,i7)') '# No of bands: ', nbands
     if (present(photo_volume)) then
@@ -1438,9 +1438,9 @@ contains
     write (reflect_unit, '(a1)') '#'
     write (reflect_unit, '(a22, i6)') '# Number of k-points: ', nkpoints
     if (nspins == 1) then
-      write (reflect_unit, '(a23, f10.5)') '# Number of electrons: ', num_electrons(1)
+      write (reflect_unit, '(a23, f12.5)') '# Number of electrons: ', num_electrons(1)
     else
-      write (reflect_unit, '(a23, f10.5, 1x, f10.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
+      write (reflect_unit, '(a23, f12.5, 1x, f12.5)') '# Number of electrons:', num_electrons(1), num_electrons(2)
     end if
     write (reflect_unit, '(a15,i7)') '# No of bands: ', nbands
     if (present(photo_volume)) then
