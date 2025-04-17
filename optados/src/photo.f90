@@ -2621,11 +2621,11 @@ contains
 
     N_in = 1  ! 0 = no inversion, 1 = inversion
     g = 0.0_dp
+    factor = 1.0_dp/(temp_photon_energy**2)
 
     do N_k = 1, num_kpoints_on_node(my_node_id)                 ! Loop over kpoints
       do N_spin = 1, nspins                                   ! Loop over spins
         do n_eigen = 1, nbands                                ! Loop over state
-          factor = 1.0_dp/(temp_photon_energy**2)
           if (index(optics_geom, 'unpolar') > 0) then
             if (num_symm == 0) then
               g(1) = (((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
@@ -2884,7 +2884,7 @@ contains
                 write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
                 write (stdout, '(13(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*spectral_factor, &
                   band_energy(n_eigen, N_spin, N_k), &
-                  spectral_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_k, N_spin), &
+                  spectral_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_spin, N_k), &
                   electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
                   I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss(gdx, n_eigen, N_spin, N_k), &
                   vacuum_gauss(n_eigen, N_spin, N_k), &
