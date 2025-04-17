@@ -636,10 +636,10 @@ contains
     end if
 
     call comms_bcast(fem_energy_info(1), 5)
-    energy_count = int(fem_energy_info(1))
+    energy_count = nint(fem_energy_info(1))
     ! Figure out how many kpoints should be on each node
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (foptical_mat(1:nbands, 1:3, energy_count, 1:num_kpoints_on_node(my_node_id), 1:nspins), stat=ierr)
+    allocate (foptical_mat(nbands, 3, energy_count, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
     if (on_root) then
       do inodes = 1, num_nodes - 1
@@ -648,7 +648,7 @@ contains
             read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
           end do
         end do
-        call comms_send(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(inodes), inodes)
+        call comms_send(foptical_mat(1, 1, 1, 1, 1), nbands*energy_count*3*nspins*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
@@ -658,7 +658,7 @@ contains
     end if
 
     if (.not. on_root) then
-      call comms_recv(foptical_mat(1, 1, 1, 1, 1), (nbands)*energy_count*3*nspins*num_kpoints_on_node(my_node_id), root_id)
+      call comms_recv(foptical_mat(1, 1, 1, 1, 1), nbands*energy_count*3*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (unit=fem_unit)
