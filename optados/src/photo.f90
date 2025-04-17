@@ -3009,7 +3009,6 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: inv_sqrt_two_pi
     implicit none
-    real(kind=dp), allocatable, dimension(:) :: layer_e_transverse
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
     integer                                  :: atom, ierr
 
@@ -3025,20 +3024,11 @@ contains
     end if
     layer_qe = 0.0_dp
 
-    if (.not. allocated(layer_e_transverse)) then
-      allocate (layer_e_transverse(max_atoms + 1), stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - allocation of layer_e_transverse failed')
-    end if
-    layer_e_transverse = 0.0_dp
-
     if (index(photo_model, '3step') > 0) then
       do atom = 1, max_atoms + 1
         ! Calculate the qe contribution of each atom/layer
         layer_qe(atom) = sum(qe_tsm(:, :, :, :, atom))
-        layer_e_transverse(atom) = sum(te_tsm(:, :, :, atom))
       end do
-
-      call comms_reduce(layer_e_transverse(1), max_atoms + 1, 'SUM')
 
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
@@ -3058,9 +3048,6 @@ contains
       deallocate (te_tsm, stat=ierr)
       if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate te_tsm')
 
-      deallocate (layer_e_transverse, stat=ierr)
-      if (ierr /= 0) call io_error('Error: weighted_mean_te - failed to deallocate layer_e_transverse')
-
     elseif (index(photo_model, '1step') > 0) then
       do atom = 1, max_atoms + 1
         ! Calculate the qe contribution of each atom/layer
@@ -3070,7 +3057,7 @@ contains
       ! Sum the data from other nodes that have more k-points stored
       call comms_reduce(layer_qe(1), max_atoms + 1, 'SUM')
       ! Calculate the total QE
-      total_qe = sum(layer_qe)
+      total_qe = sum(layer_qe(1:max_atoms+1))
       call comms_bcast(total_qe, 1)
 
       ! Calculate the sum of transverse E from all the bands and k-points on node
