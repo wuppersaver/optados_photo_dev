@@ -143,7 +143,7 @@ contains
     open (unit=ome_unit, form='formatted', recl=1073741824, file=trim(seedname)//".ome_fmt")
 
     ! Total number of elements of ome
-    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*nbands, trim(format_precision)
     ! write(stdout,*) string
 
     ! write(string,'(a)') trim(format_precision)
@@ -190,7 +190,7 @@ contains
 
     open (unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*nbands, trim(format_precision)
     !   write(stdout,*) string
 
     write (stdout, '(a80)') omefile_header
@@ -295,11 +295,11 @@ contains
     end if
     ! Total number of elements of fem
     write (stdout, *) 'nbands', nbands, 'energy_count', energy_count
-    write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
     write (stdout, *) string
 
     ! write(string,'(a)') trim(format_precision)
-    ! write(0,*) nkpoints, nspins, nbands
+    write(stdout,*) nkpoints, nspins, nbands
 
     do ik = 1, nkpoints
       do is = 1, nspins
@@ -333,15 +333,12 @@ contains
     write (stdout, *) " Write a formatted .fem file. "
 
     foptical_mat = foptical_mat/(bohr2ang*H2eV)
-    write (stdout, *) fem_energy_info
-    energy_count = int(fem_energy_info(1))
+    energy_count = nint(fem_energy_info(1))
 
     open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') 3*nbands*energy_count, trim(format_precision)
-    ! write(stdout, *) string
+    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
 
-    write (stdout, '(a80)') femfile_header
     write (stdout, '(a80)') adjustl(femfile_header)
 
     write (fem_unit, '('//trim(format_precision)//')') file_version
@@ -352,8 +349,7 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), &
-                                                  jb=1, energy_count)
+        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
       end do
     end do
 
@@ -366,10 +362,10 @@ contains
   subroutine read_fem_bin()
     !! Read a binary ome file. Wrapper to keep the naming tidy.
     implicit none
-    write (stdout, *) " Read a formatted ome file. "
+    write (stdout, *) " Read a unformatted fem_bin file. "
 
     call elec_read_foptical_mat()
-    write (stdout, *) " "//trim(seedname)//".fem_bin"//"--> Unformatted ome sucessfully read. "
+    write (stdout, *) " "//trim(seedname)//".fem_bin"//" --> Unformatted fem_bin sucessfully read. "
   end subroutine read_fem_bin
 
   !=========================================================================
@@ -402,14 +398,13 @@ contains
       write (fem_unit) fem_energy_info(i)
     end do
 
-    ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
         write (fem_unit) (((foptical_mat(ib, jb, i, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
       end do
     end do
 
-    write (stdout, *) " Sucesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
+    write (stdout, *) " Succesfully written an unformatted fem file --> "//trim(outseedname)//".fem_bin"
   end subroutine write_fem_bin
 
   !=========================================================================
@@ -1454,50 +1449,50 @@ program od2od
   ! Main case to decide what file format to read in.
   read_input:select case(trim(infile))
   case ("ome_fmt")
-  ome_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_ome_fmt()
+    ome_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_ome_fmt()
   case ("ome_bin")
-  ome_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_ome_bin()
+    ome_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_ome_bin()
   case ("fem_fmt")
-  fem_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_fem_fmt()
+    fem_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_fem_fmt()
   case ("fem_bin")
-  fem_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_fem_bin()
+    fem_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_fem_bin()
   case ("tmprob_fmt")
-  tmcoeff_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_tmprob_fmt()
+    tmcoeff_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_tmprob_fmt()
   case ("tmprob_bin")
-  tmcoeff_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_tmprob_bin()
+    tmcoeff_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_tmprob_bin()
   case ("specfn_fmt")
-  tmcoeff_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_specfn_fmt()
+    tmcoeff_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_specfn_fmt()
   case ("specfn_bin")
-  tmcoeff_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_specfn_bin()
+    tmcoeff_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_specfn_bin()
   case ("dome_fmt")
-  dome_conv = .true.
-  call get_band_energy()
-  call write_read_file()
-  call read_dome_fmt()
+    dome_conv = .true.
+    call get_band_energy()
+    call write_read_file()
+    call read_dome_fmt()
   case ("dome_bin")
   dome_conv = .true.
   call get_band_energy()
