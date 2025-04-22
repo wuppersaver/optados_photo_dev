@@ -61,7 +61,7 @@ module od_photo
   real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
   real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_arpes
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes_internal
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_transverse
   real(kind=dp), allocatable, dimension(:) :: bind_energy
@@ -1263,12 +1263,12 @@ contains
     ! Impossible value as default that is equal to no emission
     theta_arpes = 91.0_dp
 
-    if (.not. allocated(theta_arpes_internal)) then
-      allocate (theta_arpes_internal(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_arpes_internal failed')
+    if (.not. allocated(theta_internal)) then
+      allocate (theta_internal(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_angle - allocation of theta_internal failed')
     end if
     ! Impossible value as default that is equal to no emission
-    theta_arpes_internal = 91.0_dp
+    theta_internal = 91.0_dp
 
     if (.not. allocated(phi_arpes)) then
       allocate (phi_arpes(sf_maxvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1399,7 +1399,7 @@ contains
                                                               E_transverse(gdx, n_eigen, N_spin, N_k))/ &
                                                              E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
               ! angle of electron within material, before passing the surface
-              theta_arpes_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+              theta_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
                                                                        - E_transverse(gdx, n_eigen, N_spin, N_k))/ &
                                                                       (E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff))) &
                                                                 *rad_to_deg
@@ -1424,7 +1424,7 @@ contains
                                                               E_transverse(gdx, n_eigen, N_spin, N_k))/ &
                                                              E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
               ! Angle of electron within material, before passing the surface
-              theta_arpes_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+              theta_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
                                                                        - E_transverse(gdx, n_eigen, N_spin, N_k)) &
                                                                       /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
                                                                         work_function_eff)))*rad_to_deg
@@ -1489,7 +1489,7 @@ contains
     real(kind=dp) :: tolerance
     real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
 
-    tolerance = 0.1E-11_dp
+    tolerance = 1.0E-12_dp
     time0 = io_time()
     allocate (new_atom_coordinates(3, max_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atom_coordinates failed')
@@ -1569,12 +1569,12 @@ contains
             do n_eigen = 1, nbands
               do gdx = 1, photo_sf_max_vectors
                 ! is the emission possible?
-                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
+                if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
                   ! The electron's kinetic energy inside the material is higher, than after the emission
                   ! through the surface. Thus follows an angle closer to normal direction and one needs
                   ! the internal theta angle.
                   exponent = (new_atom_coordinates(3, atom_order(atom))/ &
-                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
+                              cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(atom)
                   if (exponent .gt. -575.0_dp) then
                     electron_esc(gdx, n_eigen, N_spin, N_k, atom) = exp(exponent)
                   else
@@ -1592,9 +1592,9 @@ contains
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               do gdx = 1, photo_sf_max_vectors
-                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
+                if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
                   exponent = (new_atom_coordinates(3, atom_order(atom))/ &
-                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
+                              cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
                   if ((exponent .gt. -575.0_dp) .and. (exponent .lt. 575.0_dp)) then
                     electron_esc(gdx, n_eigen, N_spin, N_k, atom) = exp(exponent)
                   else if (exponent .gt. -575.0_dp) then
@@ -1659,9 +1659,9 @@ contains
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               do gdx = 1, photo_sf_max_vectors
-                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
                   exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
+                              cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-575) is ~1E-250, this should be more than enough precision.
                   if (exponent .gt. -575.0_dp) then
@@ -1680,9 +1680,9 @@ contains
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
               do gdx = 1, photo_sf_max_vectors
-                if (cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
+                if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
                   exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_height/ &
-                              cos(theta_arpes_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
+                              cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-575) is ~1E-250, this should be more than enough precision.
                   if (exponent .gt. -575.0_dp) then
@@ -1959,7 +1959,7 @@ contains
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
 
-    width = (1.0_dp/11604.45_dp)*photo_temperature
+    width = kB*photo_temperature
     qe_factor = 1.0_dp/(cell_area)
     norm_vac = inv_sqrt_two_pi/width
 
@@ -3921,9 +3921,9 @@ contains
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes')
     end if
 
-    if (allocated(theta_arpes_internal)) then
-      deallocate (theta_arpes_internal, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_arpes_internal')
+    if (allocated(theta_internal)) then
+      deallocate (theta_internal, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate theta_internal')
     end if
 
     if (allocated(refract)) then
