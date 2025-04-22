@@ -104,7 +104,7 @@ contains
                              efermi, efermi_set, elec_read_foptical_mat, elec_dealloc_pdos
     use od_jdos_utils, only: jdos_utils_calculate, setup_energy_scale
     use od_comms, only: on_root
-    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, photo_output, photo_photon_sweep, &
+    use od_parameters, only: photo_work_function, photo_model, photo_elec_field, photo_output, photo_energy_sweep, &
                              photo_photon_min, jdos_spacing, photo_photon_energy, iprint
     use od_dos_utils, only: dos_utils_set_efermi, dos_utils_calculate_at_e, dos_utils_deallocate
     use od_io, only: stdout, io_error, io_time
@@ -153,7 +153,7 @@ contains
       work_function_eff = photo_work_function
     end if
 
-    if (photo_photon_sweep) then
+    if (photo_energy_sweep) then
       do i = 1, number_energies
         time_a = io_time()
         temp_photon_energy = photo_photon_min + (i - 1)*jdos_spacing
@@ -197,9 +197,7 @@ contains
         ! Only call the binding energy gaussian broadening and file printing if necessary
         if (.not. index(photo_output, 'off') > 0) then
           !Broaden ouputs using a gaussian function
-          if (index(photo_output, 'e_bind') > 0) then
-            call binding_energy_broadening
-          end if
+          call binding_energy_broadening
           ! Write either a binding energy output with after Gaussian broadening or the reduced QE tensor
           call write_qe_output_files
         end if
@@ -496,13 +494,13 @@ contains
 
   subroutine calc_photon_energies
     use od_constants, only: dp
-    use od_parameters, only: photo_photon_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy
+    use od_parameters, only: photo_energy_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy
     use od_io, only: io_error
     implicit none
     real(kind=dp)        ::   num_energies, temp
     integer              ::   ierr, i
 
-    if (photo_photon_sweep) then
+    if (photo_energy_sweep) then
       num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
       number_energies = int(num_energies) + 1
       if (photo_photon_max - photo_photon_min .eq. 0.0_dp) then
@@ -1938,7 +1936,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
                              elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, iprint, &
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_energy_sweep, iprint, &
                              photo_model, photo_sf_max_vectors, photo_output
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2011,7 +2009,7 @@ contains
       call elec_read_transmit_prob()
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_energy_sweep) then
       write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
       write (stdout, '(5(1x,I4))') shape(photo_matrix_weights)
       write (stdout, '(5(1x,I4))') nbands, nbands, nspins, num_kpoints_on_node(my_node_id), N_geom
@@ -2030,7 +2028,7 @@ contains
       write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_energy_sweep) then
       write (stdout, '(1x,a78)') '+---------------------- Printing Delta Function Values ----------------------+'
       write (stdout, '(5(1x,I4))') shape(delta_temp)
       write (stdout, '(5(1x,I4))') nbands, nbands, num_kpoints_on_node(my_node_id), nspins
@@ -2043,7 +2041,7 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
-    ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) &
+    ! if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_energy_sweep) &
     !   then
     !   i = 17 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
     !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
@@ -2503,7 +2501,7 @@ contains
     use od_constants, only: dp, hbar, e_mass
     use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat, fem_energy_info, efermi
     use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
-    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_photon_sweep, jdos_spacing,&
+    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_energy_sweep, jdos_spacing,&
      & photo_work_function, iprint
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root
@@ -2542,7 +2540,7 @@ contains
     ! Are the jdos_step and energy_step compatible?
     ! Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
     ! reached using the input step
-    if (photo_photon_sweep .and. jdos_spacing .lt. energy_step) then
+    if (photo_energy_sweep .and. jdos_spacing .lt. energy_step) then
       if (on_root) then
         write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
         write (stdout, *) 'The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!'
@@ -2550,7 +2548,7 @@ contains
       end if
     end if
     ! If energy_step is lt jdos_spacing - is the mod==0?
-    if (photo_photon_sweep .and. energy_step .lt. jdos_spacing) then
+    if (photo_energy_sweep .and. energy_step .lt. jdos_spacing) then
       if (abs(modulo(jdos_spacing, energy_step)) .gt. tolerance) then
         if (on_root) then
           write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
@@ -2705,7 +2703,7 @@ contains
       if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (index(devel_flag, 'print_qe_constituents') > 0 .and. on_root .and. .not. photo_energy_sweep) then
       write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
       write (stdout, 126) shape(foptical_matrix_weights)
       write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
@@ -2732,7 +2730,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id, num_nodes
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_photon_sweep, &
+    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_energy_sweep, &
                              iprint, photo_model, photo_sf_max_vectors
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2845,7 +2843,7 @@ contains
       end do
     end do
 
-    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_photon_sweep) then
+    if (index(devel_flag, 'print_qe_formula_values') > 0 .and. on_root .and. .not. photo_energy_sweep) then
       i = 13 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
       write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
       write (stdout, '(13(7x,a17))') 'calced_qe_value', 'contribution', 'band_energy', 'spectral_weight', &

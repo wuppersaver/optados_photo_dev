@@ -129,7 +129,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_max
   real(kind=dp), public, save :: photo_bindenergy_broadening
   real(kind=dp), public, save :: photo_photon_energy
-  logical, public, save       :: photo_photon_sweep
+  logical, public, save       :: photo_energy_sweep
   real(kind=dp), public, save :: photo_photon_min
   real(kind=dp), public, save :: photo_photon_max
   real(kind=dp), public, save :: photo_bulk_cutoff
@@ -194,7 +194,7 @@ contains
       call io_error('Error: value of energy_unit not recognised in param_read')
 
     dos = .false.; pdos = .false.; pdis = .false.; jdos = .false.; optics = .false.
-    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.; photo_photon_sweep = .false.
+    core = .false.; compare_dos = .false.; compare_jdos = .false.; photo = .false.; photo_energy_sweep = .false.
     call param_get_vector_length('task', found, i_temp)
     if (found .and. i_temp > 0) then
       allocate (task_string(i_temp), stat=ierr)
@@ -219,8 +219,8 @@ contains
           dos = .true.
         elseif (index(task_string(loop), 'photoemission') > 0) then
           photo = .true.
-        elseif (index(task_string(loop), 'photon_sweep') > 0) then
-          photo = .true.; photo_photon_sweep = .true.
+        elseif (index(task_string(loop), 'photo_energy_sweep') > 0) then
+          photo = .true.; photo_energy_sweep = .true.
         elseif (index(task_string(loop), 'none') > 0) then
           dos = .false.; pdos = .false.; jdos = .false.; optics = .false.; core = .false.
         elseif (index(task_string(loop), 'all') > 0) then
@@ -459,15 +459,15 @@ contains
       call io_error('Error: value of momentum not recognised in param_read')
 
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
-    if (found .and. photo_photon_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
-    if (photo .and. .not. found .and. .not. photo_photon_sweep) &
+    if (found .and. photo_energy_sweep) call io_error('Error: cannot set photon energy for photon energy sweep calculation')
+    if (photo .and. .not. found .and. .not. photo_energy_sweep) &
       call io_error('Error: please set photon energy for photoemission calculation')
 
     photo_photon_min = 3.0_dp
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = 2.0_dp
     call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
-    if (photo_photon_min .gt. photo_photon_max .and. photo_photon_sweep) &
+    if (photo_photon_min .gt. photo_photon_max .and. photo_energy_sweep) &
       call io_error('Error: max photon value is lower than min photon value or they have not been set')
 
     call param_get_keyword('photo_work_function', found, r_value=photo_work_function)
@@ -979,7 +979,7 @@ contains
       elseif (index(photo_model, 'ds_like_pe') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
       end if
-      if (photo_photon_sweep) then
+      if (photo_energy_sweep) then
         write (stdout, '(1x,a46,1x,1f10.4,a4,1f7.4,a10)') '|  Photon Energy Sweep                       :', photo_photon_min,&
                                                         & ' -> ', photo_photon_max, ' eV      |'
       else
@@ -1707,7 +1707,7 @@ contains
     call comms_bcast(jdos, 1)
     call comms_bcast(optics, 1)
     call comms_bcast(photo, 1)
-    call comms_bcast(photo_photon_sweep, 1)
+    call comms_bcast(photo_energy_sweep, 1)
     call comms_bcast(core, 1)
     call comms_bcast(compare_dos, 1)
     call comms_bcast(compare_jdos, 1)
@@ -1758,7 +1758,7 @@ contains
     call comms_bcast(photo_model, len(photo_model))
     call comms_bcast(photo_momentum, len(photo_momentum))
     call comms_bcast(photo_photon_energy, 1)
-    if (photo_photon_sweep) then
+    if (photo_energy_sweep) then
       call comms_bcast(photo_photon_min, 1)
       call comms_bcast(photo_photon_max, 1)
     end if
