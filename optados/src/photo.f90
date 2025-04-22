@@ -3179,7 +3179,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp) :: time0, time1
 
-    real(kind=dp) :: final_fd, ekin_temp
+    real(kind=dp) :: final_fd, ekin_temp, be_temp
     integer :: N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
     integer :: middle_idx, width_idx, window_width
 
@@ -3190,12 +3190,14 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
 
     time0 = io_time()
+    ! We are redoing parts of the QE calculation, so we need these factors
     qe_factor = 1.0_dp/(cell_area)
-    width = (1.0_dp/11604.45_dp)*photo_temperature
+    width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
+    ! How many SD out from the center should the Gaussian broadening be summed up?
     window_width = 12
-    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 100
-    total_be_contribs = 0.0_dp
+    max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
+    if (max_energy .lt. 500) return
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3215,8 +3217,6 @@ contains
     end if
     vacuum_gauss = 0.0_dp
 
-    if (max_energy .lt. 0) return
-
     allocate (bind_energy(max_energy), stat=ierr)
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of bind_energy failed')
     bind_energy = 0.0_dp
@@ -3233,65 +3233,68 @@ contains
     if (ierr /= 0) call io_error('Error: binding_energy_broadening - allocation of arpes_mask failed')
     arpes_mask = 0.00_dp
 
-    do e_scale = 1, max_energy
-      bind_energy(e_scale) = real(e_scale - 1, dp)/1000
-    end do
+    total_be_contribs = 0.0_dp
 
-    do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-      do N_spin = 1, nspins                    ! Loop over spins
-        do n_eigen_init = 1, nbands
-          middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-          width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
-          do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
-            ! do e_scale = 1, max_energy
-            binding_temp(e_scale, n_eigen_init, N_spin, N_k) = &
-              gaussian((efermi - band_energy(n_eigen_init, N_spin, N_k)), photo_bindenergy_broadening, bind_energy(e_scale))
+    if (index(photo_model, '3step') > 0) then
+      do e_scale = 1, max_energy
+        bind_energy(e_scale) = (e_scale - 1)*0.001_dp - 0.5_dp
+      end do
+
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen_init = 1, nbands
+            be_temp = efermi - band_energy(n_eigen_init, N_spin, N_k)
+            middle_idx = ceiling(be_temp*1000) + 500
+            width_idx = ceiling((photo_bindenergy_broadening*window_width)*1000)
+            do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+              ! do e_scale = 1, max_energy
+              binding_temp(e_scale, n_eigen_init, N_spin, N_k) = &
+                gaussian(be_temp, photo_bindenergy_broadening, bind_energy(e_scale))
+            end do
           end do
         end do
       end do
-    end do
 
-    if (index(photo_model, '3step') > 0) then
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
-          do n_eigen = 1, nbands
-            argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
+          do n_eigen_init = 1, nbands
+            argument = (band_energy(n_eigen_init, N_spin, N_k) - efermi)/(kB*photo_temperature)
             ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
             ! so this cutoff condition saves us from running into arithmetic
             ! issues when computing fermi_dirac due to possible under/over-flow.
             if (argument .gt. 230.0_dp) then
-              fermi_dirac(n_eigen, N_spin, N_k) = 0.0_dp
+              fermi_dirac(n_eigen_init, N_spin, N_k) = 0.0_dp
             elseif (argument .lt. -230.0_dp) then
-              fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp
+              fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp
             else
-              fermi_dirac(n_eigen, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
+              fermi_dirac(n_eigen_init, N_spin, N_k) = 1.0_dp/(exp(argument) + 1.0_dp)
             end if
 
             ! The vacuum gauss represents the necessary condition: is the final state above E_vacuum?
             ! The transverse gauss represents the sufficient condition:  after "emission", do we have enough energy for E_ortho > 0?
             ! Is the final state energy above the vauum level?
-            if (band_energy(n_eigen, N_spin, N_k) .lt. evacuum_eff) then
-              vacuum_gauss(n_eigen, N_spin, N_k) = gaussian(band_energy(n_eigen, N_spin, N_k) + &
+            if (band_energy(n_eigen_init, N_spin, N_k) .lt. evacuum_eff) then
+              vacuum_gauss(n_eigen_init, N_spin, N_k) = gaussian(band_energy(n_eigen_init, N_spin, N_k) + &
                                                             scissor_op, width, evacuum_eff)/norm_vac
             else
-              vacuum_gauss(n_eigen, N_spin, N_k) = 1.0_dp
+              vacuum_gauss(n_eigen_init, N_spin, N_k) = 1.0_dp
             end if
             ! Is there enough total energy for this kpt/band for E_ortho > 0 after passing through surface potential step
             ! (workfunction), evacuum_eff = efermi + work_function_eff
             do gdx = 1, photo_sf_max_vectors
               ! Is (photon_energy - transverse energy) > (work_function - E_field_lowering)
               ! Is the final kinetic energy ortho > 0?
-              ekin_temp = temp_photon_energy - E_transverse(gdx, n_eigen, N_spin, N_k)
+              ekin_temp = temp_photon_energy - E_transverse(gdx, n_eigen_init, N_spin, N_k)
               if (ekin_temp .le. work_function_eff) then
-                transverse_gauss(gdx, n_eigen, N_spin, N_k) = gaussian(ekin_temp, width, work_function_eff)/norm_vac
+                transverse_gauss(gdx, n_eigen_init, N_spin, N_k) = gaussian(ekin_temp, width, work_function_eff)/norm_vac
               else
-                transverse_gauss(gdx, n_eigen, N_spin, N_k) = 1.0_dp
+                transverse_gauss(gdx, n_eigen_init, N_spin, N_k) = 1.0_dp
               end if
-              if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
-                  theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
-                if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                    phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                  arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
+              if (theta_arpes(gdx, n_eigen_init, N_spin, N_k) .ge. photo_theta_min .and. &
+                  theta_arpes(gdx, n_eigen_init, N_spin, N_k) .le. photo_theta_max) then
+                if (phi_arpes(gdx, n_eigen_init, N_spin, N_k) .ge. photo_phi_min .and. &
+                    phi_arpes(gdx, n_eigen_init, N_spin, N_k) .le. photo_phi_max) then
+                  arpes_mask(gdx, n_eigen_init, N_spin, N_k) = 1.0_dp
                 end if
               end if
             end do
@@ -3313,8 +3316,8 @@ contains
               ! end if
               final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
               do n_eigen_init = 1, n_eigen_final - 1
-                middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-                width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
+                middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))*1000) + 500
+                width_idx = ceiling(photo_bindenergy_broadening*window_width*1000)
                 temp_contribution = &
                   qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
                   *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
@@ -3354,8 +3357,8 @@ contains
             ! end if
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
-              middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))/0.001)
-              width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
+              middle_idx = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))*1000) + 500
+              width_idx = ceiling(photo_bindenergy_broadening*window_width*1000)
               temp_contribution = &
                 (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
                  *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
@@ -3394,6 +3397,24 @@ contains
       end if
 
     elseif (index(photo_model, '1step') > 0) then
+      do e_scale = 1, max_energy
+        bind_energy(e_scale) = (e_scale - 1)*0.001_dp - 0.5_dp
+      end do
+
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        do N_spin = 1, nspins                    ! Loop over spins
+          do n_eigen = 1, nbands
+            be_temp = efermi - band_energy(n_eigen, N_spin, N_k)
+            middle_idx = ceiling(be_temp*1000) + 500
+            width_idx = ceiling(photo_bindenergy_broadening*window_width*1000)
+            do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+              binding_temp(e_scale, n_eigen, N_spin, N_k) = &
+                gaussian(be_temp, photo_bindenergy_broadening, bind_energy(e_scale))
+            end do
+          end do
+        end do
+      end do
+
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
@@ -3444,8 +3465,8 @@ contains
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen = 1, nbands
-              middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))/0.001)
-              width_idx = ceiling((photo_bindenergy_broadening*window_width)/0.001)
+              middle_idx = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))*1000) + 500
+              width_idx = ceiling(photo_bindenergy_broadening*window_width*1000)
               temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                    *electrons_per_state*kpoint_weight(N_k) &
                                    *I_layer(box_atom(atom), current_photo_energy_index) &
@@ -3499,7 +3520,7 @@ contains
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
     use od_parameters, only: photo_output, photo_model, photo_work_function, iprint, devel_flag, &
                              photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max, photo_bindenergy_broadening, &
-                             optics_qdir
+                             optics_qdir, optics_geom
     implicit none
     integer :: atom, ierr, e_scale, binding_unit, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
@@ -3638,9 +3659,10 @@ contains
         call io_date(cdate, ctime)
         write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
         & cdate, ' at ', ctime
-        write (binding_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
+        write (binding_unit, '(1x,a25,a)') '## Seedname: ', trim(adjustl(seedname))
         write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
         write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
+        write (binding_unit, '(1x,a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
         write (binding_unit, '(1x,a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
         write (binding_unit, '(1x,a35,f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
         write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
