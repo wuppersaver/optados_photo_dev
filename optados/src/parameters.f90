@@ -128,6 +128,8 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_min
   real(kind=dp), public, save :: photo_theta_max
   real(kind=dp), public, save :: photo_bindenergy_broadening
+  real(kind=dp), public, save :: photo_kmat_bin_width
+  real(kind=dp), public, save :: photo_const_binding_emap
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_energy_sweep
   real(kind=dp), public, save :: photo_photon_min
@@ -527,10 +529,6 @@ contains
 
     photo_output = 'off'
     call param_get_keyword('photo_output', found, c_value=photo_output)
-    if (index(photo_output, 'qe_matrix') == 0 .and. index(photo_output, 'e_bind') == 0 .and. &
-      & index(photo_output, 'off') == 0) then
-      call io_error('Error: value of photo_output output not recognised in param_read')
-    end if
 
     photo_theta_min = 0.0_dp
     call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
@@ -541,9 +539,12 @@ contains
     photo_phi_max = 90.0_dp
     call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
 
-    photo_bindenergy_broadening = 0.0259
+    photo_bindenergy_broadening = 0.0259_dp
     call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
-
+    photo_kmat_bin_width = 0.005_dp
+    call param_get_keyword('photo_kmat_bin_width', found, r_value=photo_kmat_bin_width)
+    photo_const_binding_emap = 0.0_dp
+    call param_get_keyword('photo_const_binding_emap', found, r_value=photo_const_binding_emap)
     photo_sf_max_vectors = 1
     call param_get_keyword('photo_sf_max_vectors', found, i_value=photo_sf_max_vectors)
     if ((photo_sf_max_vectors .gt. 1) .and. (index(photo_momentum, 'specfn') .eq. 0)) then
@@ -1009,22 +1010,25 @@ contains
       if (photo_remove_box_states) then
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
       end if
-      ! TODO: Edit the output to reflect the changes made to the printing subroutines
-      if (index(photo_output, 'qe_matrix') > 0) then
-        write (stdout, '(1x,a78)') '|  Writing Quantum Efficiency Matrix   to :     *SEED*_qe_matrix.dat         |'
-      end if
-      if (index(photo_output, 'e_bind') > 0) then
-        write (stdout, '(1x,a78)') '|  Writing Binding Energies            to :     *SEED*_binding_energy.dat    |'
-      end if
       if (index(photo_momentum, 'specfn') > 0) then
         write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of k + G SpecFn Contributions        : ', photo_sf_max_vectors, '|'
       end if
-      write (stdout, '(1x,a78)') '|  Emission Angle Bounds for writing to *SEED*_binding_energy.dat -----------|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
-      write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
-      write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  BindingEnergy Broad. Width (eV)           :', photo_bindenergy_broadening, '|'
+      if (index(photo_output, 'off') == 0) then
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
+      end if
+      if (index(photo_output, 'e_bind') > 0) then
+        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
+        & photo_bindenergy_broadening, '|'
+      end if
+      if (index(photo_output, 'ekin_k_mat') > 0) then
+        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy K Matrix Bin Width (eV)    :', photo_kmat_bin_width, '|'
+      end if
+      if (index(photo_output, 'const_energy_map') > 0) then
+        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', photo_const_binding_emap, '|'
+      end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
@@ -1782,6 +1786,8 @@ contains
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)
+    call comms_bcast(photo_kmat_bin_width, 1)
+    call comms_bcast(photo_const_binding_emap, 1)
     call comms_bcast(photo_sf_max_vectors, 1)
 
     call comms_bcast(num_exclude_bands, 1)
