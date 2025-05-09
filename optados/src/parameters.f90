@@ -121,7 +121,7 @@ module od_parameters
 
   ! Photoemission parameters - V.Chang, et al. Dec-2022
   character(len=20), public, save :: photo_model
-  character(len=20), public, save :: photo_output
+  character(len=60), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
   real(kind=dp), public, save :: photo_phi_min
   real(kind=dp), public, save :: photo_phi_max
@@ -129,7 +129,7 @@ module od_parameters
   real(kind=dp), public, save :: photo_theta_max
   real(kind=dp), public, save :: photo_bindenergy_broadening
   real(kind=dp), public, save :: photo_kmat_bin_width
-  real(kind=dp), public, save :: photo_const_binding_emap
+  real(kind=dp), public, save :: photo_const_emap_value
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_energy_sweep
   real(kind=dp), public, save :: photo_photon_min
@@ -543,8 +543,8 @@ contains
     call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
     photo_kmat_bin_width = 0.005_dp
     call param_get_keyword('photo_kmat_bin_width', found, r_value=photo_kmat_bin_width)
-    photo_const_binding_emap = 0.0_dp
-    call param_get_keyword('photo_const_binding_emap', found, r_value=photo_const_binding_emap)
+    photo_const_emap_value = 0.0_dp
+    call param_get_keyword('photo_const_emap_value', found, r_value=photo_const_emap_value)
     photo_sf_max_vectors = 1
     call param_get_keyword('photo_sf_max_vectors', found, i_value=photo_sf_max_vectors)
     if ((photo_sf_max_vectors .gt. 1) .and. (index(photo_momentum, 'specfn') .eq. 0)) then
@@ -1023,11 +1023,11 @@ contains
         write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
         & photo_bindenergy_broadening, '|'
       end if
-      if (index(photo_output, 'ekin_k_mat') > 0) then
+      if (index(photo_output, 'ekin_k_mat') > 0 .or. index(photo_output, 'p_tensor') > 0) then
         write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy K Matrix Bin Width (eV)    :', photo_kmat_bin_width, '|'
       end if
       if (index(photo_output, 'const_energy_map') > 0) then
-        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', photo_const_binding_emap, '|'
+        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', photo_const_emap_value, '|'
       end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -1787,7 +1787,7 @@ contains
     call comms_bcast(photo_phi_max, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)
     call comms_bcast(photo_kmat_bin_width, 1)
-    call comms_bcast(photo_const_binding_emap, 1)
+    call comms_bcast(photo_const_emap_value, 1)
     call comms_bcast(photo_sf_max_vectors, 1)
 
     call comms_bcast(num_exclude_bands, 1)
