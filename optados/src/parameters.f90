@@ -121,30 +121,31 @@ module od_parameters
 
   ! Photoemission parameters - V.Chang, et al. Dec-2022
   character(len=20), public, save :: photo_model
-  character(len=60), public, save :: photo_output
+  character(len=80), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
-  real(kind=dp), public, save :: photo_phi_min
-  real(kind=dp), public, save :: photo_phi_max
-  real(kind=dp), public, save :: photo_theta_min
-  real(kind=dp), public, save :: photo_theta_max
-  real(kind=dp), public, save :: photo_bindenergy_broadening
-  real(kind=dp), public, save :: photo_kmat_bin_width
-  real(kind=dp), public, save :: photo_const_emap_value
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_energy_sweep
   real(kind=dp), public, save :: photo_photon_min
   real(kind=dp), public, save :: photo_photon_max
+  real(kind=dp), public, save :: photo_slab_min
+  real(kind=dp), public, save :: photo_slab_max
+  real(kind=dp), public, save :: photo_work_function
   real(kind=dp), public, save :: photo_bulk_cutoff
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
   integer, public, save       :: photo_len_imfp_value
   real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_value
   character(len=20), public, save :: photo_imfp_choice
-  real(kind=dp), public, save :: photo_work_function
-  real(kind=dp), public, save :: photo_slab_min
-  real(kind=dp), public, save :: photo_slab_max
+  real(kind=dp), public, save :: photo_phi_min
+  real(kind=dp), public, save :: photo_phi_max
+  real(kind=dp), public, save :: photo_theta_min
+  real(kind=dp), public, save :: photo_theta_max
+  real(kind=dp), public, save :: photo_bindenergy_broadening
+  real(kind=dp), public, save :: photo_pmat_bin_width
+  real(kind=dp), public, save :: photo_const_bindenergy_value
   logical, public, save       :: photo_remove_box_states
-  integer, public, save       :: photo_sf_max_vectors
+  logical, public, save       :: photo_use_tmprob
+  integer, public, save       :: photo_gk_max_vectors
 
   real(kind=dp), public, save :: lenconfac
 
@@ -522,7 +523,6 @@ contains
 
     photo_bulk_cutoff = 10.0_dp
     call param_get_keyword('photo_bulk_cutoff', found, r_value=photo_bulk_cutoff)
-    if (found) photo_bulk_cutoff = -1*log(photo_bulk_cutoff)
 
     photo_temperature = 298.0_dp
     call param_get_keyword('photo_temperature', found, r_value=photo_temperature)
@@ -539,17 +539,19 @@ contains
     photo_phi_max = 90.0_dp
     call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
 
-    photo_bindenergy_broadening = 0.0259_dp
+    photo_bindenergy_broadening = 0.0257_dp
     call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
-    photo_kmat_bin_width = 0.005_dp
-    call param_get_keyword('photo_kmat_bin_width', found, r_value=photo_kmat_bin_width)
-    photo_const_emap_value = 0.0_dp
-    call param_get_keyword('photo_const_emap_value', found, r_value=photo_const_emap_value)
-    photo_sf_max_vectors = 1
-    call param_get_keyword('photo_sf_max_vectors', found, i_value=photo_sf_max_vectors)
-    if ((photo_sf_max_vectors .gt. 1) .and. (index(photo_momentum, 'specfn') .eq. 0)) then
-      call io_error('Error: When choosing a photo_momentum other than specfn, photo_sf_max_vectors = 1')
+    photo_pmat_bin_width = 0.005_dp
+    call param_get_keyword('photo_pmat_bin_width', found, r_value=photo_pmat_bin_width)
+    photo_const_bindenergy_value = 0.0_dp
+    call param_get_keyword('photo_const_bindenergy_value', found, r_value=photo_const_bindenergy_value)
+    photo_gk_max_vectors = 1
+    call param_get_keyword('photo_gk_max_vectors', found, i_value=photo_gk_max_vectors)
+    if ((photo_gk_max_vectors .gt. 1) .and. (index(photo_momentum, 'specfn') .eq. 0)) then
+      call io_error('Error: When choosing a photo_momentum other than specfn, photo_gk_max_vectors must = 1')
     end if
+    photo_use_tmprob = .True.
+    call param_get_keyword('photo_use_tmprob', found, l_value=photo_use_tmprob)
 
     num_atoms = 0
     num_species = 0
@@ -977,6 +979,11 @@ contains
       elseif (index(photo_model, '3step') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
+        if (photo_use_tmprob) then
+          write (stdout, '(1x,a78)') '|      *** Including transmission probability across surface ***             |'
+        else
+          write (stdout, '(1x,a78)') '|    *** NOT Including transmission probability across surface ***           |'
+        end if
       elseif (index(photo_model, 'ds_like_pe') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
       end if
@@ -1010,24 +1017,25 @@ contains
       if (photo_remove_box_states) then
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
       end if
-      if (index(photo_momentum, 'specfn') > 0) then
-        write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of k + G SpecFn Contributions        : ', photo_sf_max_vectors, '|'
+      if (index(photo_momentum, 'gkgrid') > 0) then
+        write (stdout, '(1x,a47,1x,1i6,23x,a1)') '| # of G + k Grid Contributions              : ', photo_gk_max_vectors, '|'
       end if
-      if (index(photo_output, 'off') == 0) then
+      if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
       end if
-      if (index(photo_output, 'e_bind') > 0) then
+      if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
         write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
         & photo_bindenergy_broadening, '|'
       end if
-      if (index(photo_output, 'ekin_k_mat') > 0 .or. index(photo_output, 'p_tensor') > 0) then
-        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy K Matrix Bin Width (eV)    :', photo_kmat_bin_width, '|'
+      if (index(photo_output, 'bindenergy_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
+        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy P Matrix Bin Width (1/A)   :', photo_pmat_bin_width, '|'
       end if
-      if (index(photo_output, 'const_energy_map') > 0) then
-        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', photo_const_emap_value, '|'
+      if (index(photo_output, 'const_bindenergy_p_map') > 0) then
+        write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', &
+        photo_const_bindenergy_value, '|'
       end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -1786,9 +1794,10 @@ contains
     call comms_bcast(photo_phi_min, 1)
     call comms_bcast(photo_phi_max, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)
-    call comms_bcast(photo_kmat_bin_width, 1)
-    call comms_bcast(photo_const_emap_value, 1)
-    call comms_bcast(photo_sf_max_vectors, 1)
+    call comms_bcast(photo_pmat_bin_width, 1)
+    call comms_bcast(photo_const_bindenergy_value, 1)
+    call comms_bcast(photo_gk_max_vectors, 1)
+    call comms_bcast(photo_use_tmprob, 1)
 
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 1) then

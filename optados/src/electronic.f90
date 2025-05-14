@@ -50,8 +50,8 @@ module od_electronic
   ! F.Mildner Feb/Mar-2025
   real(kind=dp), allocatable, public, save     :: transmit_prob(:, :, :)
   character(len=80), public, save              :: tmprob_file_header
-  real(kind=dp), allocatable, public, save     :: photo_spectral_func(:, :, :, :, :)
-  character(len=80), public, save              :: photo_specfn_file_header
+  real(kind=dp), allocatable, public, save     :: photo_gkgrid(:, :, :, :, :)
+  character(len=80), public, save              :: photo_gkgrid_file_header
 
   real(kind=dp), public, save :: efermi ! The fermi energy we finally decide on
   logical, public, save       :: efermi_set = .false. ! Have we set efermi?
@@ -131,7 +131,7 @@ module od_electronic
   public :: elec_read_band_curvature
   public :: elec_read_foptical_mat
   public :: elec_read_transmit_prob
-  public :: elec_read_spec_function
+  public :: elec_read_gk_grid_points
 
   !-------------------------------------------------------------------------!
 
@@ -663,21 +663,6 @@ contains
 
     if (on_root) close (unit=fem_unit)
 
-    ! foptical_mat = foptical_mat + (1.0E-100_dp,1.0E-100_dp)
-
-    ! do is = 1, nspins
-    !   do ik = 1, num_kpoints_on_node(my_node_id)
-    !     do jb = 1, energy_count
-    !       do i = 1, 3
-    !         do ib = 1, nbands
-    !           if (foptical_mat(ib, i, jb, ik, is)%re .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%re = 0.0_dp
-    !           if (foptical_mat(ib, i, jb, ik, is)%im .lt. 1.0E-150_dp) foptical_mat(ib, i, jb, ik, is)%im = 0.0_dp
-    !         end do
-    !       end do
-    !     end do
-    !   end do
-    ! end do
-    ! write (stdout,*) sum(foptical_mat)
     ! Convert all free electron matrix elements to eV Ang
     if (legacy_file_format) then
       foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
@@ -847,16 +832,16 @@ contains
 102 call io_error('Error: Problem opening tmprob_bin file in read_transmit_probabil')
   end subroutine elec_read_transmit_prob
 
-  subroutine elec_read_spec_function(max_gvec)
+  subroutine elec_read_gk_grid_points(max_gkgrid)
     !=========================================================================
-    ! Read the .specfn_bin file containing the contributions from a list of
+    ! Read the .gkgrid_bin file containing the contributions from a list of
     ! k + G vectors. These can be used to "unfold" bands into their respective
     ! contributions from different BZs and calculate photoemission from SC
     ! structures.
     !-------------------------------------------------------------------------
     ! Arguments: None
     !-------------------------------------------------------------------------
-    ! Parent module variables: photo_spectral_func,nspins,nbands
+    ! Parent module variables: photo_gkgrid,nspins,nbands
     !-------------------------------------------------------------------------
     ! Modules used:  See below
     !-------------------------------------------------------------------------
@@ -875,63 +860,63 @@ contains
         & io_error
     use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
     use od_constants, only: bohr2ang, H2eV
-    use od_parameters, only: legacy_file_format, iprint, photo_sf_max_vectors, devel_flag
+    use od_parameters, only: legacy_file_format, iprint, photo_gk_max_vectors, devel_flag
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: photo_specfn_unit, i, gdx, ib, is, ik, inodes, ierr
+    integer :: photo_gkgrid_unit, i, gdx, ib, is, ik, inodes, ierr
     real(kind=dp) :: time0, time1, file_version
     real(kind=dp), parameter :: file_ver = 1.0_dp
-    character(filename_len) :: specfn_filename
+    character(filename_len) :: gkgrid_filename
 
-    integer, intent(inout) :: max_gvec
+    integer, intent(inout) :: max_gkgrid
 
     time0 = io_time()
 
-    if (allocated(photo_spectral_func)) return
+    if (allocated(photo_gkgrid)) return
 
     if (on_root) then
-      photo_specfn_unit = io_file_unit()
-      specfn_filename = trim(seedname)//".specfn_bin"
-      if (iprint > 1) write (stdout, '(1x,a)') 'Reading specfn contributions from file: '//trim(specfn_filename)
-      open (unit=photo_specfn_unit, file=specfn_filename, status="old", form='unformatted', err=102)
-      read (photo_specfn_unit) file_version
+      photo_gkgrid_unit = io_file_unit()
+      gkgrid_filename = trim(seedname)//".gkgrid_bin"
+      if (iprint > 1) write (stdout, '(1x,a)') 'Reading gkgrid contributions from file: '//trim(gkgrid_filename)
+      open (unit=photo_gkgrid_unit, file=gkgrid_filename, status="old", form='unformatted', err=102)
+      read (photo_gkgrid_unit) file_version
       if ((file_version - file_ver) > 0.001_dp) &
-        call io_error('Error: Trying to read newer version of tmprob_bin file. Update optados!')
-      read (photo_specfn_unit) photo_specfn_file_header
-      if (iprint > 1) write (stdout, '(1x,a)') trim(photo_specfn_file_header)
+        call io_error('Error: Trying to read newer version of gkgrid_bin file. Update optados!')
+      read (photo_gkgrid_unit) photo_gkgrid_file_header
+      if (iprint > 1) write (stdout, '(1x,a)') trim(photo_gkgrid_file_header)
     end if
 
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (photo_spectral_func(3, max_gvec, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: Problem allocating photo_spectral_func in elec_read_spec_function')
+    allocate (photo_gkgrid(3, max_gkgrid, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: Problem allocating photo_gkgrid in elec_read_gk_grid_points')
     if (on_root) then
       do inodes = 1, num_nodes - 1
         do ik = 1, num_kpoints_on_node(inodes)
           do is = 1, nspins
-            read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+            read (photo_gkgrid_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gkgrid), &
                                       ib=1, nbands)
           end do
         end do
-        call comms_send(photo_spectral_func(1, 1, 1, 1, 1), &
-                        3*max_gvec*nbands*nspins*num_kpoints_on_node(inodes), inodes)
+        call comms_send(photo_gkgrid(1, 1, 1, 1, 1), &
+                        3*max_gkgrid*nbands*nspins*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
-          read (photo_specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+          read (photo_gkgrid_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gkgrid), &
                                     ib=1, nbands)
         end do
       end do
     end if
 
     if (.not. on_root) then
-      call comms_recv(photo_spectral_func(1, 1, 1, 1, 1), &
-                      3*max_gvec*nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
+      call comms_recv(photo_gkgrid(1, 1, 1, 1, 1), &
+                      3*max_gkgrid*nbands*nspins*num_kpoints_on_node(my_node_id), root_id)
     end if
 
-    if (on_root) close (unit=photo_specfn_unit)
+    if (on_root) close (unit=photo_gkgrid_unit)
 
-    photo_spectral_func(1:2, :, :, :, :) = photo_spectral_func(1:2, :, :, :, :)/bohr2ang
+    photo_gkgrid(1:2, :, :, :, :) = photo_gkgrid(1:2, :, :, :, :)/bohr2ang
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
@@ -941,8 +926,8 @@ contains
 
     return
 
-102 call io_error('Error: Problem opening specfn_bin file in read_spec_function')
-  end subroutine elec_read_spec_function
+102 call io_error('Error: Problem opening gkgrid_bin file in read_spec_function')
+  end subroutine elec_read_gk_grid_points
 
   !=========================================================================
   subroutine elec_read_band_energy !(band_energy,kpoint_r,kpoint_weight)
