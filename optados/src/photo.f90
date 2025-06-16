@@ -3566,7 +3566,7 @@ contains
       call io_date(cdate, ctime)
       write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
       & cdate, ' at ', ctime
-      write (binding_unit, '(1x,a25,a)') '## Seedname: ', trim(adjustl(seedname))
+      write (binding_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
       write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
       write (binding_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (binding_unit, '(1x,a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
@@ -3777,6 +3777,11 @@ contains
 
       do atom = 1, max_atoms
         do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+          if (index(photo_momentum, 'crystal') > 0) then
+            temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
+            ! calculate the bin position in k and e
+            center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+          end if
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen_final = 2, nbands
               ! if (num_exclude_bands .gt. 1) then
@@ -3795,6 +3800,7 @@ contains
                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                   *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
                 do gdx = 1, photo_gk_max_vectors
+                  center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
                   gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
@@ -3841,6 +3847,7 @@ contains
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
               do gdx = 1, photo_gk_max_vectors
+                center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
                 gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
@@ -3983,7 +3990,7 @@ contains
       call io_date(cdate, ctime)
       write (matrix_unit, '(a56,a9,a4,a11)') '## OptaDOS Photoemission: Energy vs P_transverse matrix ',&
       & cdate, ' at ', ctime
-      write (matrix_unit, '(a14,a30)') '## Seedname : ', trim(adjustl(seedname))
+      write (matrix_unit, '(a14,a)') '## Seedname : ', trim(adjustl(seedname))
       write (matrix_unit, '(a25,a12)') '## Photoemission Model : ', trim(adjustl(photo_model))
       write (matrix_unit, '(a24,f7.3)') '## Photon Energy [eV] : ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
@@ -4043,6 +4050,7 @@ contains
     integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, gdx, ierr
     integer    ::  matrix_unit, total_ks, nsymm_op, x_center, y_center, z_center, xdx, ydx, zdx
     integer    ::  xdx_offset, ydx_offset, zdx_offset, xdx_window, ydx_window, zdx_window
+    integer    ::  xdx_min, xdx_max, ydx_min, ydx_max, zdx_min, zdx_max
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: e_z
@@ -4050,8 +4058,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
     real(kind=dp), allocatable, dimension(:, :, :)    :: vacuum_gauss
     real(kind=dp), allocatable, dimension(:, :, :)    :: fermi_dirac
+    real(kind=dp), allocatable, dimension(:)          :: gauss_y, gauss_x
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), temp_mat(2, 2), current_k(2)
-    real(kind=dp) :: qe_contrib, gauss_y, gauss_x, gauss_z, total_weighted, qe_norm
+    real(kind=dp) :: qe_contrib, gauss_z, total_weighted, qe_norm
     real(kind=dp) :: kx_broadening, ky_broadening, kz_broadening, k_prefactor, kz
     real(kind=dp) :: final_fd, ekin_temp, z_max, xy_max, wave_prefactor
     real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument
@@ -4066,34 +4075,34 @@ contains
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of fermi_dirac failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of fermi_dirac failed')
     end if
     fermi_dirac = 0.0_dp
 
     if (.not. allocated(transverse_gauss)) then
       allocate (transverse_gauss(photo_gk_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of transverse_gauss failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of transverse_gauss failed')
     end if
     transverse_gauss = 0.0_dp
 
     if (.not. allocated(arpes_mask)) then
       allocate (arpes_mask(photo_gk_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of arpes_mask failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of arpes_mask failed')
     end if
     arpes_mask = 0.00_dp
 
     if (.not. allocated(vacuum_gauss)) then
       allocate (vacuum_gauss(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of vacuum_gauss failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of vacuum_gauss failed')
     end if
     vacuum_gauss = 0.0_dp
 
     if (.not. allocated(e_z)) then
       allocate (e_z(photo_gk_max_vectors, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of e_z failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of e_z failed')
     end if
     e_z = 1000.0_dp
-
+    
     total_be_contribs = 0.0_dp
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
@@ -4141,9 +4150,20 @@ contains
 
     if (.not. allocated(p_tensor)) then
       allocate (p_tensor(max_bin_p(1), max_bin_p(2), max_bin_p(3)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: binding_energy_curve - allocation of p_tensor failed')
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of p_tensor failed')
     end if
     p_tensor = 0.0_dp
+
+    if (.not. allocated(gauss_x)) then
+      allocate (gauss_x(max_bin_p(1)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of gauss_x failed')
+    end if
+    gauss_x = 0.0_dp
+    if (.not. allocated(gauss_y)) then
+      allocate (gauss_y(max_bin_p(2)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of gauss_y failed')
+    end if
+    gauss_y = 0.0_dp
 
     if (index(photo_model, '3step') > 0) then
       do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -4203,6 +4223,7 @@ contains
       do nsymm_op = 1, num_crystal_symmetry_operations
         ! make s_inv 2x2 as the inverse of the symmetry operation with A^-1 formula
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+        time1 = io_time()
         do atom = 1, max_atoms
           do N_k = 1, num_kpoints_on_node(my_node_id)
             if (index(devel_flag, 'no_symmetry') > 0) then
@@ -4213,7 +4234,18 @@ contains
               k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
             end if
             x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+            xdx_min = max(x_center - xdx_window, 1)
+            xdx_max = min(x_center + xdx_window, max_bin_p(1))
+            do xdx = xdx_min, xdx_max
+              gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            end do
             y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+            ydx_min = max(y_center - ydx_window, 1)
+            ydx_max = min(y_center + ydx_window, max_bin_p(2))
+            do ydx = ydx_min, ydx_max
+              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            end do
+            
             do N_spin = 1, nspins                    ! Loop over spins
               do n_eigen_final = 2, nbands
                 ! if (num_exclude_bands .gt. 1) then
@@ -4240,13 +4272,14 @@ contains
                     total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                     kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen_final, N_spin, N_k)*ev_to_j))*1E-10_dp
                     z_center = nint(kz/photo_pmat_bin_width) + 1
-                    do zdx = max(z_center - zdx_window, 1), min(z_center + zdx_window, max_bin_p(3))
+                    zdx_min = max(z_center - zdx_window, 1)
+                    zdx_max = min(z_center + zdx_window, max_bin_p(3))
+                    qe_contrib = k_prefactor*qe_contrib
+                    do zdx = zdx_min, zdx_max
                       gauss_z = gaussian(kz, kz_broadening, zdx*photo_pmat_bin_width)
-                      do ydx = max(y_center - ydx_window, 1), min(y_center + ydx_window, max_bin_p(2))
-                        gauss_y = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-                        do xdx = max(x_center - xdx_window, 1), min(x_center + xdx_window, max_bin_p(1))
-                          gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
-                          p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x*gauss_y*gauss_z*k_prefactor*qe_contrib
+                      do ydx = ydx_min, ydx_max
+                        do xdx = xdx_min, xdx_max
+                          p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x(xdx)*gauss_y(ydx)*gauss_z*qe_contrib
                         end do
                       end do
                     end do
@@ -4272,7 +4305,17 @@ contains
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          xdx_min = max(x_center - xdx_window, 1)
+          xdx_max = min(x_center + xdx_window, max_bin_p(1))
+          do xdx = xdx_min, xdx_max
+            gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+          end do
           y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          ydx_min = max(y_center - ydx_window, 1)
+          ydx_max = min(y_center + ydx_window, max_bin_p(2))
+          do ydx = ydx_min, ydx_max
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+          end do
           do N_spin = 1, nspins
             do n_eigen_final = 2, nbands
               ! if (num_exclude_bands .gt. 1) then
@@ -4300,13 +4343,14 @@ contains
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                   kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen, N_spin, N_k)*ev_to_j))*1E-10_dp
                   z_center = nint(kz/photo_pmat_bin_width) + 1
-                  do zdx = max(z_center - zdx_window, 1), min(z_center + zdx_window, max_bin_p(3))
+                  zdx_min = max(z_center - zdx_window, 1)
+                  zdx_max = min(z_center + zdx_window, max_bin_p(3))
+                  qe_contrib = k_prefactor*qe_contrib
+                  do zdx = zdx_min, zdx_max
                     gauss_z = gaussian(kz, kz_broadening, zdx*photo_pmat_bin_width)
-                    do ydx = max(y_center - ydx_window, 1), min(y_center + ydx_window, max_bin_p(2))
-                      gauss_y = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-                      do xdx = max(x_center - xdx_window, 1), min(x_center + xdx_window, max_bin_p(1))
-                        gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
-                        p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x*gauss_y*gauss_z*k_prefactor*qe_contrib
+                    do ydx = ydx_min, ydx_max
+                      do xdx = xdx_min, xdx_max
+                        p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x(xdx)*gauss_y(ydx)*gauss_z*qe_contrib
                       end do
                     end do
                   end do
@@ -4380,7 +4424,17 @@ contains
               k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
             end if
             x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+            xdx_min = max(x_center - xdx_window, 1)
+            xdx_max = min(x_center + xdx_window, max_bin_p(1))
+            do xdx = xdx_min, xdx_max
+              gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            end do
             y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+            ydx_min = max(y_center - ydx_window, 1)
+            ydx_max = min(y_center + ydx_window, max_bin_p(2))
+            do ydx = ydx_min, ydx_max
+              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            end do
             do N_spin = 1, nspins
               do n_eigen = 1, nbands
                 temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
@@ -4400,16 +4454,14 @@ contains
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                   kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen, N_spin, N_k)*ev_to_j))*1E-10_dp
                   z_center = nint(kz/photo_pmat_bin_width) + 1
-                  do zdx = max(z_center - zdx_window, 1), min(z_center + zdx_window, max_bin_p(3))
+                  zdx_min = max(z_center - zdx_window, 1)
+                  zdx_max = min(z_center + zdx_window, max_bin_p(3))
+                  qe_contrib = qe_contrib*k_prefactor
+                  do zdx = zdx_min, zdx_max
                     gauss_z = gaussian(kz, kz_broadening, zdx*photo_pmat_bin_width)
-                    ! write (stdout, *) kz, zdx*photo_pmat_bin_width, gauss_z
-                    do ydx = max(y_center - ydx_window, 1), min(y_center + ydx_window, max_bin_p(2))
-                      ! for min_bin_k to max_bin_k
-                      gauss_y = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-                      do xdx = max(x_center - xdx_window, 1), min(x_center + xdx_window, max_bin_p(1))
-                        gauss_x = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
-                        p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x*gauss_y*gauss_z*k_prefactor*qe_contrib
-                        ! if (ekin_k_matrix(kdx,zdx) .gt. 0.0_dp) write (stdout,*) zdx, kdx ,ekin_k_matrix(kdx, zdx)
+                    do ydx = ydx_min, ydx_max
+                      do xdx = xdx_min, xdx_max
+                        p_tensor(xdx, ydx, zdx) = p_tensor(xdx, ydx, zdx) + gauss_x(xdx)*gauss_y(ydx)*gauss_z*qe_contrib
                       end do
                     end do
                   end do
@@ -4478,6 +4530,14 @@ contains
     if (allocated(p_tensor)) then
       deallocate (p_tensor, stat=ierr)
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate p_tensor')
+    end if
+    if (allocated(gauss_x)) then
+      deallocate(gauss_x, stat=ierr)
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate gauss_x')
+    end if
+    if (allocated(gauss_y)) then
+      deallocate(gauss_y, stat=ierr)
+      if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate gauss_y')
     end if
     time1 = io_time()
     if (on_root .and. iprint > 1) then
@@ -5049,7 +5109,7 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
-      write (stdout, '(1x,a36,22x,f11.3,a8)') '+ Time to write the qe tensor to file', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a37,21x,f11.3,a8)') '+ Time to write the qe tensor to file', time1 - time0, ' (sec) +'
     end if
 
   end subroutine write_qe_tensor
