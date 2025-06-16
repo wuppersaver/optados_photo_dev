@@ -1006,7 +1006,7 @@ contains
       else if (index(photo_imfp_choice, 'curve') > 0) then
         write (stdout, '(1x,a78)') '|  Energy Dependent IMFP Curve               : Values will be printed later  |'
       end if
-      write (stdout, '(1x,a46,4x,E11.4,16x,a1)') '|  Approx. Bulk P_escape Cutoff              :', exp(-1*photo_bulk_cutoff), '|'
+      write (stdout, '(1x,a46,3x,f5.1,23x,a1)') '|  Bulk cutoff dist. (int. multiple of IMFP) :', photo_bulk_cutoff, '|'
       if ((photo_elec_field .gt. 1.0E-4_dp) .or. (photo_elec_field .lt. 1.0E-25_dp)) then
         write (stdout, '(1x,a46,1x,1f10.4,20x,a1)') '|  Electric Field Strength    (V/Ang)        :', photo_elec_field, '|'
       else
