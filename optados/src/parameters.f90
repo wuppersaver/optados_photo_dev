@@ -1027,7 +1027,7 @@ contains
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
       end if
       if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
-        write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
+        write (stdout, '(1x,a46,4x,1f7.4,20x,a1)') '|  Binding Energy Broad. Width (eV)          :', &
         & photo_bindenergy_broadening, '|'
       end if
       if (index(photo_output, 'bindenergy_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
@@ -1041,6 +1041,7 @@ contains
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
     if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
+    if (index('off', photo_output) == 0) write (stdout, '(1x,a12,1x,a100)') 'photo_output :', photo_output
     write (stdout, *) ' '
 
   end subroutine param_write
