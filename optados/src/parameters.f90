@@ -119,7 +119,7 @@ module od_parameters
   logical, public, save :: LAI_lorentzian
   real(kind=dp), public, save :: core_chemical_shift ! used in conjunction with miz_chemical_shift script in tools
 
-  ! Photoemission parameters - V.Chang, et al. Dec-2022
+  ! Photoemission parameters - F.Mildner, et al. Jun-2025
   character(len=20), public, save :: photo_model
   character(len=80), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
@@ -1035,7 +1035,7 @@ contains
       end if
       if (index(photo_output, 'const_bindenergy_p_map') > 0) then
         write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', &
-        photo_const_bindenergy_value, '|'
+          photo_const_bindenergy_value, '|'
       end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'

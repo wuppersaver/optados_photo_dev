@@ -6,7 +6,7 @@ module od_conv
   use od_electronic, only: elec_read_optical_mat, elec_read_band_gradient, elec_read_elnes_mat,&
        & elec_pdos_read, elec_read_band_energy, omefile_header, domefile_header, pdosfile_header,&
        & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info, tmprob_file_header, &
-       & elec_read_transmit_prob, photo_spectral_func, photo_specfn_file_header, elec_read_spec_function
+       & elec_read_transmit_prob, photo_gkgrid, photo_gkgrid_file_header, elec_read_gk_grid_points
   use od_parameters, only: iprint
   use od_io, only: stdout, io_error, seedname
   implicit none
@@ -299,7 +299,7 @@ contains
     write (stdout, *) string
 
     ! write(string,'(a)') trim(format_precision)
-    write(stdout,*) nkpoints, nspins, nbands
+    write (stdout, *) nkpoints, nspins, nbands
 
     do ik = 1, nkpoints
       do is = 1, nspins
@@ -380,7 +380,6 @@ contains
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    character(len=100):: string
     integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
 
     write (stdout, *) " Write a binary fem file."
@@ -551,7 +550,7 @@ contains
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, photo_spectral_func
+    use od_electronic, only: nspins, nbands, photo_gkgrid
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
@@ -564,11 +563,11 @@ contains
     open (unit=specfn_unit, form='formatted', recl=1073741824, file=trim(seedname)//".specfn_fmt")
     read (specfn_unit, '('//trim(format_precision)//')') file_version
 
-    read (specfn_unit, '(a80)') photo_specfn_file_header
+    read (specfn_unit, '(a80)') photo_gkgrid_file_header
     read (str_gvec, *) max_gvec
-    if (.not. allocated(photo_spectral_func)) then
+    if (.not. allocated(photo_gkgrid)) then
       write (stdout, *) " Allocating spectral function."
-      allocate (photo_spectral_func(3, max_gvec, nbands, nspins, nkpoints), stat=ierr)
+      allocate (photo_gkgrid(3, max_gvec, nbands, nspins, nkpoints), stat=ierr)
     end if
     ! ! Total number of elements of tmprob
     ! write(stdout,*) 'nbands', nbands
@@ -580,7 +579,7 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+        read (specfn_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
                                                     ib=1, nbands)
       end do
     end do
@@ -598,7 +597,7 @@ contains
     use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, photo_spectral_func, photo_specfn_file_header
+    use od_electronic, only: nspins, nbands, photo_gkgrid, photo_gkgrid_file_header
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
@@ -613,15 +612,15 @@ contains
     write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
     ! write(stdout, *) string
 
-    write (stdout, '(a80)') photo_specfn_file_header
-    write (stdout, '(a80)') adjustl(photo_specfn_file_header)
+    write (stdout, '(a80)') photo_gkgrid_file_header
+    write (stdout, '(a80)') adjustl(photo_gkgrid_file_header)
 
     write (specfn_unit, '('//trim(format_precision)//')') file_version
-    write (specfn_unit, '(a80)') adjustl(photo_specfn_file_header)
+    write (specfn_unit, '(a80)') adjustl(photo_gkgrid_file_header)
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit, '('//trim(string)//')') (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), &
+        write (specfn_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), &
                                                       gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
@@ -637,7 +636,7 @@ contains
     implicit none
     write (stdout, *) " Read an unformatted specfn file. "
     read (str_gvec, *) max_gvec
-    call elec_read_spec_function(max_gvec)
+    call elec_read_gk_grid_points(max_gvec)
     write (stdout, *) " "//trim(seedname)//".specfn_bin"//"--> Unformatted specfn sucessfully read. "
   end subroutine read_specfn_bin
 
@@ -647,7 +646,7 @@ contains
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, photo_spectral_func, photo_specfn_file_header
+    use od_electronic, only: nspins, nbands, photo_gkgrid, photo_gkgrid_file_header
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
@@ -660,13 +659,13 @@ contains
 
     write (stdout, *) "-> specfn file_version ", file_version
     write (specfn_unit) file_version
-    write (stdout, *) "-> specfn file_header ", trim(photo_specfn_file_header)
-    write (specfn_unit) adjustl(photo_specfn_file_header)
+    write (stdout, *) "-> specfn file_header ", trim(photo_gkgrid_file_header)
+    write (specfn_unit) adjustl(photo_gkgrid_file_header)
 
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit) (((photo_spectral_func(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
+        write (specfn_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
 
@@ -1449,50 +1448,50 @@ program od2od
   ! Main case to decide what file format to read in.
   read_input:select case(trim(infile))
   case ("ome_fmt")
-    ome_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_ome_fmt()
+  ome_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_ome_fmt()
   case ("ome_bin")
-    ome_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_ome_bin()
+  ome_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_ome_bin()
   case ("fem_fmt")
-    fem_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_fem_fmt()
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_fmt()
   case ("fem_bin")
-    fem_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_fem_bin()
+  fem_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_fem_bin()
   case ("tmprob_fmt")
-    tmcoeff_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_tmprob_fmt()
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_tmprob_fmt()
   case ("tmprob_bin")
-    tmcoeff_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_tmprob_bin()
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_tmprob_bin()
   case ("specfn_fmt")
-    tmcoeff_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_specfn_fmt()
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_specfn_fmt()
   case ("specfn_bin")
-    tmcoeff_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_specfn_bin()
+  tmcoeff_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_specfn_bin()
   case ("dome_fmt")
-    dome_conv = .true.
-    call get_band_energy()
-    call write_read_file()
-    call read_dome_fmt()
+  dome_conv = .true.
+  call get_band_energy()
+  call write_read_file()
+  call read_dome_fmt()
   case ("dome_bin")
   dome_conv = .true.
   call get_band_energy()

@@ -530,9 +530,12 @@ contains
     dE = E(2) - E(1)
     if (present(photo_atom_volume)) then
       epsilon2_const = (e_charge*pi*1E-20)/(photo_atom_volume*1E-30*epsilon_0)
-      write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
+
+      if (iprint .gt. 2) write (stdout, '(1x,a33,1x,f15.8,3x,a25)') &
+        '+------------ Using atom_volume =', photo_atom_volume, '------------------------+'
     else
-      write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
+      if (iprint .gt. 2) write (stdout, '(1x,a78)') &
+        '+----------------------------- Using cell_volume ----------------------------+'
       epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
     end if
     !epsilon2_const = (e_charge*pi*1E-20)/(cell_volume*1E-30*epsilon_0)
@@ -546,11 +549,12 @@ contains
         end do
       end do
       if (present(photo_atom_volume)) then
-        write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, &
+        if (iprint .gt. 2) write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, &
           '------------------------+'
         intra = intra*e_charge/(photo_atom_volume*1E-10*epsilon_0)
       else
-        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
+        if (iprint .gt. 2) write (stdout, '(1x,a78)') &
+          '+----------------------------- Using cell_volume ----------------------------+'
         intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
       end if
       ! intra = intra*e_charge/(cell_volume*1E-10*epsilon_0)
@@ -593,8 +597,11 @@ contains
       end do
       if (present(photo_atom_volume)) then
         N_eff = (x*e_mass*photo_atom_volume*1E-30*epsilon_0*2)/(pi)
+        if (iprint .gt. 2) write (stdout, '(1x,a33,1x,f15.8,3x,a25)') '+------------ Using atom_volume =', photo_atom_volume, &
+          '------------------------+'
       else
-        write (stdout, '(1x,a78)') '+----------------------------- Using cell_volume ----------------------------+'
+        if (iprint .gt. 2) write (stdout, '(1x,a78)') &
+          '+----------------------------- Using cell_volume ----------------------------+'
         N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
       end if
       ! N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)

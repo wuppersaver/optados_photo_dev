@@ -65,7 +65,7 @@ module od_constants
   real(kind=dp), parameter, public :: boltzmann = 1.38064852E-23_dp      !J K^-1
   real(kind=dp), parameter, public :: kB = 8.617333262E-5_dp                ! ev K^-1
   ! Constants for field emission in Photoemission Module
-  real(kind=dp), parameter, public :: b_factor = 74.4412181295_dp
+  real(kind=dp), parameter, public :: b_factor = 0.6830890_dp            ! eV^(-3/2) V A^-1
   real(kind=dp), parameter, public :: p1 = 0.03270530446_dp
   real(kind=dp), parameter, public :: p2 = 0.009157798739_dp
   real(kind=dp), parameter, public :: p3 = 0.002644272807_dp
