@@ -121,7 +121,7 @@ module od_parameters
 
   ! Photoemission parameters - F.Mildner, et al. Jun-2025
   character(len=20), public, save :: photo_model
-  character(len=80), public, save :: photo_output
+  character(len=90), public, save :: photo_output
   character(len=20), public, save :: photo_momentum
   real(kind=dp), public, save :: photo_photon_energy
   logical, public, save       :: photo_energy_sweep
@@ -980,9 +980,9 @@ contains
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     3-Step Model              |'
         write (stdout, '(1x,a78)') '|  Photoemission Final State                 :     Bloch State               |'
         if (photo_use_tmprob) then
-          write (stdout, '(1x,a78)') '|      *** Including transmission probability across surface ***             |'
+          write (stdout, '(1x,a78)') '|         *** Including transmission probability across surface ***          |'
         else
-          write (stdout, '(1x,a78)') '|    *** NOT Including transmission probability across surface ***           |'
+          write (stdout, '(1x,a78)') '|       *** NOT Including transmission probability across surface ***        |'
         end if
       elseif (index(photo_model, 'ds_like_pe') > 0) then
         write (stdout, '(1x,a78)') '|  Photoemission Model                       :     Simplified PE Model       |'
@@ -1037,13 +1037,24 @@ contains
         write (stdout, '(1x,a46,2x,1f8.3,21x,a1)') '|  Binding Energy for const. E Map (eV)      :', &
           photo_const_bindenergy_value, '|'
       end if
+      if (index(photo_output, 'off') == 0) then
+        write (stdout, '(1x,a78)') '|  ------ List of extra Values to be calculated and written to file -------  |'
+        write (stdout, '(1x,a78)') '|  ------------------------------------------------------------------------  |'
+        if (index(photo_output, 'bindenergy_ptrans_map') > 0) write (stdout, '(1x,a78)') &
+         '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
+        if (index(photo_output, 'p_tensor') > 0) write (stdout, '(1x,a78)') &
+         '|  -------------------- Full momentum (px,py,pz) tensor -------------------  |'
+        if (index(photo_output, 'bindenergy_curve') > 0) write (stdout, '(1x,a78)') &
+         '|  ---------------------- Binding Energy curve (EDC) ----------------------  |'
+        if (index(photo_output, 'const_bindenergy_p_map') > 0) write (stdout, '(1x,a78)') &
+         '|  --------------------- Constant binding Energy map ----------------------  |'
+        if (index(photo_output, 'qe_tensor') > 0) write (stdout, '(1x,a78)') &
+         '|  ---------------------------- Full QE tensor ----------------------------  |'
+      end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     if (num_exclude_bands > 0) write (stdout, '(1x,a16,1x,999(1x,I3))') 'excluded_bands :', exclude_bands(:)
     if (scan(devel_flag, "AEIOUaeiou") > 0) write (stdout, '(1x,a12,1x,a100)') 'devel_flag :', devel_flag
-    if (index('off', photo_output) == 0) write (stdout, '(1x,a12,1x,a100)') 'photo_output :', photo_output
-    write (stdout, *) ' '
-
   end subroutine param_write
 
   !==================================================================!
