@@ -1,5 +1,5 @@
 """
-Parser function parse() to parse the .odo file of OptaDOS.
+Parser function parse() to parse the .qe_tensor file of OptaDOS.
 """
 from __future__ import print_function
 
@@ -21,14 +21,9 @@ def parse(fname):
 
     with open(fname) as f:
         lines = f.readlines()
-    i = 0
-    while True:
-        if '##' not in lines[i]:
-            break
-        else:
-            i += 1
 
-    for l in lines[i:]:
+    for l in lines:
+        if '##' in l[:10] : continue
         retdict["matrix"] += [float(a) for a in l.split()[1:]]
         ###############################################################
 

@@ -9,13 +9,13 @@ from collections import defaultdict
 
 from . import show_output
 
-e_fermi_fb = re.compile("Fermi\ energy\ \(Fixed\ broadening\)\ \:\s*([0-9\.-]+)\s*")
-e_fermi_ab = re.compile("Fermi\ energy\ \(Adaptive\ broadening\)\ \:\s*([0-9\.-]+)\s*")
-e_fermi_lb = re.compile("Fermi\ energy\ \(Linear\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_fb = re.compile(r"Fermi\ energy\ \(Fixed\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_ab = re.compile(r"Fermi\ energy\ \(Adaptive\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_lb = re.compile(r"Fermi\ energy\ \(Linear\ broadening\)\ \:\s*([0-9\.-]+)\s*")
 
-qe_bulk = re.compile("Bulk \s*([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
-qe_total = re.compile("Total Quantum Efficiency \(electrons/photon\):\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*") 
-mte = re.compile("Weighted\ Mean\ Transverse\ Energy\ \(eV\)\:\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
+qe_bulk = re.compile(r"Bulk \s*([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
+qe_total = re.compile(r"Total Quantum Efficiency \(electrons/photon\):\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*") 
+mte = re.compile(r"Weighted\ Mean\ Transverse\ Energy\ \(eV\)\:\s+([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[Ee]([+-]?\d+))?\s*")
 
 def parse(fname):
     """
