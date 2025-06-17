@@ -5020,7 +5020,7 @@ contains
       call io_date(cdate, ctime)
       write (matrix_unit, '(a66,a9,a4,a11)') '## OptaDOS Photoemission: Printing Constant Binding Energy Map on ',&
       & cdate, ' at ', ctime
-      write (matrix_unit, '(1x,a25,a)') '## Seedname: ', trim(adjustl(seedname))
+      write (matrix_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
       write (matrix_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
       write (matrix_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(1x,a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
