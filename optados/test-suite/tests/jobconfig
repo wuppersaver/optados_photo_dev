@@ -498,7 +498,5 @@ output = Cu111_1x1.odo
 optados_only = testopt_*
 od2od_only = testod2od_*
 photoemission_only = testopt_photo_*
-photo_specfn_only = testopt_photo_specfn_*
-photo_mpi_specfn_only = testopt_photo_specfn_mpi*
 all = optados_only od2od_only
 default =  all
