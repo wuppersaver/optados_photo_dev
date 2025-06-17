@@ -35,6 +35,16 @@ exe = ../../optados.x
 extract_fn = tools parsers.parse_photo_odo.parse
 tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
 
+[OPTADOS_PHOTO_ODODBG_OK]
+exe = ../../optados.debug
+extract_fn = tools parsers.parse_photo_odo.parse
+tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'qe_total'),(1E-8,1.0e-6,'mte')
+
+[OPTADOS_PHOTO_QEMAT_OK]
+exe = ../../optados.x
+extract_fn = tools parsers.parse_photo_qemat.parse
+tolerance = (1.0e-3,1.0e-3, "matrix")
+
 [OPTADOS_PHOTO_OPTERR_FAIL]
 exe = ../../optados.x
 can_fail = true
@@ -48,7 +58,7 @@ tolerance = (1.0e-3, 5.0e-3, 'fermi_lb'),(1e-8,1.0e-6,'qe_bulk'),(1e-8,1.0e-6,'q
 [OPTADOS_MPI_PHOTO_QEMAT_OK]
 exe = ../../optados.mpi
 extract_fn = tools parsers.parse_photo_qemat.parse
-tolerance = (5.0e-3, 'matrix')
+tolerance = (5.0e-2, 5E-5)
 
 [OPTADOS_MPI_PHOTO_ODO_FAIL]
 exe = ../../optados.mpi

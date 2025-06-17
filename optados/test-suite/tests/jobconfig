@@ -436,8 +436,61 @@ program = OPTADOS_MPI_PHOTO_QEMAT_OK
 min_nprocs = 2
 nprocs = 2
 inputs_args = ('Cu100_5L.odi','')
-output = Cu100_5L_1step_6.000_qe_matrix.dat
+output = Cu100_5L_3step_6.000_qe_tensor.dat
 
+# These tests are for cleaning up the code to see if 
+
+[testopt_photo_specfn_1step]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1.odo
+
+[testopt_photo_specfn_1step_ebind]
+program = OPTADOS_PHOTO_QEMAT_OK
+max_nprocs = 0
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1_1step_6.600_binding_energy.dat
+
+[testopt_photo_specfn_3step]
+program = OPTADOS_PHOTO_ODO_OK
+max_nprocs = 0
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1.odo
+
+[testopt_photo_specfn_3step_ebind]
+program = OPTADOS_PHOTO_QEMAT_OK
+max_nprocs = 0
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1_3step_6.600_binding_energy.dat
+
+[testopt_photo_specfn_mpi_3step_ebind]
+program = OPTADOS_MPI_PHOTO_QEMAT_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1_3step_6.600_binding_energy.dat
+
+[testopt_photo_specfn_mpi_3step]
+program = OPTADOS_MPI_PHOTO_ODO_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1.odo
+
+[testopt_photo_specfn_mpi_1step_ebind]
+program = OPTADOS_MPI_PHOTO_QEMAT_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1_1step_6.600_binding_energy.dat
+
+[testopt_photo_specfn_mpi_1step]
+program = OPTADOS_MPI_PHOTO_ODO_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Cu111_1x1.odi','')
+output = Cu111_1x1.odo
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------
@@ -445,5 +498,7 @@ output = Cu100_5L_1step_6.000_qe_matrix.dat
 optados_only = testopt_*
 od2od_only = testod2od_*
 photoemission_only = testopt_photo_*
+photo_specfn_only = testopt_photo_specfn_*
+photo_mpi_specfn_only = testopt_photo_specfn_mpi*
 all = optados_only od2od_only
 default =  all
