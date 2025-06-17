@@ -544,7 +544,7 @@ contains
 
   !=========================================================================
   !=========================================================================
-  subroutine read_specfn_fmt()
+  subroutine read_gkgrid_fmt()
     !! Read a formatted Optical Matrix Elements file.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
@@ -556,14 +556,14 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, ierr, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, ierr, gkgrid_unit = 6
 
-    write (stdout, *) " Read a formatted .specfn_fmt file. "
+    write (stdout, *) " Read a formatted .gkgrid_fmt file. "
 
-    open (unit=specfn_unit, form='formatted', recl=1073741824, file=trim(seedname)//".specfn_fmt")
-    read (specfn_unit, '('//trim(format_precision)//')') file_version
+    open (unit=gkgrid_unit, form='formatted', recl=1073741824, file=trim(seedname)//".gkgrid_fmt")
+    read (gkgrid_unit, '('//trim(format_precision)//')') file_version
 
-    read (specfn_unit, '(a80)') photo_gkgrid_file_header
+    read (gkgrid_unit, '(a80)') photo_gkgrid_file_header
     read (str_gvec, *) max_gvec
     if (.not. allocated(photo_gkgrid)) then
       write (stdout, *) " Allocating spectral function."
@@ -579,19 +579,19 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (specfn_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
+        read (gkgrid_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), &
                                                     ib=1, nbands)
       end do
     end do
 
-    close (unit=specfn_unit)
+    close (unit=gkgrid_unit)
 
-    write (stdout, *) trim(seedname)//".specfn_fmt"//"--> Formatted specfn sucessfully read. "
+    write (stdout, *) trim(seedname)//".gkgrid_fmt"//"--> Formatted gkgrid sucessfully read. "
 
-  end subroutine read_specfn_fmt
+  end subroutine read_gkgrid_fmt
 
   !=========================================================================
-  subroutine write_specfn_fmt()
+  subroutine write_gkgrid_fmt()
     !! Write a formatted ome file.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, stdout, io_file_unit,&
@@ -603,11 +603,11 @@ contains
 
     real(dp):: file_version = 1.0_dp          ! File version
     character(len=100):: string
-    integer :: ik, is, ib, i, gdx, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, gkgrid_unit = 6
 
-    write (stdout, *) " Write a formatted .specfn file. "
+    write (stdout, *) " Write a formatted .gkgrid file. "
 
-    open (unit=specfn_unit, form='formatted', file=trim(outseedname)//".specfn_fmt")
+    open (unit=gkgrid_unit, form='formatted', file=trim(outseedname)//".gkgrid_fmt")
 
     write (string, '(I0,"(1x,",a,")")') nbands*max_gvec*3, trim(format_precision)
     ! write(stdout, *) string
@@ -615,33 +615,33 @@ contains
     write (stdout, '(a80)') photo_gkgrid_file_header
     write (stdout, '(a80)') adjustl(photo_gkgrid_file_header)
 
-    write (specfn_unit, '('//trim(format_precision)//')') file_version
-    write (specfn_unit, '(a80)') adjustl(photo_gkgrid_file_header)
+    write (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    write (gkgrid_unit, '(a80)') adjustl(photo_gkgrid_file_header)
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), &
+        write (gkgrid_unit, '('//trim(string)//')') (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), &
                                                       gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
 
-    close (unit=specfn_unit)
+    close (unit=gkgrid_unit)
 
-    write (stdout, *) " Sucesfully written a formatted specfn file --> "//trim(outseedname)//".specfn_fmt"
-  end subroutine write_specfn_fmt
+    write (stdout, *) " Sucesfully written a formatted gkgrid file --> "//trim(outseedname)//".gkgrid_fmt"
+  end subroutine write_gkgrid_fmt
 
   !=========================================================================
-  subroutine read_specfn_bin()
+  subroutine read_gkgrid_bin()
     !! Read a binary ome file. Wrapper to keep the naming tidy.
     implicit none
-    write (stdout, *) " Read an unformatted specfn file. "
+    write (stdout, *) " Read an unformatted gkgrid file. "
     read (str_gvec, *) max_gvec
     call elec_read_gk_grid_points(max_gvec)
-    write (stdout, *) " "//trim(seedname)//".specfn_bin"//"--> Unformatted specfn sucessfully read. "
-  end subroutine read_specfn_bin
+    write (stdout, *) " "//trim(seedname)//".gkgrid_bin"//"--> Unformatted gkgrid sucessfully read. "
+  end subroutine read_gkgrid_bin
 
   !=========================================================================
-  subroutine write_specfn_bin()
+  subroutine write_gkgrid_bin()
     !! Write a binary ome file.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, stdout, io_file_unit, io_error
@@ -651,26 +651,26 @@ contains
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
-    integer :: ik, is, ib, i, gdx, specfn_unit = 6
+    integer :: ik, is, ib, i, gdx, gkgrid_unit = 6
 
-    write (stdout, *) " Write a binary specfn file."
+    write (stdout, *) " Write a binary gkgrid file."
 
-    open (unit=specfn_unit, form='unformatted', file=trim(outseedname)//".specfn_bin")
+    open (unit=gkgrid_unit, form='unformatted', file=trim(outseedname)//".gkgrid_bin")
 
-    write (stdout, *) "-> specfn file_version ", file_version
-    write (specfn_unit) file_version
-    write (stdout, *) "-> specfn file_header ", trim(photo_gkgrid_file_header)
-    write (specfn_unit) adjustl(photo_gkgrid_file_header)
+    write (stdout, *) "-> gkgrid file_version ", file_version
+    write (gkgrid_unit) file_version
+    write (stdout, *) "-> gkgrid file_header ", trim(photo_gkgrid_file_header)
+    write (gkgrid_unit) adjustl(photo_gkgrid_file_header)
 
     ! write(0,*) nkpoints, nspins, nbands
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (specfn_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
+        write (gkgrid_unit) (((photo_gkgrid(i, gdx, ib, is, ik), i=1, 3), gdx=1, max_gvec), ib=1, nbands)
       end do
     end do
 
-    write (stdout, *) " Sucesfully written an unformatted specfn file --> "//trim(outseedname)//".specfn_bin"
-  end subroutine write_specfn_bin
+    write (stdout, *) " Sucesfully written an unformatted gkgrid file --> "//trim(outseedname)//".gkgrid_bin"
+  end subroutine write_gkgrid_bin
 
   !=========================================================================
   ! D I A G O N A L  O P T I C A L   M A T R I X   E L E M E N T S
@@ -1477,16 +1477,16 @@ program od2od
   call get_band_energy()
   call write_read_file()
   call read_tmprob_bin()
-  case ("specfn_fmt")
+  case ("gkgrid_fmt")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
-  call read_specfn_fmt()
-  case ("specfn_bin")
+  call read_gkgrid_fmt()
+  case ("gkgrid_bin")
   tmcoeff_conv = .true.
   call get_band_energy()
   call write_read_file()
-  call read_specfn_bin()
+  call read_gkgrid_bin()
   case ("dome_fmt")
   dome_conv = .true.
   call get_band_energy()
@@ -1556,14 +1556,14 @@ program od2od
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
   call write_tmprob_bin
-  case ("specfn_fmt")
+  case ("gkgrid_fmt")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
-  call write_specfn_fmt
-  case ("specfn_bin")
+  call write_gkgrid_fmt
+  case ("gkgrid_bin")
   if (.not. (tmcoeff_conv)) call io_error(' Input format '//trim(infile)//' not compatible with output format'&
        &//trim(outfile))
-  call write_specfn_bin
+  call write_gkgrid_bin
   case ("dome_fmt")
   if (.not. (dome_conv .or. ome_conv)) call io_error(' Input format '//trim(infile)//&
        &' not compatible with output format '//trim(outfile))
