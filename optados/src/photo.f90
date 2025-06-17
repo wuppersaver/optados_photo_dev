@@ -3564,7 +3564,7 @@ contains
         //trim(adjustl(char_e))//'_bindenergy_curve.dat'
       open (unit=binding_unit, action='write', file=filename)
       call io_date(cdate, ctime)
-      write (binding_unit, '(1x,a60,a9,a4,a11)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
+      write (binding_unit, '(1x,a60,a11,a4,a9)') '## OptaDOS Photoemission: Printing Broadened Binding Energy on ',&
       & cdate, ' at ', ctime
       write (binding_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
       write (binding_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
@@ -3988,7 +3988,7 @@ contains
         //trim(adjustl(char_e))//'_Ebind_ptrans_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
-      write (matrix_unit, '(a56,a9,a4,a11)') '## OptaDOS Photoemission: Energy vs P_transverse matrix ',&
+      write (matrix_unit, '(a56,a11,a4,a9)') '## OptaDOS Photoemission: Energy vs P_transverse matrix ',&
       & cdate, ' at ', ctime
       write (matrix_unit, '(a14,a)') '## Seedname : ', trim(adjustl(seedname))
       write (matrix_unit, '(a25,a12)') '## Photoemission Model : ', trim(adjustl(photo_model))
@@ -4491,7 +4491,7 @@ contains
         //trim(adjustl(char_e))//'_ptensor.dat'
       call io_date(cdate, ctime)
       open (unit=matrix_unit, action='write', file=filename)
-      write (matrix_unit, '(a59,a9,a4,a11)') '## OptaDOS Photoemission: Printing Full Momentum Tensor on ',&
+      write (matrix_unit, '(a59,a11,a4,a9)') '## OptaDOS Photoemission: Printing Full Momentum Tensor on ',&
       & cdate, ' at ', ctime
       write (matrix_unit, '(a13,a)') '## Seedname: ', trim(adjustl(seedname))
       write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
@@ -4933,7 +4933,7 @@ contains
         '_'//trim(adjustl(char_e))//'_ref_'//trim(adjustl(char_ref))//'_const_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
-      write (matrix_unit, '(a66,a9,a4,a11)') '## OptaDOS Photoemission: Printing Constant Binding Energy Map on ',&
+      write (matrix_unit, '(a66,a11,a4,a9)') '## OptaDOS Photoemission: Printing Constant Binding Energy Map on ',&
       & cdate, ' at ', ctime
       write (matrix_unit, '(a13,a)') '## Seedname: ', trim(adjustl(seedname))
       write (matrix_unit, '(a24,a8)') '## Photoemission Model: ', trim(adjustl(photo_model))
@@ -5012,23 +5012,23 @@ contains
       matrix_unit = io_file_unit()
       write (char_e, '(F7.3)') temp_photon_energy
       if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix_final.dat'
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor_final.dat'
       else
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
       end if
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
-      write (matrix_unit, '(a66,a9,a4,a11)') '## OptaDOS Photoemission: Printing Constant Binding Energy Map on ',&
+      write (matrix_unit, '(a53,a11,a4,a9)') '## OptaDOS Photoemission: Printing Full QE tensor on ',&
       & cdate, ' at ', ctime
-      write (matrix_unit, '(1x,a13,a)') '## Seedname: ', trim(adjustl(seedname))
-      write (matrix_unit, '(1x,a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
-      write (matrix_unit, '(1x,a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
-      write (matrix_unit, '(1x,a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
-      write (matrix_unit, '(1x,a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
+      write (matrix_unit, '(a13,a)') '## Seedname: ', trim(adjustl(seedname))
+      write (matrix_unit, '(a24,a12)') '## Photoemission Model: ', trim(adjustl(photo_model))
+      write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
+      write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
+      write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
-        write (matrix_unit, *) '## Writing the contributions of excitations into the !!FINAL!! states'
+        write (matrix_unit, '(a69)') '## Writing the contributions of excitations into the !!FINAL!! states'
       end if
-      write (matrix_unit, *) '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
+      write (matrix_unit, '(a61,a,a6)') '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       ! Printing out the info on root_node
       write (out_string, '(I0,"(1x,",a,")")') nbands, 'ES16.8E3'
 
@@ -5036,11 +5036,11 @@ contains
         if (index(devel_flag, 'single') > 0) then
           n_eigen = len_trim(devel_flag)
           read (devel_flag(n_eigen - 2:n_eigen), *) band_num
-          write (matrix_unit, '(1x,a42,1x,I3)') '## Writing contributions into final band #', band_num
-          write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+          write (matrix_unit, '(a42,1x,I3)') '## Writing contributions into final band #', band_num
+          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
                                                        & ')'
           do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
             do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
                 write (matrix_unit, '('//trim(out_string)//')') &
@@ -5049,12 +5049,12 @@ contains
             end do
           end do
         else if (index(devel_flag, 'final') > 0) then
-          write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
-          write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-          write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+          write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
+          write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
+          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
                                                        & ')'
           do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
             do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
                 write (matrix_unit, '('//trim(out_string)//')') &
@@ -5063,12 +5063,12 @@ contains
             end do
           end do
         else
-          write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
-          write (matrix_unit, *) '## at a certain k-point, spin, and atom'
-          write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+          write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
+          write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
+          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
                                                        & ')'
           do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
             do N_k = 1, num_kpoints_on_node(my_node_id)
               do N_spin = 1, nspins
                 write (matrix_unit, '('//trim(out_string)//')') &
@@ -5078,12 +5078,12 @@ contains
           end do
         end if
       elseif (index(photo_model, '1step') > 0) then
-        write (matrix_unit, *) '## (Reduced) QE Matrix where each row contains the contributions from each band'
-        write (matrix_unit, *) '## at a certain k-point, spin, and atom'
+        write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
+        write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
         write (matrix_unit, '(1x,a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
                                   & ')'
         do atom = 1, max_atoms + 1
-          if (atom .eq. max_atoms + 1) write (matrix_unit, *) '## Bulk Contribution:'
+          if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
           do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
               write (matrix_unit, '('//trim(out_string)//')') (qe_osm(n_eigen, N_spin, N_k, atom), n_eigen=1, nbands)
@@ -5142,9 +5142,9 @@ contains
       ! Writing header to output file
       write (char_e, '(F7.3)') temp_photon_energy
       if (index(devel_flag, 'final') > 0 .and. index(photo_model, '3step') > 0) then
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix_final.dat'
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor_final.dat'
       else
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_matrix.dat'
+        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
       end if
       matrix_unit = io_file_unit()
       open (unit=matrix_unit, action='write', file=filename)
