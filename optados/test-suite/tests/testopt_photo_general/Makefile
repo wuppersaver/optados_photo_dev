@@ -1,4 +1,4 @@
-all: $(patsubst %.bands.bz2, %.bands, $(wildcard *.bands.bz2)) $(patsubst %.dome_fmt.bz2, %.dome_bin, $(wildcard *.dome_fmt.bz2)) $(patsubst %.fem_fmt.bz2, %.fem_bin, $(wildcard *.fem_fmt.bz2)) $(patsubst %.ome_fmt.bz2, %.ome_bin, $(wildcard *.ome_fmt.bz2)) $(patsubst %.pdos_fmt.bz2, %.pdos_bin, $(wildcard *.pdos_fmt.bz2))
+all: $(patsubst %.bands.bz2, %.bands, $(wildcard *.bands.bz2)) $(patsubst %.dome_fmt.bz2, %.dome_bin, $(wildcard *.dome_fmt.bz2)) $(patsubst %.fem_fmt.bz2, %.fem_bin, $(wildcard *.fem_fmt.bz2)) $(patsubst %.tmprob_fmt.bz2, %.tmprob_bin, $(wildcard *.tmprob_fmt.bz2)) $(patsubst %.gkgrid_fmt.bz2, %.gkgrid_bin, $(wildcard *.gkgrid_fmt.bz2)) $(patsubst %.ome_fmt.bz2, %.ome_bin, $(wildcard *.ome_fmt.bz2)) $(patsubst %.pdos_fmt.bz2, %.pdos_bin, $(wildcard *.pdos_fmt.bz2))
 
 %.dome_bin:  %.dome_fmt.bz2 %.bands
 	$(eval SEEDNAME:=$(patsubst %.dome_fmt.bz2, %, $<))
@@ -9,6 +9,11 @@ all: $(patsubst %.bands.bz2, %.bands, $(wildcard *.bands.bz2)) $(patsubst %.dome
 	$(eval SEEDNAME:=$(patsubst %.fem_fmt.bz2, %, $<))
 	echo $(SEEDNAME)
 	cat $< | bunzip2 - > $(SEEDNAME).fem_fmt && ../../../od2od -i fem_fmt -o fem_bin  $(SEEDNAME) && rm $(SEEDNAME).fem_fmt
+	
+%.tmprob_bin:  %.tmprob_fmt.bz2 %.bands
+	$(eval SEEDNAME:=$(patsubst %.tmprob_fmt.bz2, %, $<))
+	echo $(SEEDNAME)
+	cat $< | bunzip2 - > $(SEEDNAME).tmprob_fmt && ../../../od2od -i tmprob_fmt -o tmprob_bin  $(SEEDNAME) && rm $(SEEDNAME).tmprob_fmt
 
 %.ome_bin:  %.ome_fmt.bz2 %.bands
 	$(eval SEEDNAME:=$(patsubst %.ome_fmt.bz2, %, $<))

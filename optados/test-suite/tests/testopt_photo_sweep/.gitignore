@@ -4,3 +4,5 @@
 *.dome_bin
 *.dome_fmt
 *.bands
+*.tmprob_bin
+*.log

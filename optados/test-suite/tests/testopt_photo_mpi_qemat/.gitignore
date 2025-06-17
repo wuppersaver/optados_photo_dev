@@ -5,3 +5,5 @@
 *.dome_fmt
 *.bands
 *.odo
+*.tmprob_bin
+*.log
