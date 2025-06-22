@@ -3629,7 +3629,7 @@ contains
     integer :: k_window, e_window, center_bin_e, center_bin_k, kdx_min, kdx_max, edx_min, edx_max
     real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), k_broadening, temp_k, min_e, gauss_e
-    real(kind=dp) :: final_fd, ekin_temp
+    real(kind=dp) :: final_fd, ekin_temp, qe_contrib
     real(kind=dp) :: total_weighted, qe_norm
     real(kind=dp) :: time0, time1
 
@@ -4582,10 +4582,11 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
-    real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
-    real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
+    real(kind=dp), allocatable, dimension(:, :, :)    :: fermi_dirac
+    real(kind=dp), allocatable, dimension(:, :, :)    :: vacuum_gauss
+    real(kind=dp), allocatable, dimension(:)          :: gauss_y, gauss_x
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), gauss_e, temp_mat(2, 2), current_k(2), final_fd, ekin_temp, z_max, xy_max
-    real(kind=dp) :: k_prefactor, gauss_y, gauss_x, ref_level, kx_broadening, ky_broadening, qe_contrib, time0, time1
+    real(kind=dp) :: k_prefactor, ref_level, kx_broadening, ky_broadening, qe_contrib, time0, time1
     real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument, total_weighted, qe_norm
     integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, gdx, ierr
     integer    :: matrix_unit, nsymm_op, x_center, y_center, xdx, ydx, xdx_min, xdx_max, ydx_min, ydx_max, px_max, py_max
