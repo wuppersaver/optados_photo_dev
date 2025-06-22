@@ -1038,7 +1038,7 @@ contains
           photo_const_bindenergy_value, '|'
       end if
       if (index(photo_output, 'off') == 0) then
-        write (stdout, '(1x,a78)') '|  ------ List of extra Values to be calculated and written to file -------  |'
+        write (stdout, '(1x,a78)') '|  ------ List of extra values to be calculated and written to file -------  |'
         write (stdout, '(1x,a78)') '|  ------------------------------------------------------------------------  |'
         if (index(photo_output, 'bindenergy_ptrans_map') > 0) write (stdout, '(1x,a78)') &
          '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
