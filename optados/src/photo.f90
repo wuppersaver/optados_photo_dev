@@ -2883,18 +2883,18 @@ contains
                                                    + temp_contribution*gk_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*te_gk_factor
-              if ((temp_contribution*gk_factor) .gt. 0.0_dp .and. index(devel_flag, 'print_qe_formula_values') > 0 &
-                  .and. on_root) then
-                write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
-                write (stdout, '(13(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*gk_factor, &
-                  band_energy(n_eigen, N_spin, N_k), &
-                  gkgrid_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_spin, N_k), &
-                  electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-                  I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss(gdx, n_eigen, N_spin, N_k), &
-                  vacuum_gauss(n_eigen, N_spin, N_k), &
-                  fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
-                  pdos_weights_k_band(n_eigen, N_spin, N_k)
-              end if
+              ! if ((temp_contribution*gk_factor) .gt. 0.0_dp .and. index(devel_flag, 'print_qe_formula_values') > 0 &
+              !     .and. on_root) then
+              !   write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
+              !   write (stdout, '(13(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*gk_factor, &
+              !     band_energy(n_eigen, N_spin, N_k), &
+              !     gkgrid_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_spin, N_k), &
+              !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+              !     I_layer(box_atom(atom), current_photo_energy_index), transverse_gauss(gdx, n_eigen, N_spin, N_k), &
+              !     vacuum_gauss(n_eigen, N_spin, N_k), &
+              !     fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+              !     pdos_weights_k_band(n_eigen, N_spin, N_k)
+              ! end if
             end do
           end do
         end do
@@ -3205,22 +3205,18 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :, :) :: binding_temp
-    real(kind=dp) :: time0, time1
-
-    real(kind=dp) :: final_fd, ekin_temp, be_temp
-    integer :: N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
-    integer :: middle_idx, width_idx, window_width
-    real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument
-
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: transverse_gauss
     real(kind=dp), allocatable, dimension(:, :, :) :: vacuum_gauss
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
-
-    integer :: binding_unit
-
     real(kind=dp), allocatable, dimension(:, :) :: qe_atom
+    real(kind=dp) :: time0, time1
+    real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument
+    real(kind=dp) :: final_fd, ekin_temp, be_temp, qe_contrib
     real(kind=dp) :: total_weighted, qe_norm
+    integer :: N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, e_scale, gdx, ierr
+    integer :: middle_idx, width_idx, window_width, e_min, e_max
+    integer :: binding_unit
     character(len=100)                          :: out_string
     character(len=99)                           :: filename
     character(len=10)                           :: char_e
@@ -3228,6 +3224,7 @@ contains
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
+    if (on_root) write (stdout, '(1x,a78)') '+---------------- Starting Binding Energy Curve Calculation -----------------+'
     ! We are redoing parts of the QE calculation, so we need these factors
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
@@ -3377,12 +3374,11 @@ contains
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                               *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                  total_be_contribs = total_be_contribs + (temp_contribution*gk_factor)
+                  qe_contrib = temp_contribution*gk_factor
+                  total_be_contribs = total_be_contribs + qe_contrib
                   do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                     weighted_be_atom(e_scale, atom) = &
-                      weighted_be_atom(e_scale, atom) &
-                      + (binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
-                         *temp_contribution*gk_factor)
+                      weighted_be_atom(e_scale, atom) + (binding_temp(e_scale, n_eigen_init, N_spin, N_k)*qe_contrib)
                   end do
                 end do
               end do
@@ -3419,12 +3415,11 @@ contains
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                             *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                total_be_contribs = total_be_contribs + (temp_contribution*gk_factor)
+                qe_contrib = temp_contribution*gk_factor
+                total_be_contribs = total_be_contribs + qe_contrib
                 do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
                   weighted_be_atom(e_scale, max_atoms + 1) = &
-                    weighted_be_atom(e_scale, max_atoms + 1) &
-                    + (binding_temp(e_scale, n_eigen_init, N_spin, N_k) &
-                       *temp_contribution*gk_factor)
+                    weighted_be_atom(e_scale, max_atoms + 1) + (binding_temp(e_scale, n_eigen_init, N_spin, N_k)*qe_contrib)
                 end do
               end do
             end do
@@ -3516,12 +3511,14 @@ contains
                             *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                             *transverse_gauss(gdx, n_eigen, N_spin, N_k)
-                total_be_contribs = total_be_contribs + (temp_contribution*gk_factor)
-                do e_scale = max(middle_idx - width_idx, 1), min(middle_idx + width_idx, max_energy)
+                qe_contrib = temp_contribution*gk_factor
+                total_be_contribs = total_be_contribs + qe_contrib
+                e_min = max(middle_idx - width_idx, 1)
+                e_max = min(middle_idx + width_idx, max_energy)
+                do e_scale = e_min, e_max 
                   weighted_be_atom(e_scale, atom) = &
                     weighted_be_atom(e_scale, atom) &
-                    + (binding_temp(e_scale, n_eigen, N_spin, N_k) &
-                       *temp_contribution*gk_factor)
+                    + (binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_contrib)
                 end do
               end do
             end do
@@ -3560,7 +3557,7 @@ contains
       write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
                  '_bindenergy_curve.dat'
-      if (iprint > 1 .and. on_root) write (stdout, *) '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
+      write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
         //trim(adjustl(char_e))//'_bindenergy_curve.dat'
       open (unit=binding_unit, action='write', file=filename)
       call io_date(cdate, ctime)
@@ -3614,21 +3611,22 @@ contains
   subroutine binding_energy_momentum_map
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice
-    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
+                             photo_gkgrid, elec_read_gk_grid_points
     use od_parameters, only: photo_work_function, photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
     & photo_phi_min, photo_phi_max, photo_bindenergy_broadening, photo_gk_max_vectors, scissor_op, iprint, &
     & photo_momentum, photo_pmat_bin_width, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi
+    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, hbar, ev_to_j
     implicit none
 
     integer :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, kdx, edx, gdx, ierr
     integer :: window_width, matrix_unit
     integer :: k_window, e_window, center_bin_e, center_bin_k, kdx_min, kdx_max, edx_min, edx_max
-    real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument
-    real(kind=dp) :: step(1:2), sub_cell_length(1:2), k_broadening, temp_k, min_e, gauss_e
+    real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, argument, gk
+    real(kind=dp) :: step(1:2), sub_cell_length(1:2), k_broadening, temp_k, min_e, gauss_e, e_temp
     real(kind=dp) :: final_fd, ekin_temp, qe_contrib
     real(kind=dp) :: total_weighted, qe_norm
     real(kind=dp) :: time0, time1
@@ -3648,6 +3646,7 @@ contains
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
+    if (on_root) write (stdout, '(1x,a78)') '+--------- Starting Binding Energy vs Transverse P Map Calculation ----------+'
     ! We are redoing parts of the QE calculation, so we need these factors
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
@@ -3698,12 +3697,17 @@ contains
     e_window = 15*ceiling(photo_bindenergy_broadening/photo_pmat_bin_width)
     ! get the maximum k
     max_k_transverse = 0.0_dp
-    do N_k = 1, num_kpoints_on_node(my_node_id)
-      temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
-      max_k_transverse = max(max_k_transverse, temp_k)
-    end do
-    call comms_reduce(max_k_transverse, 1, "MAX")
-    call comms_bcast(max_k_transverse, 1)
+    if (index(photo_momentum, 'crystal') > 0) then
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
+        max_k_transverse = max(max_k_transverse, temp_k)
+      end do
+      call comms_reduce(max_k_transverse, 1, "MAX")
+      call comms_bcast(max_k_transverse, 1)
+    elseif (index(photo_momentum, 'gkgrid') > 0) then
+      call elec_read_gk_grid_points(photo_gk_max_vectors)
+      max_k_transverse = sqrt((2*e_mass*((temp_photon_energy - work_function_eff + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
+    end if
     max_bin_k = ceiling(max_k_transverse/photo_pmat_bin_width)
 
     ! calculating upper bound of energy range with some extra for plotting
@@ -3788,11 +3792,122 @@ contains
             temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
             ! calculate the bin position in k and e
             center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+            kdx_min = max(center_bin_k - k_window, 1)
+            kdx_max = min(center_bin_k + k_window, max_bin_k) 
+            gk = (kdx_min - 1)*photo_pmat_bin_width
+            do kdx = kdx_min, kdx_max
+              gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+              gk = gk + photo_pmat_bin_width
+            end do
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen_final = 2, nbands
+                ! if (num_exclude_bands .gt. 1) then
+                !   if (any(exclude_bands == n_eigen_final)) then
+                !     cycle
+                !   end if
+                ! end if
+                final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
+                do n_eigen_init = 1, n_eigen_final - 1
+                  temp_contribution = &
+                    qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                    *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
+                    *electrons_per_state*kpoint_weight(N_k)*I_layer(box_atom(atom), current_photo_energy_index) &
+                    *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                    *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
+                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                    *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  do gdx = 1, photo_gk_max_vectors
+                    gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                                *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
+                                *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                    qe_contrib = temp_contribution*gk_factor
+                    total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+                    center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+                    edx_min = max(center_bin_e - e_window, 1)
+                    edx_max = min(center_bin_e + e_window, max_bin_e)
+                    e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+                    do edx = edx_min, edx_max
+                      gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                        e_temp)
+                      e_temp = e_temp + photo_pmat_bin_width
+                      do kdx = kdx_min, kdx_max
+                        ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          elseif (index(photo_momentum, 'gkgrid') > 0) then
+            do N_spin = 1, nspins                    ! Loop over spins
+              do n_eigen_final = 2, nbands
+                ! if (num_exclude_bands .gt. 1) then
+                !   if (any(exclude_bands == n_eigen_final)) then
+                !     cycle
+                !   end if
+                ! end if
+                final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
+                do n_eigen_init = 1, n_eigen_final - 1
+                  temp_contribution = &
+                    qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                    *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
+                    *electrons_per_state*kpoint_weight(N_k)*I_layer(box_atom(atom), current_photo_energy_index) &
+                    *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                    *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
+                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                    *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  do gdx = 1, photo_gk_max_vectors
+                    gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                                *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
+                                *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                    qe_contrib = temp_contribution*gk_factor
+                    total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+
+                    temp_k = sqrt(photo_gkgrid(1, gdx, n_eigen, N_spin, N_k)**2 + photo_gkgrid(2, gdx, n_eigen, N_spin, N_k)**2)
+                    center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+                    kdx_min = max(center_bin_k - k_window, 1)
+                    kdx_max = min(center_bin_k + k_window, max_bin_k)
+                    gk = (kdx_min - 1)*photo_pmat_bin_width
+                    do kdx = kdx_min, kdx_max
+                      gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+                      gk = gk + photo_pmat_bin_width
+                    end do
+
+                    center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+                    edx_min = max(center_bin_e - e_window, 1)
+                    edx_max = min(center_bin_e + e_window, max_bin_e)
+                    e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+                    do edx = edx_min, edx_max
+                      gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                        e_temp)
+                      e_temp = e_temp + photo_pmat_bin_width
+                      do kdx = kdx_min, kdx_max
+                        ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
           end if
+        end do
+      end do
+
+      call photo_calculate_delta(delta_temp, .true.)
+
+      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
+        if (index(photo_momentum, 'crystal') > 0) then
+          temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
+          ! calculate the bin position in k and e
+          center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
           kdx_min = max(center_bin_k - k_window, 1)
           kdx_max = min(center_bin_k + k_window, max_bin_k)
+          gk = (kdx_min - 1)*photo_pmat_bin_width
           do kdx = kdx_min, kdx_max
-            gauss_k(kdx) = gaussian(temp_k, k_broadening, (kdx - 1)*photo_pmat_bin_width)
+            gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+            gk = gk + photo_pmat_bin_width
           end do
           do N_spin = 1, nspins                    ! Loop over spins
             do n_eigen_final = 2, nbands
@@ -3804,26 +3919,29 @@ contains
               final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
               do n_eigen_init = 1, n_eigen_final - 1
                 temp_contribution = &
-                  qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                  *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_spin, N_k) &
-                  *electrons_per_state*kpoint_weight(N_k)*I_layer(box_atom(atom), current_photo_energy_index) &
+                  (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                  *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                  *transmit_prob(n_eigen_final, N_spin, N_k) &
+                  *electrons_per_state*kpoint_weight(N_k) &
                   *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
-                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                   *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
                 do gdx = 1, photo_gk_max_vectors
                   gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                              *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                              *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                               *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
                   qe_contrib = temp_contribution*gk_factor
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                   center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
                   edx_min = max(center_bin_e - e_window, 1)
                   edx_max = min(center_bin_e + e_window, max_bin_e)
+                  e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
                   do edx = edx_min, edx_max
-                    gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, &
-                                       min_e + (edx - 1)*photo_pmat_bin_width)
+                    gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                      e_temp)
+                    e_temp = e_temp + photo_pmat_bin_width
                     do kdx = kdx_min, kdx_max
                       ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
                     end do
@@ -3832,61 +3950,60 @@ contains
               end do
             end do
           end do
-        end do
-      end do
+        elseif (index(photo_momentum, 'gkgrid') > 0) then
+          do N_spin = 1, nspins                    ! Loop over spins
+            do n_eigen_final = 2, nbands
+              ! if (num_exclude_bands .gt. 1) then
+              !   if (any(exclude_bands == n_eigen_final)) then
+              !     cycle
+              !   end if
+              ! end if
+              final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
+              do n_eigen_init = 1, n_eigen_final - 1
+                temp_contribution = &
+                  (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                  *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                  *transmit_prob(n_eigen_final, N_spin, N_k) &
+                  *electrons_per_state*kpoint_weight(N_k) &
+                  *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                do gdx = 1, photo_gk_max_vectors
+                  gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                              *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
+                              *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                              *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
+                  qe_contrib = temp_contribution*gk_factor
+                  total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
 
-      call photo_calculate_delta(delta_temp, .true.)
-
-      do N_k = 1, num_kpoints_on_node(my_node_id)   ! Loop over kpoints
-          if (index(photo_momentum, 'crystal') > 0) then
-            temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
-            ! calculate the bin position in k and e
-            center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
-          end if
-          kdx_min = max(center_bin_k - k_window, 1)
-          kdx_max = min(center_bin_k + k_window, max_bin_k)
-          do kdx = kdx_min, kdx_max
-            gauss_k(kdx) = gaussian(temp_k, k_broadening, (kdx - 1)*photo_pmat_bin_width)
-          end do
-        do N_spin = 1, nspins                    ! Loop over spins
-          do n_eigen_final = 2, nbands
-            ! if (num_exclude_bands .gt. 1) then
-            !   if (any(exclude_bands == n_eigen_final)) then
-            !     cycle
-            !   end if
-            ! end if
-            final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
-            do n_eigen_init = 1, n_eigen_final - 1
-              temp_contribution = &
-                (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                 *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                 *transmit_prob(n_eigen_final, N_spin, N_k) &
-                 *electrons_per_state*kpoint_weight(N_k) &
-                 *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
-                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
-              do gdx = 1, photo_gk_max_vectors
-                gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
-                            *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                            *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
-                            *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                qe_contrib = temp_contribution*gk_factor
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
-                edx_min = max(center_bin_e - e_window, 1)
-                edx_max = min(center_bin_e + e_window, max_bin_e)
-                do edx = edx_min, edx_max
-                  gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, &
-                                      min_e + (edx - 1)*photo_pmat_bin_width)
+                  temp_k = sqrt(photo_gkgrid(1, gdx, n_eigen, N_spin, N_k)**2 + photo_gkgrid(2, gdx, n_eigen, N_spin, N_k)**2)
+                  center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+                  kdx_min = max(center_bin_k - k_window, 1)
+                  kdx_max = min(center_bin_k + k_window, max_bin_k)
+                  gk = (kdx_min - 1)*photo_pmat_bin_width
                   do kdx = kdx_min, kdx_max
-                    ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                    gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+                    gk = gk + photo_pmat_bin_width
+                  end do
+
+                  center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+                  edx_min = max(center_bin_e - e_window, 1)
+                  edx_max = min(center_bin_e + e_window, max_bin_e)
+                  e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+                  do edx = edx_min, edx_max
+                    gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                      e_temp)
+                    e_temp = e_temp + photo_pmat_bin_width
+                    do kdx = kdx_min, kdx_max
+                      ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                    end do
                   end do
                 end do
               end do
             end do
           end do
-        end do
+        end if
       end do
     end if
 
@@ -3943,43 +4060,90 @@ contains
             temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
             ! calculate the bin position in k and e
             center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
-          end if
-          kdx_min = max(center_bin_k - k_window, 1)
-          kdx_max = min(center_bin_k + k_window, max_bin_k)
-          do kdx = kdx_min, kdx_max
-            gauss_k(kdx) = gaussian(temp_k, k_broadening, (kdx - 1)*photo_pmat_bin_width)
-          end do
-          spins: do N_spin = 1, nspins
-            bands: do n_eigen = 1, nbands
-              temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
-                                   *electrons_per_state*kpoint_weight(N_k) &
-                                   *I_layer(box_atom(atom), current_photo_energy_index) &
-                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
-                                   *fermi_dirac(n_eigen, N_spin, N_k) &
-                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
-                                  *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
-              do gdx = 1, photo_gk_max_vectors
-                center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
-                gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
-                            *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
-                            *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
-                            *transverse_gauss(gdx, n_eigen, N_spin, N_k)
-                qe_contrib = temp_contribution*gk_factor
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                ! calculate the bin position in k and e
-                edx_min = max(center_bin_e - e_window, 1)
-                edx_max = min(center_bin_e + e_window, max_bin_e)
-                do edx = edx_min, edx_max
-                  gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
-                                     min_e + (edx - 1)*photo_pmat_bin_width)
+            kdx_min = max(center_bin_k - k_window, 1)
+            kdx_max = min(center_bin_k + k_window, max_bin_k)
+            gk = (kdx_min - 1)*photo_pmat_bin_width
+            do kdx = kdx_min, kdx_max
+              gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+              gk = gk + photo_pmat_bin_width
+            end do
+            spins: do N_spin = 1, nspins
+              bands: do n_eigen = 1, nbands
+                temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
+                                    *electrons_per_state*kpoint_weight(N_k) &
+                                    *I_layer(box_atom(atom), current_photo_energy_index) &
+                                    *vacuum_gauss(n_eigen, N_spin, N_k) &
+                                    *fermi_dirac(n_eigen, N_spin, N_k) &
+                                    *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                      /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                    *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                do gdx = 1, photo_gk_max_vectors
+                  gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
+                              *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
+                              *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                              *transverse_gauss(gdx, n_eigen, N_spin, N_k)
+                  qe_contrib = temp_contribution*gk_factor
+                  total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+                  center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+                  edx_min = max(center_bin_e - e_window, 1)
+                  edx_max = min(center_bin_e + e_window, max_bin_e)
+                  e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+                  do edx = edx_min, edx_max
+                    gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                      e_temp)
+                    e_temp = e_temp + photo_pmat_bin_width
+                    do kdx = kdx_min, kdx_max
+                      ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                    end do
+                  end do
+                end do
+              end do bands
+            end do spins
+          elseif (index(photo_momentum, 'gkgrid') > 0) then
+            do N_spin = 1, nspins
+              do n_eigen = 1, nbands
+                temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
+                                    *electrons_per_state*kpoint_weight(N_k) &
+                                    *I_layer(box_atom(atom), current_photo_energy_index) &
+                                    *vacuum_gauss(n_eigen, N_spin, N_k) &
+                                    *fermi_dirac(n_eigen, N_spin, N_k) &
+                                    *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                      /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                    *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+                do gdx = 1, photo_gk_max_vectors
+                  gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
+                              *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
+                              *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
+                              *transverse_gauss(gdx, n_eigen, N_spin, N_k)
+                  qe_contrib = temp_contribution*gk_factor
+                  total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+
+                  temp_k = sqrt(photo_gkgrid(1, gdx, n_eigen, N_spin, N_k)**2 + photo_gkgrid(2, gdx, n_eigen, N_spin, N_k)**2)
+                  center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+                  kdx_min = max(center_bin_k - k_window, 1)
+                  kdx_max = min(center_bin_k + k_window, max_bin_k)
+                  gk = (kdx_min - 1)*photo_pmat_bin_width
                   do kdx = kdx_min, kdx_max
-                    ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                    gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+                    gk = gk + photo_pmat_bin_width
+                  end do
+
+                  center_bin_e = ceiling((E_kinetic(gdx, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+                  edx_min = max(center_bin_e - e_window, 1)
+                  edx_max = min(center_bin_e + e_window, max_bin_e)
+                  e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+                  do edx = edx_min, edx_max
+                    gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
+                                      e_temp)
+                    e_temp = e_temp + photo_pmat_bin_width
+                    do kdx = kdx_min, kdx_max
+                      ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
+                    end do
                   end do
                 end do
               end do
-            end do bands
-          end do spins
+            end do
+          end if
         end do kpoints
       end do
     end if
@@ -4000,7 +4164,7 @@ contains
       write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
                  '_Ebind_ptrans_map.dat'
-      if (iprint > 1 .and. on_root) write (stdout, *) '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
+      write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
         //trim(adjustl(char_e))//'_Ebind_ptrans_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
@@ -4093,6 +4257,7 @@ contains
     real(kind=dp) :: time0, time1
 
     time0 = io_time()
+    if (on_root) write (stdout, '(1x,a78)') '+---------------- Starting Full Momentum Tensor Calculation -----------------+'
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -4505,7 +4670,7 @@ contains
       matrix_unit = io_file_unit()
       write (char_e, '(F7.3)') temp_photon_energy
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_ptensor.dat'
-      if (iprint > 1 .and. on_root) write (stdout, *) '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
+      write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)//'_' &
         //trim(adjustl(char_e))//'_ptensor.dat'
       call io_date(cdate, ctime)
       open (unit=matrix_unit, action='write', file=filename)
@@ -4598,6 +4763,7 @@ contains
     character(len=11)                           :: cdate             ! Temp. date string
 
     time0 = io_time()
+    if (on_root) write (stdout, '(1x,a78)') '+------------ Starting Constant Binding Energy Map Calculation --------------+'
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -4961,7 +5127,7 @@ contains
       end do
     end if
 
-    call comms_reduce(kxky_matrix(1, 1), xdx_max*ydx_max, 'SUM')
+    call comms_reduce(kxky_matrix(1, 1), px_max*py_max, 'SUM')
     call comms_reduce(total_be_contribs, 1, 'SUM')
     total_weighted = sum(kxky_matrix(:, :))
     if (total_weighted .gt. 0.0_dp) then
@@ -4978,7 +5144,7 @@ contains
       write (char_ref, '(F7.2)') photo_const_bindenergy_value
       filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_ref_'// &
                  trim(adjustl(char_ref))//'_const_map.dat'
-      if (iprint > 1 .and. on_root) write (stdout, *) '| Writing out to *SEEDNAME*_'//trim(photo_model)// &
+      write (stdout, '(1x,a)') '| Writing out to *SEEDNAME*_'//trim(photo_model)// &
         '_'//trim(adjustl(char_e))//'_ref_'//trim(adjustl(char_ref))//'_const_map.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
