@@ -1,6 +1,6 @@
- OptaDOS: Execution started on 17 Jun 2025 at 13:57:12 
+ OptaDOS: Execution started on 17 Jun 2025 at 17:44:38 
           Parallelised over    1 thread(s)
- 
+
  +===========================================================================+
  |                                                                           |
  |                OOO   PPPP  TTTTT  AA   DDD    OOO    SSS                  |
@@ -32,7 +32,7 @@
  |      in all your publications arising from your use of OptaDOS            |
  |                                                                           |
  +===========================================================================+
- 
+
  +------------------------------ JOB CONTROL ---------------------------------+
  |  Output Density of States                  :  False                        |
  |  Output Partial Density of States          :  False                        |
@@ -90,15 +90,15 @@
                     a_1     2.582173   0.000000   0.000000
                     a_2     0.000000   2.582173   0.000000
                     a_3     0.000000   0.000000  23.907520
- 
+
                         Reciprocal-Space Vectors (Ang^-1)
                     b_1     2.433294   0.000000   0.000000
                     b_2     0.000000   2.433294   0.000000
                     b_3     0.000000   0.000000   0.262812
- 
+
                    Unit Cell Volume:     159.40621  (Ang^3)
- 
- 
+
+
  +----------------------- Electronic Data ------------------------------------+
  |  Number of Bands                           :            65                 |
  |  Grid size                                 :        3 x  3 x  1            |
@@ -159,13 +159,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.806370E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.799314E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.788846E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.831106E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.823518E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.812267E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.153828E+00  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.136019E+00  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.119744E+00  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.147520E+00  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.129745E+00  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.113589E+00  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -635,13 +635,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.237662E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.234325E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.229406E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.202416E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.199434E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.195042E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.165269E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.135582E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.110444E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.123285E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.100149E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.807529E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -747,13 +747,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.383350E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.378534E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.371423E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.346562E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.342122E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.335568E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.353689E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.296314E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.246683E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.304885E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.254526E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.211120E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -859,13 +859,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.516684E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.510479E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.501310E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.487176E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.481283E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.472578E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.529766E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.447321E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.375433E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.491396E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.414418E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.347379E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -1335,13 +1335,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.676033E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.668410E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.657136E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.665066E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.657505E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.646324E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.797252E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.680213E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.577074E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.770560E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.656576E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.556263E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -1447,13 +1447,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.728633E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.720633E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.708797E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.714924E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.707031E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.695356E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.909288E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.779068E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.663822E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.882059E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.755098E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.642834E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -1559,13 +1559,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.777572E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.769143E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.756669E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.766710E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.758382E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.746060E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.996331E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.855321E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.730277E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.978551E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.839812E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.716819E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2035,13 +2035,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.836861E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.827653E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.814030E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.837946E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.828722E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.815076E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.103970E+00  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.890509E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.758518E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.103999E+00  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.890691E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.758613E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2147,13 +2147,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.825728E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.816814E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.803621E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.829811E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.820775E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.807404E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.106707E+00  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.916624E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.783130E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.105337E+00  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.903659E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.770993E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2259,13 +2259,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.781113E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.771931E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.758359E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.800191E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.791638E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.778980E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.840713E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.712441E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.600181E-01  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.105558E+00  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.908149E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.777120E-01  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2735,13 +2735,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.379548E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.372387E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.361897E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.334163E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.327785E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.318446E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.104679E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.801757E-02  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.608259E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.883980E-02  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.674962E-02  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.510425E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2847,13 +2847,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.504089E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.494679E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.480892E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.479998E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.471043E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.457923E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.144508E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.111000E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.844616E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.137902E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.105943E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.806272E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -2959,13 +2959,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.570521E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.559730E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.543926E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.557416E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.546920E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.531546E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.156004E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.119410E-01  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.905316E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.154882E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.118692E-01  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.900982E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -3463,13 +3463,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.648245E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.634452E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.614311E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.647499E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.633810E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.613819E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.112474E-01  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.832312E-02  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.609325E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.115359E-01  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.855338E-02  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.627458E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -4163,13 +4163,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.672924E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.656724E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.633152E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.672508E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.656433E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.633038E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.680843E-02  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.484042E-02  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.339960E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.703250E-02  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.501199E-02  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.352905E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -4863,13 +4863,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.678000E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.660751E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.635697E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.676587E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.659376E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.634377E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.526692E-02  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.367172E-02  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.252690E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.525918E-02  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.366650E-02  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.252342E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -5563,13 +5563,13 @@
  |     Vol. per layer     =    12.0071                                        |
  |     Total Volume       =   348.2048                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.672750E+00  P_esc =  0.364275E+00         |
- |     Layer #   2     I_light =  0.655505E+00  P_esc =  0.259338E+00         |
- |     Layer #   3     I_light =  0.630463E+00  P_esc =  0.184631E+00         |
+ |     Layer #   1     I_light =  0.662780E+00  P_esc =  0.364275E+00         |
+ |     Layer #   2     I_light =  0.645541E+00  P_esc =  0.259338E+00         |
+ |     Layer #   3     I_light =  0.620520E+00  P_esc =  0.184631E+00         |
  |                                   ......                                   |
- |     Layer #  27     I_light =  0.503547E-02  P_esc =  0.530661E-04         |
- |     Layer #  28     I_light =  0.350070E-02  P_esc =  0.377794E-04         |
- |     Layer #  29     I_light =  0.240232E-02  P_esc =  0.268963E-04         |
+ |     Layer #  27     I_light =  0.461219E-02  P_esc =  0.530661E-04         |
+ |     Layer #  28     I_light =  0.318912E-02  P_esc =  0.377794E-04         |
+ |     Layer #  29     I_light =  0.217627E-02  P_esc =  0.268963E-04         |
  +----------------------------------------------------------------------------+
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
@@ -5578,11 +5578,11 @@
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.7214E-008               |
- |  Cu          2            2                      0.3805E-008               |
- |  Cu          3            3                      0.2622E-008               |
- | Bulk                                             0.5697E-008               |
- | Total Quantum Efficiency (electrons/photon):         0.1934E-007           |
+ |  Cu          1            1                      0.6702E-006               |
+ |  Cu          2            2                      0.3535E-006               |
+ |  Cu          3            3                      0.2435E-006               |
+ | Bulk                                             0.5282E-006               |
+ | Total Quantum Efficiency (electrons/photon):         0.1795E-005           |
  | Weighted Mean Transverse Energy (eV):                0.0000E+000           |
  +----------------------------------------------------------------------------+
  +--------------- Starting Photoemission Sweep with  5.9500 eV ---------------+
@@ -5755,9 +5755,9 @@
  +----------------------------------------------------------------------------+
  | End of Photoemission Calculation                                           |
  |                                                                            |
- + Time to calculate Photoemission                                0.411 (sec) +
+ + Time to calculate Photoemission                                0.315 (sec) +
  +============================================================================+
   
   
- 
- OptaDOS: Execution complete on 17 Jun 2025 at 13:57:13 
+
+ OptaDOS: Execution complete on 17 Jun 2025 at 17:44:39 
