@@ -539,7 +539,7 @@ contains
     photo_phi_max = 90.0_dp
     call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
 
-    photo_bindenergy_broadening = 0.0257_dp
+    photo_bindenergy_broadening = 0.01285_dp
     call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
     photo_pmat_bin_width = 0.005_dp
     call param_get_keyword('photo_pmat_bin_width', found, r_value=photo_pmat_bin_width)
