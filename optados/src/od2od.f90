@@ -143,7 +143,7 @@ contains
     open (unit=ome_unit, form='formatted', recl=1073741824, file=trim(seedname)//".ome_fmt")
 
     ! Total number of elements of ome
-    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
     ! write(stdout,*) string
 
     ! write(string,'(a)') trim(format_precision)
@@ -190,7 +190,7 @@ contains
 
     open (unit=ome_unit, form='formatted', file=trim(outseedname)//".ome_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*nbands, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 3*nbands*nbands, trim(format_precision)
     !   write(stdout,*) string
 
     write (stdout, '(a80)') omefile_header
