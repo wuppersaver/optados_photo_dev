@@ -458,7 +458,7 @@ contains
     photo_momentum = 'crystal'
     call param_get_keyword('photo_momentum', found, c_value=photo_momentum)
     if (index(photo_momentum, 'kp') == 0 .and. index(photo_momentum, 'crystal') == 0 .and. index(photo_momentum, 'operator') == 0 &
-        .and. index(photo_momentum, 'specfn') == 0) &
+        .and. index(photo_momentum, 'gkgrid') == 0) &
       call io_error('Error: value of momentum not recognised in param_read')
 
     call param_get_keyword('photo_photon_energy', found, r_value=photo_photon_energy)
@@ -547,8 +547,8 @@ contains
     call param_get_keyword('photo_const_bindenergy_value', found, r_value=photo_const_bindenergy_value)
     photo_gk_max_vectors = 1
     call param_get_keyword('photo_gk_max_vectors', found, i_value=photo_gk_max_vectors)
-    if ((photo_gk_max_vectors .gt. 1) .and. (index(photo_momentum, 'specfn') .eq. 0)) then
-      call io_error('Error: When choosing a photo_momentum other than specfn, photo_gk_max_vectors must = 1')
+    if ((photo_gk_max_vectors .gt. 1) .and. (index(photo_momentum, 'gkgrid') .eq. 0)) then
+      call io_error('Error: When choosing a photo_momentum other than gkgrid, photo_gk_max_vectors must = 1')
     end if
     photo_use_tmprob = .True.
     call param_get_keyword('photo_use_tmprob', found, l_value=photo_use_tmprob)

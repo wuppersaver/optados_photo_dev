@@ -921,12 +921,12 @@ contains
     time1 = io_time()
     if (on_root .and. iprint > 1) then
       write (stdout, '(1x,a59,f11.3,a8)') &
-        '+ Time to read Spectral Fn Contribs                        ', time1 - time0, ' (sec) +'
+        '+ Time to read Gkgrid Contributions                        ', time1 - time0, ' (sec) +'
     end if
 
     return
 
-102 call io_error('Error: Problem opening gkgrid_bin file in read_spec_function')
+102 call io_error('Error: Problem opening gkgrid_bin file in read_gk_grid_points')
   end subroutine elec_read_gk_grid_points
 
   !=========================================================================
