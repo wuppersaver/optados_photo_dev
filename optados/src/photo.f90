@@ -1425,10 +1425,10 @@ contains
             ! acos(E_ortho/E_kinetic)
             theta_arpes(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) &
                                                             - E_transverse(gdx, n_eigen, N_spin, N_k)) &
-                                                            /E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
+                                                           /E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
             ! Angle of electron within material, before passing the surface
             theta_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
-                                                                - E_transverse(gdx, n_eigen, N_spin, N_k)) &
+                                                               - E_transverse(gdx, n_eigen, N_spin, N_k)) &
                                                               /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
                                                                 work_function_eff)))*rad_to_deg
           end do
@@ -3831,7 +3831,7 @@ contains
                 e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
                 do edx = edx_min, edx_max
                   gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, &
-                                    e_temp)
+                                     e_temp)
                   e_temp = e_temp + photo_pmat_bin_width
                   do kdx = kdx_min, kdx_max
                     ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -3867,12 +3867,12 @@ contains
             do n_eigen_init = 1, n_eigen_final - 1
               temp_contribution = &
                 (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                *transmit_prob(n_eigen_final, N_spin, N_k) &
-                *electrons_per_state*kpoint_weight(N_k) &
-                *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
-                  /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                 *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                 *transmit_prob(n_eigen_final, N_spin, N_k) &
+                 *electrons_per_state*kpoint_weight(N_k) &
+                 *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
 
               gk_factor = arpes_mask(1, n_eigen_final, N_spin, N_k) &
@@ -3887,7 +3887,7 @@ contains
               e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
               do edx = edx_min, edx_max
                 gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, &
-                                  e_temp)
+                                   e_temp)
                 e_temp = e_temp + photo_pmat_bin_width
                 do kdx = kdx_min, kdx_max
                   ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -3959,12 +3959,12 @@ contains
           do N_spin = 1, nspins
             do n_eigen = 1, nbands
               temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
-                                  *electrons_per_state*kpoint_weight(N_k) &
-                                  *I_layer(box_atom(atom), current_photo_energy_index) &
-                                  *vacuum_gauss(n_eigen, N_spin, N_k) &
-                                  *fermi_dirac(n_eigen, N_spin, N_k) &
-                                  *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                   *electrons_per_state*kpoint_weight(N_k) &
+                                   *I_layer(box_atom(atom), current_photo_energy_index) &
+                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
+                                   *fermi_dirac(n_eigen, N_spin, N_k) &
+                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               gk_factor = arpes_mask(1, n_eigen, N_spin, N_k) &
                           *gkgrid_weight(1, n_eigen, N_spin, N_k) &
@@ -3978,7 +3978,7 @@ contains
               e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
               do edx = edx_min, edx_max
                 gauss_e = gaussian(E_kinetic(1, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
-                                  e_temp)
+                                   e_temp)
                 e_temp = e_temp + photo_pmat_bin_width
                 do kdx = kdx_min, kdx_max
                   ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -4048,7 +4048,7 @@ contains
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate binding_temp')
     end if
 
-    if(allocated(gauss_k)) then
+    if (allocated(gauss_k)) then
       deallocate (gauss_k, stat=ierr)
       if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate gauss_k')
     end if
@@ -4271,7 +4271,7 @@ contains
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
 
                   temp_k = sqrt(photo_gkgrid(1, gdx, n_eigen_init, N_spin, N_k)**2 + &
-                   photo_gkgrid(2, gdx, n_eigen_init, N_spin, N_k)**2)
+                                photo_gkgrid(2, gdx, n_eigen_init, N_spin, N_k)**2)
                   center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
                   kdx_min = max(center_bin_k - k_window, 1)
                   kdx_max = min(center_bin_k + k_window, max_bin_k)
@@ -4287,7 +4287,7 @@ contains
                   e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
                   do edx = edx_min, edx_max
                     gauss_e = gaussian(E_kinetic(gdx, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, &
-                                      e_temp)
+                                       e_temp)
                     e_temp = e_temp + photo_pmat_bin_width
                     do kdx = kdx_min, kdx_max
                       ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -4314,12 +4314,12 @@ contains
             do n_eigen_init = 1, n_eigen_final - 1
               temp_contribution = &
                 (qe_factor*photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
-                *transmit_prob(n_eigen_final, N_spin, N_k) &
-                *electrons_per_state*kpoint_weight(N_k) &
-                *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
-                  /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                 *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k) &
+                 *transmit_prob(n_eigen_final, N_spin, N_k) &
+                 *electrons_per_state*kpoint_weight(N_k) &
+                 *vacuum_gauss(n_eigen_final, N_spin, N_k)*fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
+                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
               do gdx = 1, photo_gk_max_vectors
                 gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
@@ -4330,7 +4330,7 @@ contains
                 total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
 
                 temp_k = sqrt(photo_gkgrid(1, gdx, n_eigen_init, N_spin, N_k)**2 &
-                        + photo_gkgrid(2, gdx, n_eigen_init, N_spin, N_k)**2)
+                              + photo_gkgrid(2, gdx, n_eigen_init, N_spin, N_k)**2)
                 center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
                 kdx_min = max(center_bin_k - k_window, 1)
                 kdx_max = min(center_bin_k + k_window, max_bin_k)
@@ -4346,7 +4346,7 @@ contains
                 e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
                 do edx = edx_min, edx_max
                   gauss_e = gaussian(E_kinetic(gdx, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, &
-                                    e_temp)
+                                     e_temp)
                   e_temp = e_temp + photo_pmat_bin_width
                   do kdx = kdx_min, kdx_max
                     ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -4411,12 +4411,12 @@ contains
           do N_spin = 1, nspins
             do n_eigen = 1, nbands
               temp_contribution = (qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
-                                  *electrons_per_state*kpoint_weight(N_k) &
-                                  *I_layer(box_atom(atom), current_photo_energy_index) &
-                                  *vacuum_gauss(n_eigen, N_spin, N_k) &
-                                  *fermi_dirac(n_eigen, N_spin, N_k) &
-                                  *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                   *electrons_per_state*kpoint_weight(N_k) &
+                                   *I_layer(box_atom(atom), current_photo_energy_index) &
+                                   *vacuum_gauss(n_eigen, N_spin, N_k) &
+                                   *fermi_dirac(n_eigen, N_spin, N_k) &
+                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               do gdx = 1, photo_gk_max_vectors
                 gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
@@ -4442,7 +4442,7 @@ contains
                 e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
                 do edx = edx_min, edx_max
                   gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, &
-                                    e_temp)
+                                     e_temp)
                   e_temp = e_temp + photo_pmat_bin_width
                   do kdx = kdx_min, kdx_max
                     ekin_k_matrix(kdx, edx) = ekin_k_matrix(kdx, edx) + gauss_e*gauss_k(kdx)*qe_contrib
@@ -4694,7 +4694,7 @@ contains
             ! Is the final state energy above the vauum level?
             if (band_energy(n_eigen, N_spin, N_k) .lt. evacuum_eff) then
               vacuum_gauss(n_eigen, N_spin, N_k) = gaussian(band_energy(n_eigen, N_spin, N_k) + &
-                                                                 scissor_op, width, evacuum_eff)/norm_vac
+                                                            scissor_op, width, evacuum_eff)/norm_vac
             else
               vacuum_gauss(n_eigen, N_spin, N_k) = 1.0_dp
             end if
@@ -4717,7 +4717,7 @@ contains
                 end if
               end if
               e_z(gdx, n_eigen, N_spin, N_k) = E_kinetic(gdx, n_eigen, N_spin, N_k) - &
-                                                    E_transverse(gdx, n_eigen, N_spin, N_k)
+                                               E_transverse(gdx, n_eigen, N_spin, N_k)
               if (e_z(gdx, n_eigen, N_spin, N_k) < 0.0_dp) then
                 e_z(gdx, n_eigen, N_spin, N_k) = 1000.0_dp
               end if
@@ -5037,11 +5037,11 @@ contains
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate p_tensor')
     end if
     if (allocated(gauss_x)) then
-      deallocate(gauss_x, stat=ierr)
+      deallocate (gauss_x, stat=ierr)
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate gauss_x')
     end if
     if (allocated(gauss_y)) then
-      deallocate(gauss_y, stat=ierr)
+      deallocate (gauss_y, stat=ierr)
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - failed to deallocate gauss_y')
     end if
     time1 = io_time()
@@ -5332,9 +5332,9 @@ contains
                   total_be_contribs = total_be_contribs + qe_contrib
                   gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                   do ydx = ydx_min, ydx_max
-                      do xdx = xdx_min, xdx_max
-                        kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
-                      end do
+                    do xdx = xdx_min, xdx_max
+                      kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
+                    end do
                   end do
                 end do
               end do
@@ -5507,11 +5507,11 @@ contains
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - deallocation of kxky_matrix failed')
     end if
     if (allocated(gauss_x)) then
-      deallocate(gauss_x, stat=ierr)
+      deallocate (gauss_x, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_x')
     end if
     if (allocated(gauss_y)) then
-      deallocate(gauss_y, stat=ierr)
+      deallocate (gauss_y, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_y')
     end if
 
@@ -5795,9 +5795,9 @@ contains
                   end do
                   gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                   do ydx = ydx_min, ydx_max
-                      do xdx = xdx_min, xdx_max
-                        kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
-                      end do
+                    do xdx = xdx_min, xdx_max
+                      kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
+                    end do
                   end do
                 end do
               end do
@@ -5967,15 +5967,15 @@ contains
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - deallocation of kxky_matrix failed')
     end if
     if (allocated(gauss_x)) then
-      deallocate(gauss_x, stat=ierr)
+      deallocate (gauss_x, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_x')
     end if
     if (allocated(gauss_y)) then
-      deallocate(gauss_y, stat=ierr)
+      deallocate (gauss_y, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_y')
     end if
     if (allocated(photo_gkgrid)) then
-      deallocate(photo_gkgrid, stat=ierr)
+      deallocate (photo_gkgrid, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate photo_gkgrid')
     end if
 
