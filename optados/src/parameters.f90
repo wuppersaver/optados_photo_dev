@@ -1041,15 +1041,15 @@ contains
         write (stdout, '(1x,a78)') '|  ------ List of extra values to be calculated and written to file -------  |'
         write (stdout, '(1x,a78)') '|  ------------------------------------------------------------------------  |'
         if (index(photo_output, 'bindenergy_ptrans_map') > 0) write (stdout, '(1x,a78)') &
-         '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
+          '|  --------------- Binding Energy vs transverse Energy map ----------------  |'
         if (index(photo_output, 'p_tensor') > 0) write (stdout, '(1x,a78)') &
-         '|  -------------------- Full momentum (px,py,pz) tensor -------------------  |'
+          '|  -------------------- Full momentum (px,py,pz) tensor -------------------  |'
         if (index(photo_output, 'bindenergy_curve') > 0) write (stdout, '(1x,a78)') &
-         '|  ---------------------- Binding Energy curve (EDC) ----------------------  |'
+          '|  ---------------------- Binding Energy curve (EDC) ----------------------  |'
         if (index(photo_output, 'const_bindenergy_p_map') > 0) write (stdout, '(1x,a78)') &
-         '|  --------------------- Constant binding Energy map ----------------------  |'
+          '|  --------------------- Constant binding Energy map ----------------------  |'
         if (index(photo_output, 'qe_tensor') > 0) write (stdout, '(1x,a78)') &
-         '|  ---------------------------- Full QE tensor ----------------------------  |'
+          '|  ---------------------------- Full QE tensor ----------------------------  |'
       end if
     end if
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
