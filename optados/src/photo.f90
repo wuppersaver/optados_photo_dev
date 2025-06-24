@@ -3187,7 +3187,9 @@ contains
 
   subroutine binding_energy_curve
     !===============================================================================
-    !* This subroutine applies a Gaussian broadening to the binding energy
+    !* This subroutine calculates a binding energy vs contributed QE curve and writes
+    ! it to a file. Can be thought of as an energy distribution curve (EDC) in an
+    ! ARPES experiment
     ! orig. Victor Chang, 7 February 2020
     ! edited Felix Mildner, after August 2024
     !===============================================================================
@@ -3599,14 +3601,26 @@ contains
       if (ierr /= 0) call io_error('Error: binding_energy_curve - failed to deallocate binding_temp')
     end if
 
+    if (allocated(bind_energy)) then
+      deallocate (bind_energy, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate bind_energy')
+    end if
+
     time1 = io_time()
     if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a46,13x,f11.3,a8)') '+ Time to calculate broadened binding energies', time1 - time0, ' (sec) +'
+      write (stdout, '(1x,a40,19x,f11.3,a8)') '+ Time to calculate binding energy curve', time1 - time0, ' (sec) +'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
   end subroutine binding_energy_curve
 
   subroutine binding_energy_momentum_map
+    !*===============================================================================
+    ! This subroutine calculates a binding energy vs reciprocal transverse momentum
+    ! map of the gaussian broadened band contributions and writes it to a file.
+    ! Can be thought of the bandstructure projection along the transverse diagonal 
+    ! showing the contributions of emitting bands.
+    ! written by Felix Mildner, after May 2025
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
@@ -3649,7 +3663,7 @@ contains
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
-    ! How many SD out from the center should the Gaussian broadening be summed up?
+    ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     window_width = 12
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
     if (max_energy .lt. 500) return
@@ -4033,10 +4047,15 @@ contains
       deallocate (binding_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate binding_temp')
     end if
-    
+
     if(allocated(gauss_k)) then
       deallocate (gauss_k, stat=ierr)
       if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate gauss_k')
+    end if
+
+    if (allocated(ekin_k_matrix)) then
+      deallocate (ekin_k_matrix, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate ekin_k_matrix')
     end if
 
     time1 = io_time()
@@ -4048,6 +4067,14 @@ contains
   end subroutine binding_energy_momentum_map
 
   subroutine binding_energy_momentum_map_gkgrid
+    !*===============================================================================
+    ! This subroutine calculates a binding energy vs reciprocal transverse momentum
+    ! map of the gaussian broadened band contributions and writes it to a file.
+    ! This is the optimised version for the photo_momentum option to allow supercell 
+    ! calculations. Can be thought of the bandstructure projection along the 
+    ! transverse diagonal showing the contributions of emitting bands.
+    ! written by Felix Mildner, after May 2025
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
@@ -4090,7 +4117,7 @@ contains
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
-    ! How many SD out from the center should the Gaussian broadening be summed up?
+    ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     window_width = 12
     max_energy = int((temp_photon_energy - photo_work_function)*1000) + 500
     if (max_energy .lt. 500) return
@@ -4485,10 +4512,20 @@ contains
       deallocate (binding_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - failed to deallocate binding_temp')
     end if
-    
-    if(allocated(gauss_k)) then
+
+    if (allocated(gauss_k)) then
       deallocate (gauss_k, stat=ierr)
       if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate gauss_k')
+    end if
+
+    if (allocated(photo_gkgrid)) then
+      deallocate (photo_gkgrid, stat=ierr)
+      if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate photo_gkgrid')
+    end if
+    
+    if (allocated(ekin_k_matrix)) then
+      deallocate (ekin_k_matrix, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate ekin_k_matrix')
     end if
 
     time1 = io_time()
@@ -4500,6 +4537,11 @@ contains
   end subroutine binding_energy_momentum_map_gkgrid
 
   subroutine full_momentum_tensor
+    !*===============================================================================
+    ! This subroutine calculates the px,py,pz momentum tensor of emitted electrons,
+    ! applies a gaussian broadening to each contribution and writes it to a file.
+    ! written by Felix Mildner, after May 2025
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
@@ -5011,6 +5053,11 @@ contains
   end subroutine full_momentum_tensor
 
   subroutine const_binding_energy_map
+    !*===============================================================================
+    ! This subroutine calculates a map of reciprocal space at a specified binding 
+    ! energy and writes it out to a file.
+    ! written by Felix Mildner, after Jan 2025
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
@@ -5478,6 +5525,12 @@ contains
   end subroutine const_binding_energy_map
   
   subroutine const_binding_energy_map_gkgrid
+    !*===============================================================================
+    ! This subroutine calculates a map of reciprocal space at a specified binding 
+    ! energy and writes it out to a file. This is the optimised version for the
+    ! photo_momentum option to allow supercell calculations.
+    ! written by Felix Mildner, after May 2025
+    !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
                        kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob, &
@@ -5921,6 +5974,10 @@ contains
       deallocate(gauss_y, stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gauss_y')
     end if
+    if (allocated(photo_gkgrid)) then
+      deallocate(photo_gkgrid, stat=ierr)
+      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate photo_gkgrid')
+    end if
 
     time1 = io_time()
     if (on_root .and. iprint > 1) then
@@ -5947,7 +6004,6 @@ contains
 
     integer :: atom, ierr, matrix_unit
     integer :: N_k, N_spin, n_eigen, kpt_total, band_num
-    real(kind=dp), allocatable, dimension(:, :) :: qe_atom
     character(len=99)                           :: filename
     character(len=100)                          :: out_string
     character(len=10)                           :: char_e
@@ -6045,18 +6101,6 @@ contains
         end do
       end if
       close (unit=matrix_unit)
-    end if
-    if (allocated(qe_atom)) then
-      deallocate (qe_atom, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate qe_atom')
-    end if
-    if (allocated(bind_energy)) then
-      deallocate (bind_energy, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate bind_energy')
-    end if
-    if (allocated(ekin_k_matrix)) then
-      deallocate (ekin_k_matrix, stat=ierr)
-      if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate ekin_k_matrix')
     end if
 
     time1 = io_time()

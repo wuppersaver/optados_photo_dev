@@ -1,22 +1,23 @@
 task : photoemission
-jdos_spacing : 0.1
-jdos_max_energy : 25
-broadening : linear
-linear_smearing : 0.026
-optics_intraband : TRUE
-hybrid_linear : TRUE
-optics_geom : unpolar
+JDOS_SPACING : 0.01
+BROADENING : adaptive
+adaptive_smearing : 0.4
+OPTICS_GEOM : unpolar
 optics_qdir : 1 1 0
 
-photo_model : 1step
-photo_photon_energy: 21.2
-photo_work_function : 4.556
-photo_surface_area : 6.339744873
-photo_slab_volume : 190.942338
+photo_model : 3step
+photo_photon_energy : 5.0
+# If the task is set to photo_photon_sweep these can be used instead of photo_photon_energy
+#photo_photon_min : 4.5
+#photo_photon_max : 8.0
+photo_work_function : 4.54683
+photo_slab_min : 13.41798
+photo_slab_max : 43.27299
 photo_elec_field : 0.00
-photo_imfp_const : 19.0
+photo_imfp_value : 5.3
 photo_momentum : crystal
 photo_temperature : 300
-write_photo_output : e_bind
+# For photo_momentum = gkgrid this must be set to 49
+photo_gk_max_vectors : 1 
 
 iprint : 1
