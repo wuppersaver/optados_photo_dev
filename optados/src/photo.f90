@@ -205,7 +205,7 @@ contains
         if (index(photo_output, 'off') == 0) then
           !Broaden ouputs using a gaussian function
           if (index(photo_output, 'bindenergy_curve') > 0) call binding_energy_curve
-          if (index(photo_output, 'bindenergy_ptrans_map') > 0) then 
+          if (index(photo_output, 'bindenergy_ptrans_map') > 0) then
             if (index(photo_momentum, 'gkgrid') > 0) then
               call binding_energy_momentum_map_gkgrid
             else
@@ -218,7 +218,7 @@ contains
               call const_binding_energy_map_gkgrid
             else
               call const_binding_energy_map
-            end if 
+            end if
           end if
           !Write either a binding energy output with after Gaussian broadening
           if (index(photo_output, 'qe_tensor') > 0) call write_qe_tensor
@@ -269,7 +269,7 @@ contains
       if (index(photo_output, 'off') == 0) then
         !Broaden ouputs using a gaussian function
         if (index(photo_output, 'bindenergy_curve') > 0) call binding_energy_curve
-        if (index(photo_output, 'bindenergy_ptrans_map') > 0) then 
+        if (index(photo_output, 'bindenergy_ptrans_map') > 0) then
           if (index(photo_momentum, 'gkgrid') > 0) then
             call binding_energy_momentum_map_gkgrid
           else
@@ -282,7 +282,7 @@ contains
             call const_binding_energy_map_gkgrid
           else
             call const_binding_energy_map
-          end if 
+          end if
         end if
         !Write either a binding energy output with after Gaussian broadening
         if (index(photo_output, 'qe_tensor') > 0) call write_qe_tensor
@@ -3515,7 +3515,7 @@ contains
                 total_be_contribs = total_be_contribs + qe_contrib
                 e_min = max(middle_idx - width_idx, 1)
                 e_max = min(middle_idx + width_idx, max_energy)
-                do e_scale = e_min, e_max 
+                do e_scale = e_min, e_max
                   weighted_be_atom(e_scale, atom) = &
                     weighted_be_atom(e_scale, atom) &
                     + (binding_temp(e_scale, n_eigen, N_spin, N_k)*qe_contrib)
@@ -3617,7 +3617,7 @@ contains
     !*===============================================================================
     ! This subroutine calculates a binding energy vs reciprocal transverse momentum
     ! map of the gaussian broadened band contributions and writes it to a file.
-    ! Can be thought of the bandstructure projection along the transverse diagonal 
+    ! Can be thought of the bandstructure projection along the transverse diagonal
     ! showing the contributions of emitting bands.
     ! written by Felix Mildner, after May 2025
     !===============================================================================
@@ -3735,7 +3735,7 @@ contains
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of ekin_k_matrix failed')
     end if
     ekin_k_matrix = 0.0_dp
-    
+
     if (.not. allocated(gauss_k)) then
       allocate (gauss_k(max_bin_k), stat=ierr)
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of gauss_k failed')
@@ -3796,7 +3796,7 @@ contains
           ! calculate the bin position in k and e
           center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
           kdx_min = max(center_bin_k - k_window, 1)
-          kdx_max = min(center_bin_k + k_window, max_bin_k) 
+          kdx_max = min(center_bin_k + k_window, max_bin_k)
           gk = (kdx_min - 1)*photo_pmat_bin_width
           do kdx = kdx_min, kdx_max
             gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
@@ -3874,7 +3874,7 @@ contains
                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
-              
+
               gk_factor = arpes_mask(1, n_eigen_final, N_spin, N_k) &
                           *gkgrid_weight(1, n_eigen_init, N_spin, N_k) &
                           *electron_esc(1, n_eigen_final, N_spin, N_k, max_atoms + 1) &
@@ -4070,8 +4070,8 @@ contains
     !*===============================================================================
     ! This subroutine calculates a binding energy vs reciprocal transverse momentum
     ! map of the gaussian broadened band contributions and writes it to a file.
-    ! This is the optimised version for the photo_momentum option to allow supercell 
-    ! calculations. Can be thought of the bandstructure projection along the 
+    ! This is the optimised version for the photo_momentum option to allow supercell
+    ! calculations. Can be thought of the bandstructure projection along the
     ! transverse diagonal showing the contributions of emitting bands.
     ! written by Felix Mildner, after May 2025
     !===============================================================================
@@ -4185,7 +4185,7 @@ contains
       if (ierr /= 0) call io_error('Error: binding_energy_momentum_map - allocation of ekin_k_matrix failed')
     end if
     ekin_k_matrix = 0.0_dp
-    
+
     if (.not. allocated(gauss_k)) then
       allocate (gauss_k(max_bin_k), stat=ierr)
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of gauss_k failed')
@@ -4522,7 +4522,7 @@ contains
       deallocate (photo_gkgrid, stat=ierr)
       if (ierr /= 0) call io_error('Error : binding_energy_momentum_map - failed to deallocate photo_gkgrid')
     end if
-    
+
     if (allocated(ekin_k_matrix)) then
       deallocate (ekin_k_matrix, stat=ierr)
       if (ierr /= 0) call io_error('Error: write_qe_tensor - failed to deallocate ekin_k_matrix')
@@ -4610,7 +4610,7 @@ contains
       if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of e_z failed')
     end if
     e_z = 1000.0_dp
-    
+
     total_be_contribs = 0.0_dp
     qe_factor = 1.0_dp/(cell_area)
     width = kB*photo_temperature
@@ -4752,7 +4752,7 @@ contains
             do ydx = ydx_min, ydx_max
               gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
             end do
-            
+
             do N_spin = 1, nspins                    ! Loop over spins
               do n_eigen_final = 2, nbands
                 ! if (num_exclude_bands .gt. 1) then
@@ -4775,7 +4775,7 @@ contains
                                 *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                                 *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
                                 *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                    qe_contrib = gk_factor*temp_contribution*k_prefactor                  
+                    qe_contrib = gk_factor*temp_contribution*k_prefactor
                     total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                     kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen_final, N_spin, N_k)*ev_to_j))*1E-10_dp
                     z_center = nint(kz/photo_pmat_bin_width) + 1
@@ -4845,7 +4845,7 @@ contains
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
                               *transverse_gauss(gdx, n_eigen_init, N_spin, N_k)
-                  qe_contrib = gk_factor*temp_contribution*k_prefactor                  
+                  qe_contrib = gk_factor*temp_contribution*k_prefactor
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                   kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen_final, N_spin, N_k)*ev_to_j))*1E-10_dp
                   z_center = nint(kz/photo_pmat_bin_width) + 1
@@ -4955,7 +4955,7 @@ contains
                               *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                               *transverse_gauss(gdx, n_eigen, N_spin, N_k)
-                  qe_contrib = gk_factor*temp_contribution*k_prefactor                  
+                  qe_contrib = gk_factor*temp_contribution*k_prefactor
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
                   kz = sqrt(wave_prefactor*(e_z(gdx, n_eigen, N_spin, N_k)*ev_to_j))*1E-10_dp
                   z_center = nint(kz/photo_pmat_bin_width) + 1
@@ -5054,7 +5054,7 @@ contains
 
   subroutine const_binding_energy_map
     !*===============================================================================
-    ! This subroutine calculates a map of reciprocal space at a specified binding 
+    ! This subroutine calculates a map of reciprocal space at a specified binding
     ! energy and writes it out to a file.
     ! written by Felix Mildner, after Jan 2025
     !===============================================================================
@@ -5157,7 +5157,7 @@ contains
     allocate (kxky_matrix(px_max, py_max), stat=ierr)
     if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of kxky_matrix failed')
     kxky_matrix = 0.0_dp
-    
+
     if (.not. allocated(gauss_x)) then
       allocate (gauss_x(px_max), stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of gauss_x failed')
@@ -5523,10 +5523,10 @@ contains
     end if
 
   end subroutine const_binding_energy_map
-  
+
   subroutine const_binding_energy_map_gkgrid
     !*===============================================================================
-    ! This subroutine calculates a map of reciprocal space at a specified binding 
+    ! This subroutine calculates a map of reciprocal space at a specified binding
     ! energy and writes it out to a file. This is the optimised version for the
     ! photo_momentum option to allow supercell calculations.
     ! written by Felix Mildner, after May 2025
@@ -5623,12 +5623,12 @@ contains
 
     px_max = 2*xdx_offset + 1
     py_max = 2*ydx_offset + 1
-    
+
     ! set up the kx x ky matrix
     allocate (kxky_matrix(px_max, py_max), stat=ierr)
     if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of kxky_matrix failed')
     kxky_matrix = 0.0_dp
-    
+
     if (.not. allocated(gauss_x)) then
       allocate (gauss_x(px_max), stat=ierr)
       if (ierr /= 0) call io_error('Error: const_binding_energy_map - allocation of gauss_x failed')
