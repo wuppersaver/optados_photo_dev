@@ -43,6 +43,10 @@ module od_electronic
   !Additional variables for photoemission.- V.Chang Nov-2020, F. Mildner April-2023 and later
   real(kind=dp), allocatable, public, save     :: band_curvature(:, :, :, :, :)
   complex(kind=dp), allocatable, public, save  :: foptical_mat(:, :, :, :, :)
+  ! Free-electron coherency tensor, (9, n_Ef, nbands, nkpoints_on_node, nspins).
+  ! The nine independent reals of the hermitian A_ij, in the order
+  !   Re A_11, Re A_22, Re A_33, Re A_12, Im A_12, Re A_13, Im A_13, Re A_23, Im A_23
+  real(kind=dp), allocatable, public, save     :: fem_tensor(:, :, :, :, :)
   character(len=80), public, save              :: femfile_header
   ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
   real(kind=dp), dimension(5), public, save            :: fem_energy_info
@@ -579,54 +583,52 @@ contains
   !=========================================================================
   subroutine elec_read_foptical_mat
     !=========================================================================
-    ! Read the .fem_bin file in paralell if appropriate. These are the
-    ! free electron matrix at each kpoint.
+    ! Read the .fem_bin file in parallel if appropriate.  Version 2 files hold
+    ! the free-electron coherency tensor
+    !
+    !    A_ij(n,k,E_f) = sum_G M_i^G conjg(M_j^G) g(E_f - E_(k+G))
+    !
+    ! binned by final-state energy, as nine independent reals per (band, bin).
+    ! The file carries no photon energy, Fermi energy or work function: any
+    ! polarisation is recovered as q_i conjg(q_j) A_ij and any photon energy by
+    ! evaluating at E_f = E_n + hbar omega.
     !-------------------------------------------------------------------------
-    ! Arguments: None
-    !-------------------------------------------------------------------------
-    ! Parent module variables: foptical_mat,nspins,nbands
-    !-------------------------------------------------------------------------
-    ! Modules used:  See below
-    !-------------------------------------------------------------------------
-    ! Key Internal Variables: None
-    !-------------------------------------------------------------------------
-    ! Necessary conditions: None
-    !-------------------------------------------------------------------------
-    ! Known Worries: None
+    ! Parent module variables: fem_tensor, fem_energy_info, nspins, nbands
     !-------------------------------------------------------------------------
     ! Written by  V Chang                                             Nov 2020
     !=========================================================================
-    use od_comms, only: on_root, my_node_id, num_nodes, root_id,&
-         & comms_recv, comms_send, comms_reduce, comms_bcast
-    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
-         & io_error
-    use od_cell, only: num_kpoints_on_node, nkpoints, kpoint_r
+    use od_comms, only: on_root, my_node_id, num_nodes, root_id, comms_send, comms_recv, comms_bcast
+    use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit, io_error
+    use od_cell, only: num_kpoints_on_node, nkpoints
     use od_constants, only: bohr2ang, H2eV
-    use od_parameters, only: legacy_file_format, iprint, devel_flag
+    use od_parameters, only: iprint
     use od_algorithms, only: algor_dist_array
     implicit none
 
-    integer :: fem_unit, i, ib, jb, is, ik, inodes, ierr, gam_unit = 23, inode = 0, ktmp, energy_count
+    integer :: fem_unit, i, ib, jb, is, ik, inodes, ierr, n_ef, blocksize
     character(filename_len) :: fem_filename
-    real(kind=dp) :: time0, time1, file_version, tolerance = 0.000001_dp
-    real(kind=dp), parameter :: file_ver = 1.0_dp
-    complex(kind=dp), dimension(:, :, :, :), allocatable :: foptical_mat_temp
-    logical :: have_gamma = .False.
+    real(kind=dp) :: time0, file_version
+    real(kind=dp), parameter :: fem_file_ver = 2.0_dp
 
-    ! Check that we haven't already done this.
-
-    if (allocated(foptical_mat)) return
+    if (allocated(fem_tensor)) return
 
     time0 = io_time()
     if (on_root) then
       fem_unit = io_file_unit()
       fem_filename = trim(seedname)//".fem_bin"
-      if (iprint > 1) write (stdout, '(1x,a)') 'Reading foptical matrix elements from file: '//trim(fem_filename)
+      if (iprint > 1) write (stdout, '(1x,a)') 'Reading the free-electron coherency tensor from: '//trim(fem_filename)
       open (unit=fem_unit, file=fem_filename, status="old", form='unformatted', err=102)
       read (fem_unit) file_version
-      if ((file_version - file_ver) > 0.001_dp) &
+      if (file_version .lt. fem_file_ver - 0.001_dp) then
+        write (stdout, *) 'fem_bin file version:', file_version, ' expected:', fem_file_ver
+        write (stdout, *) 'This is a version 1 file, holding wavepacket matrix elements rather than'
+        write (stdout, *) 'the coherency tensor.  Regenerate it with a CASTEP that writes version 2.'
+        call io_error('Error: .fem_bin is version 1; regenerate with a current CASTEP')
+      end if
+      if ((file_version - fem_file_ver) .gt. 0.001_dp) &
         call io_error('Error: Trying to read newer version of fem_bin file. Update optados!')
       read (fem_unit) femfile_header
+      ! n_Ef, Ef_min, Ef_step, Ef_broadening, Ef_origin (all eV, absolute)
       do i = 1, 5
         read (fem_unit) fem_energy_info(i)
       end do
@@ -634,112 +636,43 @@ contains
     end if
 
     call comms_bcast(fem_energy_info(1), 5)
-    energy_count = nint(fem_energy_info(1))
-    ! Figure out how many kpoints should be on each node
+    n_ef = nint(fem_energy_info(1))
+
     call algor_dist_array(nkpoints, num_kpoints_on_node)
-    allocate (foptical_mat(nbands, 3, energy_count, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
-    if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat in elec_read_optical_mat')
+    allocate (fem_tensor(9, n_ef, nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
+    if (ierr /= 0) call io_error('Error: Problem allocating fem_tensor in elec_read_foptical_mat')
+
+    blocksize = 9*n_ef*nbands*nspins
     if (on_root) then
       do inodes = 1, num_nodes - 1
         do ik = 1, num_kpoints_on_node(inodes)
           do is = 1, nspins
-            read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+            read (fem_unit) ((fem_tensor(1:9, jb, ib, ik, is), jb=1, n_ef), ib=1, nbands)
           end do
         end do
-        call comms_send(foptical_mat(1, 1, 1, 1, 1), nbands*energy_count*3*nspins*num_kpoints_on_node(inodes), inodes)
+        call comms_send(fem_tensor(1, 1, 1, 1, 1), blocksize*num_kpoints_on_node(inodes), inodes)
       end do
       do ik = 1, num_kpoints_on_node(0)
         do is = 1, nspins
-          read (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+          read (fem_unit) ((fem_tensor(1:9, jb, ib, ik, is), jb=1, n_ef), ib=1, nbands)
         end do
       end do
     end if
 
     if (.not. on_root) then
-      call comms_recv(foptical_mat(1, 1, 1, 1, 1), nbands*energy_count*3*nspins*num_kpoints_on_node(my_node_id), root_id)
+      call comms_recv(fem_tensor(1, 1, 1, 1, 1), blocksize*num_kpoints_on_node(my_node_id), root_id)
     end if
 
     if (on_root) close (unit=fem_unit)
 
-    ! Convert all free electron matrix elements to eV Ang
-    if (legacy_file_format) then
-      foptical_mat = foptical_mat*bohr2ang*bohr2ang*H2eV
-    else
-      foptical_mat = foptical_mat*bohr2ang*H2eV
-    end if
-
-    if (index(devel_flag, 'write_gam_fome') .gt. 0) then
-      do ik = 1, num_kpoints_on_node(my_node_id)
-        if (kpoint_r(1, ik) .lt. tolerance .and. kpoint_r(2, ik) .lt. tolerance .and. kpoint_r(3, ik) .lt. tolerance) then
-          inode = my_node_id
-          ktmp = ik
-          have_gamma = .True.
-          write (stdout, *) 'node', my_node_id, 'k#', ktmp
-        end if
-      end do
-      call comms_reduce(inode, 1, 'SUM')
-      if (have_gamma .and. .not. on_root) then
-        ! allocate the tmp array
-        allocate (foptical_mat_temp(1:nbands, 1:3, energy_count, 1:nspins), stat=ierr)
-        if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
-        ! write to tmp array
-        foptical_mat_temp = foptical_mat(:, :, :, ktmp, :)
-        ! send the tmp array to root node
-        call comms_send(foptical_mat_temp(1, 1, 1, 1), (nbands)*energy_count*3*nspins, root_id)
-        ! deallocate the tmp array
-        deallocate (foptical_mat_temp, stat=ierr)
-        if (ierr /= 0) call io_error('Error: Problem deallocating foptical_mat_temp in elec_read_foptical_mat')
-      end if
-      if (on_root) then
-        if (have_gamma) then
-          ! Write out the fomes
-          open (unit=gam_unit, action='write', file=trim(seedname)//'_gamma_fomes.dat')
-          write (gam_unit, '(1x,a28)') '############################'
-          write (gam_unit, *) '# Free electron OMEs for', seedname
-          write (gam_unit, '(1x,a28)') '############################'
-          do is = 1, nspins
-            write (gam_unit, *) 'Spin Channel', is
-            write (gam_unit, *) '# bands + free electron band', nbands + 1
-            do ib = 1, nbands
-              write (gam_unit, '(1x, I3, 999(1x,ES24.16E2))') ib, ((foptical_mat(ib, i, jb, ktmp, is), i=1, 3), jb=1, energy_count)
-            end do
-          end do
-          close (unit=gam_unit)
-        else
-          ! allocate the tmp array
-          allocate (foptical_mat_temp(1:nbands, 1:3, energy_count, 1:nspins), stat=ierr)
-          if (ierr /= 0) call io_error('Error: Problem allocating foptical_mat_temp in elec_read_foptical_mat')
-          ! receive the tmp array to root node
-          call comms_recv(foptical_mat_temp(1, 1, 1, 1), (nbands)*energy_count*3*nspins, inode)
-          ! write out the tmp array
-          open (unit=gam_unit, action='write', file=trim(seedname)//'_gamma_fomes.dat')
-          write (gam_unit, '(1x,a28)') '############################'
-          write (gam_unit, *) '# Free electron OMEs for', seedname
-          write (gam_unit, '(1x,a28)') '############################'
-          do is = 1, nspins
-            write (gam_unit, *) 'Spin Channel', is
-            write (gam_unit, *) '# bands + free electron band', nbands
-            do ib = 1, nbands + 1
-              write (gam_unit, '(1x, I3, 999(1x,ES24.16E2))') ib, ((foptical_mat(ib, i, jb, ktmp, is), i=1, 3), jb=1, energy_count)
-            end do
-          end do
-          close (unit=gam_unit)
-          ! deallocate the tmp array
-          deallocate (foptical_mat_temp, stat=ierr)
-          if (ierr /= 0) call io_error('Error: Problem deallocating foptical_mat_temp in elec_read_foptical_mat')
-        end if
-      end if
-    end if
-    time1 = io_time()
-    if (on_root .and. iprint > 1) then
-      write (stdout, '(1x,a59,f11.3,a8)') &
-           '+ Time to read Free electron Matrix Elements                   &
-           &      ', time1 - time0, ' (sec) +'
-    end if
+    ! A_ij is a matrix element squared per unit energy.  The matrix elements
+    ! themselves convert as bohr2ang*H2eV, so their square brings bohr2ang^2*H2eV^2,
+    ! and the 1/energy from the binning kernel divides one H2eV back out.
+    fem_tensor = fem_tensor*bohr2ang*bohr2ang*H2eV
 
     return
 
-102 call io_error('Error: Problem opening fem_bin file in read_band_foptical_mat')
+102 call io_error('Error: Problem opening fem_bin file in elec_read_foptical_mat')
 
   end subroutine elec_read_foptical_mat
 
