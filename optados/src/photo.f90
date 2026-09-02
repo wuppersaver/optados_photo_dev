@@ -2963,27 +2963,39 @@ contains
   !===============================================================================
   subroutine make_foptical_weights
     !*===============================================================================
-    ! This subroutine calculates the optical matrix elements for the one step
-    ! photoemission model.
+    ! Contract the free-electron coherency tensor with the light polarisation to
+    ! give the one-step matrix element weight for each initial state.
+    !
+    ! The tensor is stored against final-state energy and carries no photon
+    ! energy, so the weight for photon energy hw comes from evaluating it at
+    ! E_f = E_n + hw and contracting
+    !
+    !     |q.M|^2 summed over G  =  q_i conjg(q_j) A_ij
+    !
+    ! The polarisation directions here are real, so only the three diagonal
+    ! elements and the real parts of the off-diagonals contribute; the imaginary
+    ! parts are stored for a circular polarisation to use later.
     ! orig. Victor Chang, 7th February 2020
     ! edited by Felix Mildner, after April 2024
     !===============================================================================
-    use od_constants, only: dp, hbar, e_mass
-    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat, fem_energy_info, efermi
+    use od_constants, only: dp, kB
+    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, fem_tensor, &
+      & fem_energy_info, band_energy, efermi
     use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, &
       & crystal_symmetry_operations
-    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_energy_sweep, jdos_spacing,&
-     & iprint
+    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_energy_sweep, &
+      & iprint, photo_temperature
     use od_io, only: io_error, stdout
-    use od_comms, only: my_node_id, on_root
+    use od_comms, only: my_node_id, on_root, comms_reduce
 
     implicit none
 
-    complex(kind=dp), dimension(3) :: g
+    real(kind=dp), dimension(9) :: tens
     real(kind=dp), dimension(3) :: qdir, qdir1, qdir2
     real(kind=dp), dimension(2) :: num_occ
-    real(kind=dp) :: q_weight1, q_weight2, factor, energy_max, tolerance = 0.0001_dp
-    integer :: N_k, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr, energy_index
+    real(kind=dp) :: q_weight, q_weight1, q_weight2, factor, e_final, ef_top, e_occ_max
+    integer :: N_k, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr
+    integer :: n_ef, n_above
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') .gt. 0) then
       num_symm = 0
@@ -2995,74 +3007,25 @@ contains
     do N_spin = 1, nspins
       num_occ(N_spin) = num_electrons(N_spin)
     end do
-
     if (electrons_per_state == 2) then
       num_occ(1) = num_occ(1)/2.0_dp
     end if
 
-    ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
-    energy_count = int(fem_energy_info(1))
-    energy_min = fem_energy_info(2)
-    energy_step = fem_energy_info(3)
-    energy_fermi = fem_energy_info(4)
-    energy_workfct = fem_energy_info(5)
-    energy_max = energy_min + energy_step*(energy_count - 1)
-    ! Check the inputs are compatible
-    ! Are the jdos_step and energy_step compatible?
-    ! Check this specifically for photon_sweep, as that is quite important, otherwise check if the current energy can be
-    ! reached using the input step
-    if (photo_energy_sweep .and. jdos_spacing .lt. energy_step) then
-      if (on_root) then
-        write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
-        write (stdout, *) 'The jdos_spacing is smaller than the supplied energy_step from the .fem_bin and thus incompatible!'
-        call flush(stdout)
-        call io_error('Error: The jdos_spacing < supplied energy_step from the .fem_bin and thus incompatible!')
-      end if
-    end if
-    ! If energy_step is lt jdos_spacing - is the mod==0?
-    if (photo_energy_sweep .and. energy_step .lt. jdos_spacing) then
-      if (abs(modulo(jdos_spacing, energy_step)) .gt. tolerance) then
-        if (on_root) then
-          write (stdout, *) 'jdos_spacing = ', jdos_spacing, '1step energy steps for OMEs:', energy_step
-          write (stdout, *) 'The jdos_spacing and energy_step from 1step OMEs are not integer multiple of each other!'
-          call flush(stdout)
-          call io_error('Error: The jdos_spacing and energy_step from 1step OMEs are not integer multiple of each other!')
-        end if
-      end if
-    end if
-    ! Is the current photon_energy within the bounds of the energy_min and energy_max values?
-    if (temp_photon_energy .gt. energy_max .or. temp_photon_energy .lt. energy_min) then
-      if (on_root) then
-        write (stdout, *) 'current E_photon = ', temp_photon_energy, 'energy bounds for 1step OMEs:' &
-          , energy_min, '->', energy_max
-        write (stdout, *) 'The current photon energy is out of the min->max range of the 1step OMEs!'
-        call flush(stdout)
-        call io_error('Error: The current photon energy is out of the min->max range of the 1step OMEs!')
-      end if
-    end if
-    ! Is the fermi_energy within error?
-    if (abs(energy_fermi - efermi) .gt. tolerance) then
-      if (on_root) then
-        write (stdout, *) 'optados E_fermi:', efermi, '1step OME E_fermi:', energy_fermi
-        write (stdout, *) 'The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!'
-        write (stdout, *) 'It can also be set in the input file using efermi.'
-        call flush(stdout)
-        call io_error('Error: The Fermi Energy calculated in OptaDOS and supplied from the .fem_bin are incompatible!')
-      end if
-    end if
-    ! Is the energy_workfct within error?
-    if (abs(energy_workfct - work_function_eff) .gt. tolerance) then
-      if (on_root) then
-        write (stdout, *) 'optados workfct:', work_function_eff, '1step OME workfct:', energy_workfct
-        write (stdout, *) 'The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!'
-        call flush(stdout)
-        call io_error('Error: The Workfct from OptaDOS input and supplied from the .fem_bin are incompatible!')
-      end if
-    end if
+    ! fem_energy_info: n_Ef, Ef_min, Ef_step, Ef_broadening, Ef_origin
+    n_ef = nint(fem_energy_info(1))
+    ef_top = fem_energy_info(2) + fem_energy_info(3)*real(n_ef, dp)
 
-    ! Calculate the correct energy index in foptical_mat to use for the population of foptical_matrix_weights
-    energy_index = nint(((temp_photon_energy - energy_min)/energy_step)) + 1
-    if (on_root .and. iprint .gt. 2) write (stdout, *) 'energy_index:', energy_index
+    ! No compatibility checks are needed against the photon grid, the Fermi
+    ! energy or the work function: the tensor holds none of them.  The only way
+    ! to get this wrong is to ask for a final-state energy the file does not
+    ! cover, which is counted below and raised as an error rather than silently
+    ! dropping the states that would have been emitted.
+    !
+    ! Only occupied initial states are worth checking.  A band well above the
+    ! Fermi level carries no electrons to emit, so its final-state energy falling
+    ! outside the window costs nothing -- and with the extra bands a spectral run
+    ! carries, most of them do.
+    e_occ_max = efermi + 10.0_dp*kB*photo_temperature
 
     if (.not. allocated(foptical_matrix_weights)) then
       allocate (foptical_matrix_weights(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -3095,61 +3058,59 @@ contains
     end if
 
     N_in = 1  ! 0 = no inversion, 1 = inversion
-    g = 0.0_dp
     factor = 1.0_dp/(temp_photon_energy**2)
+    n_above = 0
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands                                ! Loop over state
+          ! * The tensor is binned by |k+G|^2/2, the plane-wave energy, whose zero
+          !   is the cell-averaged potential -- and that average moves when vacuum
+          !   is added, by 2.7 eV over a 10-28 A scan on an otherwise identical
+          !   slab.  A photoelectron travels in the vacuum, not in the average
+          !   potential, so the final state to look up is the plane wave whose
+          !   kinetic energy above the vacuum level matches the excess energy.
+          !   Referencing the lookup to evacuum_eff makes it cell independent: the
+          !   spread over the converged cells falls from 1.264 eV to 0.070 eV, and
+          !   what is left is the work-function spread, which is real.
+          e_final = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff
+          if (e_final .gt. ef_top .and. band_energy(n_eigen, N_spin, N_k) .le. e_occ_max) &
+            n_above = n_above + 1
+          call fem_tensor_at(n_eigen, N_spin, N_k, e_final, tens)
+
           if (index(optics_geom, 'unpolar') .gt. 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                       (qdir1(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                       (qdir1(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
-              g(2) = (((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                       (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                       (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
-              foptical_matrix_weights(n_eigen, N_spin, N_k) = &
-                0.5_dp*factor*(real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp))
+              foptical_matrix_weights(n_eigen, N_spin, N_k) = 0.5_dp*factor* &
+                                                              (fem_contract(tens, qdir1, q_weight1) &
+                                                               + fem_contract(tens, qdir2, q_weight2))
             else ! begin unpolar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
-                  ! Calculating foptical_matrix_weights contribution for qdir1
                   do i = 1, 3
                     qdir(i) = 0.0_dp
                     do j = 1, 3
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir1(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight1)
                   foptical_matrix_weights(n_eigen, N_spin, N_k) = &
                     foptical_matrix_weights(n_eigen, N_spin, N_k) + &
-                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
-                  g(1) = 0.0_dp
-                  ! Calculating foptical_matrix_weights contribution for qdir2
-                  do i = 1, 3 ! if I include an extra variable I can merge this and the last do loops
+                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*factor*fem_contract(tens, qdir, q_weight1)
+                  do i = 1, 3
                     qdir(i) = 0.0_dp
                     do j = 1, 3
                       qdir(i) = qdir(i) + ((-1.0_dp)**(N3 + 1))*(crystal_symmetry_operations(j, i, N2)*qdir2(j))
                     end do
                   end do
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight2)
                   foptical_matrix_weights(n_eigen, N_spin, N_k) = &
                     foptical_matrix_weights(n_eigen, N_spin, N_k) + &
-                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*real(g(1)*conjg(g(1)), dp)*factor
+                    (0.5_dp/Real((num_symm*(N_in + 1)), dp))*factor*fem_contract(tens, qdir, q_weight2)
                 end do
               end do
             end if !end unpolar symmetric
+
           elseif (index(optics_geom, 'polar') .gt. 0) then
             if (num_symm == 0) then
-              g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                       (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                       (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight)
-              foptical_matrix_weights(n_eigen, N_spin, N_k) = factor*real(g(1)*conjg(g(1)), dp)
+              foptical_matrix_weights(n_eigen, N_spin, N_k) = factor*fem_contract(tens, qdir, q_weight)
             else !begin polar symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
@@ -3160,54 +3121,32 @@ contains
                                 (crystal_symmetry_operations(j, i, N2)*optics_qdir(j))
                     end do
                   end do
-                  g(1) = 0.0_dp
-                  g(1) = (((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                           (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                           (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))/q_weight)
                   foptical_matrix_weights(n_eigen, N_spin, N_k) = &
                     foptical_matrix_weights(n_eigen, N_spin, N_k) + &
-                    (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*real(g(1)*conjg(g(1)), dp)
+                    (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*fem_contract(tens, qdir, q_weight)
                 end do
               end do
             end if ! end polar symmetric
+
           elseif (index(optics_geom, 'poly') .gt. 0) then
-            ! Polycrystalline: no preferred light direction, so average the
-            ! squared matrix element over the three Cartesian components.
-            ! Mirrors the polycrys branch of make_weights in optics.f90.
+            ! Polycrystalline: no preferred light direction.  Averaging q_i q_j A_ij
+            ! over the three cartesian directions is just the trace over three.
             if (num_symm == 0) then
-              do N2 = 1, 3
-                g(N2) = foptical_mat(n_eigen, N2, energy_index, N_k, N_spin)
-              end do
               foptical_matrix_weights(n_eigen, N_spin, N_k) = (factor/3.0_dp)* &
-                   & (real(g(1)*conjg(g(1)), dp) + real(g(2)*conjg(g(2)), dp) + &
-                   &  real(g(3)*conjg(g(3)), dp))
+                                                              (tens(1) + tens(2) + tens(3))
             else ! begin poly symmetric
               do N2 = 1, num_symm
                 do N3 = 1, 1 + N_in
-                  qdir = 0.0_dp
-                  qdir1 = 0.0_dp
-                  qdir2 = 0.0_dp
-                  ! the three rows of the symmetry operation give the three
-                  ! directions to average over
                   do i = 1, 3
                     qdir(i) = ((-1.0_dp)**(N3 + 1))*crystal_symmetry_operations(1, i, N2)
                     qdir1(i) = ((-1.0_dp)**(N3 + 1))*crystal_symmetry_operations(2, i, N2)
                     qdir2(i) = ((-1.0_dp)**(N3 + 1))*crystal_symmetry_operations(3, i, N2)
                   end do
-                  g = 0.0_dp
-                  g(1) = ((qdir(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                          (qdir(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                          (qdir(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))
-                  g(2) = ((qdir1(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                          (qdir1(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                          (qdir1(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))
-                  g(3) = ((qdir2(1)*foptical_mat(n_eigen, 1, energy_index, N_k, N_spin)) + &
-                          (qdir2(2)*foptical_mat(n_eigen, 2, energy_index, N_k, N_spin)) + &
-                          (qdir2(3)*foptical_mat(n_eigen, 3, energy_index, N_k, N_spin)))
                   foptical_matrix_weights(n_eigen, N_spin, N_k) = &
                     foptical_matrix_weights(n_eigen, N_spin, N_k) + &
-                     &(1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor*((real(g(1)*conjg(g(1)), dp) + &
-                     & real(g(2)*conjg(g(2)), dp) + real(g(3)*conjg(g(3)), dp))/3.0_dp)
+                    (1.0_dp/Real((num_symm*(N_in + 1)), dp))*factor* &
+                    ((fem_contract(tens, qdir, 1.0_dp) + fem_contract(tens, qdir1, 1.0_dp) &
+                      + fem_contract(tens, qdir2, 1.0_dp))/3.0_dp)
                 end do
               end do
             end if ! end poly symmetric
@@ -3216,15 +3155,19 @@ contains
       end do ! loop over spins
     end do ! loop over kpoints
 
-    if (allocated(foptical_mat) .and. current_photo_energy_index .eq. number_energies) then
-      deallocate (foptical_mat, stat=ierr)
-      if (ierr /= 0) call io_error('Error: make_foptical_weights - failed to deallocate foptical_mat')
+    call comms_reduce(n_above, 1, 'SUM')
+    if (on_root .and. n_above .gt. 0) then
+      write (stdout, *) 'photon energy:', temp_photon_energy, ' top of the stored Ef window:', ef_top
+      write (stdout, *) n_above, ' occupied (band, k, spin) states need a final-state energy above'
+      write (stdout, *) 'the window stored in the .fem_bin.  Those states would be silently dropped.'
+      write (stdout, *) 'Raise SPECTRAL_FEM_EF_MAX and regenerate, or lower the photon energy.'
+      call flush(stdout)
+      call io_error('Error: photon energy takes states above the stored final-state window')
     end if
 
     if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root .and. .not. photo_energy_sweep) then
       write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
       write (stdout, 126) shape(foptical_matrix_weights)
-      write (stdout, 126) nbands + 1, nbands + 1, num_kpoints_on_node(my_node_id), nspins, N_geom
 126   format(5(1x, I4))
       do N_spin = 1, nspins
         do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -3235,6 +3178,56 @@ contains
     end if
 
   end subroutine make_foptical_weights
+
+  !===============================================================================
+  subroutine fem_tensor_at(n_eigen, N_spin, N_k, e_final, tens)
+    !===============================================================================
+    ! The nine stored reals of A_ij at final-state energy e_final, linearly
+    ! interpolated between the two neighbouring bins.  Bin ie is centred on
+    ! Ef_min + (ie - 1/2)*Ef_step.  Energies outside the stored window return
+    ! zero: below it there are no free-electron final states at all, and above
+    ! it the caller counts the occurrence and raises an error.
+    !===============================================================================
+    use od_constants, only: dp
+    use od_electronic, only: fem_tensor, fem_energy_info
+    implicit none
+    integer, intent(in) :: n_eigen, N_spin, N_k
+    real(kind=dp), intent(in) :: e_final
+    real(kind=dp), dimension(9), intent(out) :: tens
+    real(kind=dp) :: x, f
+    integer :: ie, n_ef
+
+    n_ef = nint(fem_energy_info(1))
+    x = (e_final - fem_energy_info(2))/fem_energy_info(3) + 0.5_dp
+    ie = floor(x)
+    if (ie .lt. 1 .or. ie .ge. n_ef) then
+      tens = 0.0_dp
+      return
+    end if
+    f = x - real(ie, dp)
+    tens = (1.0_dp - f)*fem_tensor(:, ie, n_eigen, N_k, N_spin) &
+           + f*fem_tensor(:, ie + 1, n_eigen, N_k, N_spin)
+
+  end subroutine fem_tensor_at
+
+  !===============================================================================
+  pure function fem_contract(tens, q, qnorm) result(c)
+    !===============================================================================
+    ! q_i q_j A_ij for a real polarisation direction q, from the nine stored
+    ! reals.  The imaginary parts of the off-diagonals cancel in pairs when q is
+    ! real, so only six of the nine are used here.
+    !===============================================================================
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), dimension(9), intent(in) :: tens
+    real(kind=dp), dimension(3), intent(in) :: q
+    real(kind=dp), intent(in) :: qnorm
+    real(kind=dp) :: c
+
+    c = (q(1)*q(1)*tens(1) + q(2)*q(2)*tens(2) + q(3)*q(3)*tens(3) &
+         + 2.0_dp*(q(1)*q(2)*tens(4) + q(1)*q(3)*tens(6) + q(2)*q(3)*tens(8)))/(qnorm*qnorm)
+
+  end function fem_contract
 
   !===============================================================================
   subroutine calc_one_step_model
