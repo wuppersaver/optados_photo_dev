@@ -260,12 +260,19 @@ contains
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, photo_slab_middle, photo_layers_tops, iprint
+    use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, photo_slab_middle, photo_layers_tops, iprint, &
+      photo_slab_mode, SLAB_MODE_LAYERS
     implicit none
-    integer :: ierr, atom, counter, i, ic, atom_index, first, temp, atom_1, atom_2
+    integer :: ierr, atom, counter, i, j, ic, atom_index, first, temp, atom_1, atom_2
+    integer :: n_layers
     real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
-    integer, dimension(2)                    :: indices_top_bottom
-    real(kind=dp), dimension(2)              :: mean_heights = 0.0_dp
+    real(kind=dp)                            :: max_gap, typical_gap, layer_tol
+    real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid
+    integer, allocatable, dimension(:)       :: atoms_in_layer
+    logical                                  :: layers_from_input
+    ! Below this the atoms are all at the same height and no interlayer
+    ! spacing can be inferred from the structure (e.g. a graphene monolayer).
+    real(kind=dp), parameter                 :: min_layer_gap = 0.1_dp
     allocate (atom_order(num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atom_order failed')
 
@@ -316,10 +323,15 @@ contains
     ! User has given the slab center and top coordinates for each of
     ! the layers. We infer that the upper surface of the slab is the
     ! surface layer's top coordinate (in parameter.f90).
-    if (photo_slab_middle .gt. 0.0_dp) then
+    layers_from_input = (photo_slab_mode .eq. SLAB_MODE_LAYERS)
+    if (layers_from_input) then
       if (photo_layers_tops(1) .lt. atoms_pos_cart_photo(3, 1)) then
         call io_error('Error: the inferred top surface is below one or more atoms, something went wrong!')
       end if
+      ! Explicit layer tops always describe a multi-layer stack. Without this
+      ! single_layer keeps whatever the module variable happened to hold and
+      ! the atom-to-box assignment below branches on an undefined value.
+      single_layer = .false.
       num_boxes = size(photo_layers_tops, 1)
 
       if (.not. allocated(box_heights)) then
@@ -351,113 +363,145 @@ contains
       end if
       atoms_per_box = 0
     else
-      ! User has given the upper and lower surface and we now infer
-      ! the layers going from the midpoint of the two. We assume
-      ! that each layer has the same thickness.
+      ! ---------------------------------------------------------------------
+      ! Infer the layers by clustering the atoms in z.
+      !
+      ! Walk down the z-sorted atom list and start a new layer whenever the
+      ! gap to the previous atom exceeds a tolerance taken from the structure
+      ! itself. Because it is the gap that separates layers, rather than an
+      ! absolute grid of cut planes, rumpling inside a layer is absorbed,
+      ! every atom belongs to exactly one layer by construction, and no atom
+      ! can land on a box boundary and be silently dropped.
+      ! ---------------------------------------------------------------------
+      allocate (z_gaps(max(num_atoms - 1, 1)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of z_gaps failed')
+      z_gaps = 0.0_dp
+      do atom = 1, num_atoms - 1
+        z_gaps(atom) = atoms_pos_cart_photo(3, atom_order(atom)) - &
+                       atoms_pos_cart_photo(3, atom_order(atom + 1))
+      end do
 
-      ! determine the approximate middle of slab as reference
-      slab_middle_ref = (photo_slab_max + photo_slab_min)/2
-      ! find the nearest two atoms to the middle and determine their layers
-      indices_top_bottom = 1
-      do atom = 1, num_atoms
-        diff_temp = atoms_pos_cart_photo(3, atom_order(atom)) - slab_middle_ref
-        ! Do we have an odd number of layers? Then we only need to include
-        ! the innermost layer and move on.
-        if (abs(diff_temp) .lt. 0.5) then
-          indices_top_bottom(1) = atom_order(atom)
-          indices_top_bottom(2) = atom_order(atom + 1)
-          slab_middle_ref = atoms_pos_cart_photo(3, atom_order(atom)) - 1
-          exit
-        end if
-        if (diff_temp .gt. 0.0_dp) then
-          if (diff_temp .lt. diff_top) then
-            indices_top_bottom(1) = atom_order(atom)
-            diff_top = diff_temp
-          end if
-        end if
-        if (diff_temp .lt. 0.0_dp) then
-          if (abs(diff_temp) .lt. diff_bottom) then
-            indices_top_bottom(2) = atom_order(atom)
-            diff_bottom = abs(diff_temp)
-          end if
-        end if
-      end do
-      ! find potential atoms in the vicinity of the top and bottom atom within 0.5 A
-      ! and determing the mean z-coordinate of them (to get mean z-coord of a layer of atoms)
-      ! This way we can slightly change the height of the box if the layers are slightly
-      ! crumpled and the order of atoms does not influence our value.
-      do i = 1, 2
-        counter = 0
-        diff_top = atoms_pos_cart_photo(3, indices_top_bottom(i)) + 0.5
-        diff_bottom = atoms_pos_cart_photo(3, indices_top_bottom(i)) - 0.5
-        do atom = 1, num_atoms
-          if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
-              atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
-            counter = counter + 1
-            mean_heights(i) = mean_heights(i) + atoms_pos_cart_photo(3, atom_order(atom))
-          end if
-        end do
-        mean_heights(i) = mean_heights(i)/counter
-      end do
-      if (abs(mean_heights(1) - mean_heights(2)) .lt. 1.0E-2_dp) then
+      max_gap = 0.0_dp
+      if (num_atoms .gt. 1) max_gap = maxval(z_gaps(1:num_atoms - 1))
+
+      if (num_atoms .eq. 1 .or. max_gap .lt. min_layer_gap) then
+        ! All atoms at essentially the same height, so the thickness cannot be
+        ! inferred and has to come from the user's slab bounds.
         single_layer = .true.
+        layer_tol = huge(1.0_dp)
       else
         single_layer = .false.
+        ! Typical interlayer spacing = median of the "large" gaps. Gaps below
+        ! 10% of the largest are intra-layer rumpling and are excluded, so a
+        ! layer holding many atoms (a lateral supercell, where most gaps are
+        ! ~0) cannot drag the median down towards zero.
+        allocate (large_gaps(num_atoms - 1), stat=ierr)
+        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of large_gaps failed')
+        counter = 0
+        do atom = 1, num_atoms - 1
+          if (z_gaps(atom) .gt. 0.1_dp*max_gap) then
+            counter = counter + 1
+            large_gaps(counter) = z_gaps(atom)
+          end if
+        end do
+        ! insertion sort; counter is at most the number of layers, so small
+        do i = 2, counter
+          diff_temp = large_gaps(i)
+          j = i - 1
+          do while (j .ge. 1)
+            if (large_gaps(j) .le. diff_temp) exit
+            large_gaps(j + 1) = large_gaps(j)
+            j = j - 1
+          end do
+          large_gaps(j + 1) = diff_temp
+        end do
+        typical_gap = large_gaps((counter + 1)/2)
+        layer_tol = 0.5_dp*typical_gap
+        deallocate (large_gaps, stat=ierr)
+        if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of large_gaps failed')
       end if
-      write (stdout, *) 'mean_heights', mean_heights
-      ! determine the box height + box_volumes + new slab middle reference
-      slab_middle_ref = sum(mean_heights)/2
+
+      ! assign every atom to a layer
+      n_layers = 1
+      box_atom(1) = 1
+      do atom = 2, num_atoms
+        if (z_gaps(atom - 1) .gt. layer_tol) n_layers = n_layers + 1
+        box_atom(atom) = n_layers
+      end do
+
+      ! mean z of each layer - this, not a global spacing, is what sets the
+      ! box heights, so a relaxed surface layer is handled correctly
+      allocate (layer_centroid(n_layers), atoms_in_layer(n_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_centroid failed')
+      layer_centroid = 0.0_dp
+      atoms_in_layer = 0
+      do atom = 1, num_atoms
+        i = box_atom(atom)
+        layer_centroid(i) = layer_centroid(i) + atoms_pos_cart_photo(3, atom_order(atom))
+        atoms_in_layer(i) = atoms_in_layer(i) + 1
+      end do
+      do i = 1, n_layers
+        layer_centroid(i) = layer_centroid(i)/real(atoms_in_layer(i), dp)
+      end do
+
+      ! photo_slab_min/max bracket the whole slab, so the explicitly treated
+      ! region is its top half and everything below is covered by the bulk
+      ! extrapolation. An odd number of layers keeps the central one.
       if (single_layer) then
-        num_boxes = 2
+        num_boxes = 1
       else
-        num_boxes = ceiling((atoms_pos_cart_photo(3, atom_order(1)) - slab_middle_ref)/(mean_heights(1) - mean_heights(2)))
+        num_boxes = (n_layers + 1)/2
       end if
-      if (num_boxes .eq. 0) num_boxes = 1
 
       if (.not. allocated(box_heights)) then
         allocate (box_heights(num_boxes), stat=ierr)
         if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_heights failed')
       end if
-
-      if (single_layer) then
-        box_heights = photo_slab_max - photo_slab_min
-      else
-        box_heights = mean_heights(1) - mean_heights(2)
-      end if
-
       if (.not. allocated(box_volumes)) then
         allocate (box_volumes(num_boxes), stat=ierr)
         if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_volumes failed')
       end if
-      box_volumes = box_heights*cell_area
-
-      ! determine the number of boxes we need until we have reached the top of the slab
-      ! set up box top points as middle_reference + n(1...)*box_heights
       if (.not. allocated(boxes_top_z_coord)) then
-        allocate (boxes_top_z_coord(num_boxes))
+        allocate (boxes_top_z_coord(num_boxes), stat=ierr)
+        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of boxes_top_z_coord failed')
       end if
       if (.not. allocated(atoms_per_box)) then
-        allocate (atoms_per_box(num_boxes))
+        allocate (atoms_per_box(num_boxes), stat=ierr)
+        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atoms_per_box failed')
       end if
+
+      if (single_layer) then
+        box_heights = photo_slab_max - photo_slab_min
+        boxes_top_z_coord(1) = photo_slab_max
+      else
+        ! height of a box = centroid spacing to the layer below it
+        do i = 1, num_boxes
+          box_heights(i) = layer_centroid(i) - layer_centroid(i + 1)
+        end do
+        ! top of a box = midway between its centroid and the layer above
+        boxes_top_z_coord(1) = layer_centroid(1) + 0.5_dp*box_heights(1)
+        do i = 2, num_boxes
+          boxes_top_z_coord(i) = 0.5_dp*(layer_centroid(i - 1) + layer_centroid(i))
+        end do
+      end if
+      box_volumes = box_heights*cell_area
+
+      ! bottom of the deepest explicit box - where the bulk extrapolation starts
+      slab_middle_ref = boxes_top_z_coord(num_boxes) - box_heights(num_boxes)
+
       atoms_per_box = 0
-      current_top = slab_middle_ref
-      do i = num_boxes, 1, -1
-        boxes_top_z_coord(i) = current_top + box_heights(i)
-        ! write (stdout, *) boxes_top_z_coord(i), current_top
-        current_top = boxes_top_z_coord(i)
+      do i = 1, num_boxes
+        atoms_per_box(i) = atoms_in_layer(i)
       end do
+
+      deallocate (z_gaps, layer_centroid, atoms_in_layer, stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of clustering arrays failed')
     end if
 
-    ! put each of the atoms into a box
-    if (single_layer) then
-      i = 1
-      counter = 0
-      do atom = 1, num_atoms
-        counter = counter + 1
-        box_atom(atom) = i
-      end do
-      atoms_per_box(i) = counter
-    else
+    ! Put each of the atoms into a box. The inferred-layer path above has
+    ! already done this as part of the clustering; only the user-supplied
+    ! layer tops still need atoms sorted into the given boundaries.
+    if (layers_from_input) then
       do i = 1, num_boxes
         counter = 0
         diff_top = boxes_top_z_coord(i)
@@ -474,15 +518,38 @@ contains
     end if
 
     max_atoms = sum(atoms_per_box)
+
+    ! An empty box divides by zero in the optics and leaves a hole in the
+    ! layer-by-layer light attenuation; an atom that was assigned to no box at
+    ! all keeps box_atom = 1000 and would index I_layer out of bounds. Both
+    ! mean the supplied boundaries do not match the structure, so stop with a
+    ! message rather than silently produce nonsense.
+    do i = 1, num_boxes
+      if (atoms_per_box(i) .eq. 0) then
+        if (on_root) write (stdout, '(1x,a,i0,a,i0,a)') &
+          'Error: layer/box ', i, ' of ', num_boxes, ' contains no atoms.'
+        call io_error('Error: analyse_geometry - empty layer/box. Check photo_layers_tops '// &
+                      'or photo_slab_min/photo_slab_max against the structure.')
+      end if
+    end do
+    do atom = 1, max_atoms
+      if (box_atom(atom) .gt. num_boxes) then
+        if (on_root) write (stdout, '(1x,a,i0,a,f12.7)') &
+          'Error: atom ', atom_order(atom), ' was not assigned to any layer/box, z = ', &
+          atoms_pos_cart_photo(3, atom_order(atom))
+        call io_error('Error: analyse_geometry - atom outside every layer/box. Check the slab bounds.')
+      end if
+    end do
+
     ! We want to artifically set the box of the bulk slab to num_boxes + 1
     ! since we later use this to access I_layer in the QE calculation
     box_atom(max_atoms + 1) = num_boxes + 1
 
     if (on_root) then
-      ! Only the upper and lower surface have been given (hence photo_slab_middle .lt. 0)
+      ! Only the upper and lower surface have been given (SLAB_MODE_BOUNDS)
       ! so with debug printing on, the user gets the inferred box height, number of
       ! boxes/layers and the # of atoms in each layer/box
-      if (iprint .gt. 2 .and. photo_slab_middle .lt. 0.0_dp) then
+      if (iprint .gt. 2 .and. .not. layers_from_input) then
         write (stdout, 420) '+', 'box height (Ang) = ', box_heights(1), ',', '# of boxes = ', num_boxes, '+'
 420     format(1x, a1, 5x, a19, F13.9, a1, 12x, a13, I4, 9x, a1)
         write (stdout, 421) '+', '# of atoms in each box:', (atoms_per_box(i), i=1, num_boxes)
@@ -502,7 +569,7 @@ contains
       end do
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
       write (stdout, 226) '|  Max number of atoms:', max_atoms, '  Total number of boxes:', num_boxes, '   |'
-      if (photo_slab_middle .gt. 0.0_dp) then
+      if (layers_from_input) then
         write (stdout, '(1x,a1,76x,a1)') '|', '|'
         do i = 1, num_boxes
           write (stdout, 228) '|  Volume of box for layer ', i, ' (Ang^3) :         ', box_volumes(i), '|'
