@@ -2474,7 +2474,7 @@ contains
                  *transmit_prob(n_eigen_final, N_k, N_spin) &
                  *electrons_per_state*kpoint_weight(N_k) &
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                 *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
@@ -2970,7 +2970,8 @@ contains
     !===============================================================================
     use od_constants, only: dp, hbar, e_mass
     use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, foptical_mat, fem_energy_info, efermi
-    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, &
+      & crystal_symmetry_operations
     use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_energy_sweep, jdos_spacing,&
      & iprint
     use od_io, only: io_error, stdout
@@ -3250,7 +3251,7 @@ contains
     use od_parameters, only: scissor_op, photo_temperature, devel_flag, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_comms, only: on_root, comms_recv, comms_send
+    use od_comms, only: on_root, comms_recv, comms_send, comms_reduce
     use od_io, only: stdout, io_error, io_file_unit, io_time, io_date
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
@@ -3262,6 +3263,8 @@ contains
     real(kind=dp) :: gk_factor, te_gk_factor, conduction_band
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
+    ! per-band breakdown of the QE integrand, for devel_flag 'print_1step_terms'
+    real(kind=dp), allocatable, dimension(:) :: dbg_m, dbg_fd, dbg_pdos, dbg_gk, dbg_qe
 
     if (index(devel_flag, 'write_fem_matrix') .gt. 0) then
       kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
@@ -3354,6 +3357,14 @@ contains
       end do
     end do
 
+    ! Optional per-band breakdown of the surface layer's QE integrand: one row
+    ! per band, so it stays small, unlike a dump of every term at every gk/k.
+    if (index(devel_flag, 'print_1step_terms') .gt. 0) then
+      allocate (dbg_m(nbands), dbg_fd(nbands), dbg_pdos(nbands), dbg_gk(nbands), dbg_qe(nbands), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of the 1step term breakdown failed')
+      dbg_m = 0.0_dp; dbg_fd = 0.0_dp; dbg_pdos = 0.0_dp; dbg_gk = 0.0_dp; dbg_qe = 0.0_dp
+    end if
+
     do atom = 1, max_atoms
       if (iprint .gt. 2 .and. on_root .and. (atom .le. max_atoms)) then
         write (stdout, '(1x,a1,a38,i4,a3,i4,1x,16x,a11)') ',', "Calculating atom ", atom, " of", max_atoms, ".lt.-- QE-1S |"
@@ -3369,11 +3380,22 @@ contains
                                  *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
+            if (allocated(dbg_m) .and. atom .eq. 1) then
+              dbg_m(n_eigen) = dbg_m(n_eigen) + kpoint_weight(N_k)*foptical_matrix_weights(n_eigen, N_spin, N_k)
+              dbg_fd(n_eigen) = dbg_fd(n_eigen) + kpoint_weight(N_k)*fermi_dirac(n_eigen, N_spin, N_k)
+              dbg_pdos(n_eigen) = dbg_pdos(n_eigen) + kpoint_weight(N_k) &
+                                  *pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                                  /pdos_weights_k_band(n_eigen, N_spin, N_k)
+            end if
             do gdx = 1, photo_gkmax
               gk_factor = gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                           *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                           *emission_gauss(gdx, n_eigen, N_spin, N_k)
               te_gk_factor = gk_factor*E_transverse(gdx, n_eigen, N_spin, N_k)
+              if (allocated(dbg_gk) .and. atom .eq. 1) then
+                dbg_gk(n_eigen) = dbg_gk(n_eigen) + kpoint_weight(N_k)*gk_factor
+                dbg_qe(n_eigen) = dbg_qe(n_eigen) + temp_contribution*gk_factor
+              end if
               qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*gk_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
@@ -3405,7 +3427,7 @@ contains
                                  *electrons_per_state*kpoint_weight(N_k) &
                                  *(I_layer(box_atom(max_atoms + 1), current_photo_energy_index)) &
                                  *fermi_dirac(n_eigen, N_spin, N_k) &
-                                 *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(max_atoms + 1)) &
+                                 *(pdos_weights_boxes(n_eigen, N_spin, N_k, num_boxes) &
                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
             do gdx = 1, photo_gkmax
@@ -3437,6 +3459,25 @@ contains
     ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) then
     !   write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     ! end if
+
+    if (allocated(dbg_m)) then
+      call comms_reduce(dbg_m(1), nbands, 'SUM')
+      call comms_reduce(dbg_fd(1), nbands, 'SUM')
+      call comms_reduce(dbg_pdos(1), nbands, 'SUM')
+      call comms_reduce(dbg_gk(1), nbands, 'SUM')
+      call comms_reduce(dbg_qe(1), nbands, 'SUM')
+      if (on_root) then
+        write (stdout, '(1x,a78)') '+------------- 1step QE integrand, surface layer, per band ------------------+'
+        write (stdout, '(1x,a6,5(1x,a17))') 'band', 'foptical', 'fermi_dirac', 'pdos_ratio', 'sum_gk', 'contribution'
+        do n_eigen = 1, nbands
+          write (stdout, '(1x,i6,5(1x,E17.9E3))') n_eigen, dbg_m(n_eigen), dbg_fd(n_eigen), &
+            dbg_pdos(n_eigen), dbg_gk(n_eigen), dbg_qe(n_eigen)
+        end do
+        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
+      end if
+      deallocate (dbg_m, dbg_fd, dbg_pdos, dbg_gk, dbg_qe, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate the 1step term breakdown')
+    end if
 
     if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) call print_1step_kpt_qe
 
@@ -3978,7 +4019,7 @@ contains
                  *transmit_prob(n_eigen_final, N_k, N_spin) &
                  *electrons_per_state*kpoint_weight(N_k) &
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                 *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
@@ -4559,7 +4600,7 @@ contains
                  *transmit_prob(n_eigen_final, N_k, N_spin) &
                  *electrons_per_state*kpoint_weight(N_k) &
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                 *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
@@ -5300,7 +5341,7 @@ contains
                    *transmit_prob(n_eigen_final, N_k, N_spin) &
                    *electrons_per_state*kpoint_weight(N_k) &
                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                   *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
@@ -5933,7 +5974,7 @@ contains
                    *transmit_prob(n_eigen_final, N_k, N_spin) &
                    *electrons_per_state*kpoint_weight(N_k) &
                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
+                   *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
