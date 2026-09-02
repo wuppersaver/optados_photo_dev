@@ -509,7 +509,7 @@ contains
       read (dummy(str_pos + 11:), *) nbands
       read (band_unit, '(a)') dummy
       str_pos = index(dummy, 'units)')
-      read (dummy(str_pos + 6:), '(f12.4)') efermi_castep
+      read (dummy(str_pos + 6:), *) efermi_castep
       read (band_unit, '(a)') dummy
       read (band_unit, *) real_lattice(:, 1)
       read (band_unit, *) real_lattice(:, 2)
@@ -688,7 +688,7 @@ contains
       read (dummy(str_pos + 11:), *) nbands
       read (band_unit, '(a)') dummy
       str_pos = index(dummy, 'units)')
-      read (dummy(str_pos + 6:), '(f12.4)') efermi_castep
+      read (dummy(str_pos + 6:), *) efermi_castep
       read (band_unit, '(a)') dummy
       read (band_unit, *) real_lattice(:, 1)
       read (band_unit, *) real_lattice(:, 2)
