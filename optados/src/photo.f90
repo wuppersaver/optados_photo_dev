@@ -1670,7 +1670,7 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_imfp_value, photo_imfp_model, iprint, scissor_op
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint, scissor_op
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
     real(kind=dp) :: tolerance, conduction_band, total_depth
@@ -1737,7 +1737,8 @@ contains
           do n_eigen = 1, nbands
             conduction_band = 0.0_dp
             if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
-            scaled_x = ((band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) - efermi)/scale_factor) + 1
+            scaled_x = ((band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) + temp_photon_energy - efermi) &
+                        /scale_factor) + 1
             if ((1.0_dp - scaled_x) .gt. 1E-10_dp) cycle
             g1 = LOG(scaled_x - 1.0_dp) + ((8.0_dp/3.0_dp) - 2.0_dp*LOG(2.0_dp))
             if (scaled_x .lt. 2.0_dp) then
