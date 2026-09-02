@@ -1867,7 +1867,7 @@ contains
                         exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_heights(num_boxes)*1E-10))
     do i = 2, num_layers
       bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
-                          exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*i*box_heights(num_boxes)*1E-10))
+                          exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_heights(num_boxes)*1E-10))
     end do
 
     if ((index(photo_imfp_model, 'layers') .gt. 0) .or. (index(photo_imfp_model, 'const') .gt. 0)) then
@@ -1877,7 +1877,7 @@ contains
             do n_eigen = 1, nbands
               do gdx = 1, photo_gkmax
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes)/ &
+                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/ &
                               cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-230) is ~1E-100, this should be more than enough precision.
@@ -1898,7 +1898,7 @@ contains
             do n_eigen = 1, nbands
               do gdx = 1, photo_gkmax
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes)/ &
+                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/ &
                               cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-230) is ~1E-100, this should be more than enough precision.
@@ -2356,7 +2356,7 @@ contains
                                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                                    *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
                                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                                  *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 ! do the gkgrid_dependent part
                 gk_factor = gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -2405,7 +2405,7 @@ contains
               do gdx = 1, photo_gkmax
                 gk_factor = gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *emission_gauss(gdx, n_eigen_init, N_spin, N_k) &
-                            *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1)
+                            *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1)
                 te_gk_factor = gk_factor*E_transverse(gdx, n_eigen_init, N_spin, N_k)
                 qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1) = &
                   qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1) + temp_contribution*gk_factor
