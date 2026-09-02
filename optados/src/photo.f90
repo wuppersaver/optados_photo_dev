@@ -3869,7 +3869,7 @@ contains
                   *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
-                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -3904,7 +3904,7 @@ contains
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -4414,7 +4414,7 @@ contains
                   *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
-                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -4467,7 +4467,7 @@ contains
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -5132,11 +5132,11 @@ contains
                     *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                     *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
-                    *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                    *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                   do gdx = 1, photo_gkmax
                     gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                                 *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                                *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                *electron_esc(gdx, n_eigen_init, N_spin, N_k, atom) &
                                 *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
                     qe_contrib = gk_factor*temp_contribution*k_prefactor
                     total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
@@ -5198,11 +5198,11 @@ contains
                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                    *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                              *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                              *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                               *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
                   qe_contrib = gk_factor*temp_contribution*k_prefactor
                   total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
@@ -5772,11 +5772,11 @@ contains
                     *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                     *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
-                    *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                    *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                   do gdx = 1, photo_gkmax
                     gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                                 *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                                *electron_esc(gdx, n_eigen_final, N_spin, N_k, atom) &
+                                *electron_esc(gdx, n_eigen_init, N_spin, N_k, atom) &
                                 *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
                     current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
                     qe_contrib = k_prefactor*temp_contribution*gk_factor
@@ -5831,11 +5831,11 @@ contains
                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
                    *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(max_atoms)) &
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
-                  *(1.0_dp + field_emission(n_eigen_final, N_spin, N_k))
+                  *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
-                              *electron_esc(gdx, n_eigen_final, N_spin, N_k, max_atoms + 1) &
+                              *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                               *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
                   current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
                   qe_contrib = temp_contribution*gk_factor*k_prefactor
