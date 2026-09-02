@@ -888,7 +888,7 @@ contains
       close (unit=ome_unit)
     end if
 
-    if (index(photo_model, 'dosds') == 0) then
+    if (index(photo_model, 'dosds') .eq. 0) then
       allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics  - allocation of projected_matrix_weights failed')
       do box = 1, num_boxes                           ! Loop over boxes
@@ -934,7 +934,6 @@ contains
         call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
 
         if (on_root .and. iprint .gt. 2) then
-          N_geom = size(matrix_weights, 5)
           write (atom_s, '(I3)') box + 100
           open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
           write (wjdos_unit, '(1x,a28)') '############################'
@@ -945,7 +944,7 @@ contains
           do is = 1, nspins
             write (wjdos_unit, *) 'Spin Channel :', is
             do idos = 1, jdos_nbins
-              write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:N_geom))
+              write (wjdos_unit, *) E(idos), ' , ', sum(weighted_jdos(idos, is, 1:size(matrix_weights, 5)))
             end do
           end do
           close (unit=wjdos_unit)
@@ -974,6 +973,7 @@ contains
               dos_matrix_weights(N_geom, n_eigen, :, :) = matrix_weights(n_eigen, n_eigen, :, :, N_geom)
             end do
           end do
+          N_geom = size(matrix_weights, 5)
           call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
           weighted_dos_at_e = weighted_dos_at_e/atoms_per_box(box)
         end if
