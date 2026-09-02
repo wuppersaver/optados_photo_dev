@@ -130,6 +130,13 @@ module od_parameters
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
   real(kind=dp), public, save :: photo_slab_middle
+  ! How the user described the slab. Set once, in param_read, by looking at
+  ! which keywords are present; everything downstream branches on this
+  ! instead of re-deriving the intent from the values themselves.
+  integer, public, parameter  :: SLAB_MODE_UNUSED = 0   ! not a photoemission run
+  integer, public, parameter  :: SLAB_MODE_BOUNDS = 1   ! slab_min + slab_max, layers inferred
+  integer, public, parameter  :: SLAB_MODE_LAYERS = 2   ! slab_middle + layers_tops, layers given
+  integer, public, save       :: photo_slab_mode
   integer, public, save       :: photo_len_layers_value
   real(kind=dp), dimension(:), allocatable, public, save :: photo_layers_tops
   real(kind=dp), public, save :: photo_work_function
@@ -182,6 +189,9 @@ contains
     !local variables
     integer :: i_temp, loop, ierr
     logical :: found
+    ! Presence flags kept separate from `found`, which is overwritten by every
+    ! param_get_keyword call and so cannot be used for cross-keyword checks.
+    logical :: has_slab_min, has_slab_max, has_slab_middle, has_layers_tops
     character(len=20), allocatable :: task_string(:)
     character(len=20) :: c_string
 
@@ -479,7 +489,7 @@ contains
     call param_get_keyword('photo_photon_min', found, r_value=photo_photon_min)
     photo_photon_max = -2.0_dp
     call param_get_keyword('photo_photon_max', found, r_value=photo_photon_max)
-    if (((photo_photon_min .lt. 1.0e-12_dp) .or. (photo_photon_min .lt. 1.0e-12_dp)) .and. photo_energy_sweep) &
+    if (((photo_photon_min .lt. 1.0e-12_dp) .or. (photo_photon_max .lt. 1.0e-12_dp)) .and. photo_energy_sweep) &
       call io_error('Error: both max and min photon values < 0. Something has gone wrong.')
     if (photo_photon_min .gt. photo_photon_max .and. photo_energy_sweep) &
       call io_error('Error: max photon value < min photon value or they have not been set')
@@ -488,46 +498,77 @@ contains
     if (photo .and. .not. found) &
       call io_error('Error: work function not found, please set workfunction for photoemission calculation')
 
+    ! ------------------------------------------------------------------
+    ! Slab geometry.
+    !
+    ! There are exactly two supported ways to describe the slab:
+    !   SLAB_MODE_BOUNDS : photo_slab_min + photo_slab_max, layers inferred
+    !   SLAB_MODE_LAYERS : photo_slab_middle + photo_layers_tops, layers given
+    !
+    ! Read -> classify -> derive -> validate, in that order. Presence of a
+    ! keyword is captured in its own logical rather than being reconstructed
+    ! afterwards from a sentinel value, so the initial values below are only
+    ! placeholders and never decide anything. Keeping derivation (step 3)
+    ! ahead of the numeric checks (step 4) is what stops a value being tested
+    ! before it has been assigned.
+    ! ------------------------------------------------------------------
+
+    ! 1. read
     photo_slab_min = -2.0_dp
-    call param_get_keyword('photo_slab_min', found, r_value=photo_slab_min)
+    call param_get_keyword('photo_slab_min', has_slab_min, r_value=photo_slab_min)
     photo_slab_max = -1.0_dp
-    call param_get_keyword('photo_slab_max', found, r_value=photo_slab_max)
-
-    ! Does max > min
-    ! this is false if only slab_max is set and slab_middle will be set
-    ! this is also false if slab_min and slab_max are set correctly
-    if (photo_slab_max .lt. photo_slab_min) then
-      call io_error('Error: the supplied slab_max value is less than the slab_min value, max > min must be true')
-    end if
-
+    call param_get_keyword('photo_slab_max', has_slab_max, r_value=photo_slab_max)
     photo_slab_middle = -0.5_dp
-    call param_get_keyword('photo_slab_middle', found, r_value=photo_slab_middle)
-    if (found .and. photo_slab_middle .lt. 0.0_dp) then
-      call io_error('Error: photo_slab_middle must be a positive value!')
-    end if
-
-    ! If slab_min and slab_middle have been set - not desired - then slab_max < slab_middle
-    ! If none of the three are set - not desired - slab_max < slab_middle
-    if ((photo_slab_max .lt. photo_slab_middle) .and. photo) &
-      call io_error('Error: photo_slab_max < photo_slab_middle - either no slab parameters have been set or they are swapped')
-
-    ! This is only true if photo_slab_min has been left out by mistake
-    ! Otherwise slab_middle > 0 and slab_max > slab_middle
-    if ((photo_slab_middle .lt. -1.0e-12_dp) .and. (photo_slab_min .lt. -1.0e-12_dp) .and. photo) &
-      call io_error('Error: both slab middle < 0 and slab min < 0, so something is wrong with the slab boundaries')
-
+    call param_get_keyword('photo_slab_middle', has_slab_middle, r_value=photo_slab_middle)
     i_temp = 0
-    call param_get_vector_length('photo_layers_tops', found, i_temp)
-    if (photo_slab_middle .lt. 0.0_dp .and. found) then
-      call io_error('Error: the tops of layers must be defined with photo_layers_tops when defining photo_slab_middle!')
+    call param_get_vector_length('photo_layers_tops', has_layers_tops, i_temp)
+    photo_len_layers_value = i_temp
+    allocate (photo_layers_tops(max(i_temp, 1)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_layers_tops')
+    photo_layers_tops = 0.0_dp
+    if (has_layers_tops) &
+      call param_get_keyword_vector('photo_layers_tops', found, i_temp, r_value=photo_layers_tops)
+
+    ! 2. classify - on presence only, no numeric comparisons yet
+    if (.not. photo) then
+      photo_slab_mode = SLAB_MODE_UNUSED
+    else if (has_slab_middle .or. has_layers_tops) then
+      if (.not. has_slab_middle) call io_error('Error: photo_layers_tops was given without '// &
+                                               'photo_slab_middle - the two must be set together')
+      if (.not. has_layers_tops) call io_error('Error: photo_slab_middle was given without '// &
+                                               'photo_layers_tops - the two must be set together')
+      if (has_slab_min) call io_error('Error: photo_slab_min cannot be combined with '// &
+                                      'photo_layers_tops - use either the slab bounds or the layer tops')
+      photo_slab_mode = SLAB_MODE_LAYERS
+    else if (has_slab_min .and. has_slab_max) then
+      photo_slab_mode = SLAB_MODE_BOUNDS
+    else if (has_slab_min .or. has_slab_max) then
+      call io_error('Error: photo_slab_min and photo_slab_max must be set together')
+    else
+      call io_error('Error: no slab geometry given - set either photo_slab_min and '// &
+                    'photo_slab_max, or photo_slab_middle and photo_layers_tops')
     end if
 
-    photo_len_layers_value = i_temp
+    ! 3. derive
+    if (photo_slab_mode .eq. SLAB_MODE_LAYERS) photo_slab_max = photo_layers_tops(1)
 
-    allocate (photo_layers_tops(i_temp), stat=ierr)
-    if (ierr /= 0) call io_error('Error: param_read - allocation failed for photo_layers_tops')
-    call param_get_keyword_vector('photo_layers_tops', found, i_temp, r_value=photo_layers_tops)
-    if (photo_slab_middle .gt. 0.0_dp) photo_slab_max = photo_layers_tops(1)
+    ! 4. validate - each test has a single unambiguous cause
+    select case (photo_slab_mode)
+    case (SLAB_MODE_BOUNDS)
+      if (photo_slab_max .le. photo_slab_min) &
+        call io_error('Error: photo_slab_max must be greater than photo_slab_min')
+    case (SLAB_MODE_LAYERS)
+      if (photo_slab_middle .lt. 0.0_dp) &
+        call io_error('Error: photo_slab_middle must be a positive value!')
+      do i_temp = 2, photo_len_layers_value
+        if (photo_layers_tops(i_temp) .ge. photo_layers_tops(i_temp - 1)) &
+          call io_error('Error: photo_layers_tops must be strictly decreasing, '// &
+                        'starting from the top surface')
+      end do
+      if (photo_slab_middle .ge. photo_layers_tops(photo_len_layers_value)) &
+        call io_error('Error: photo_slab_middle must lie below the deepest entry '// &
+                      'in photo_layers_tops')
+    end select
 
     ! Electric field in V/m
     photo_elec_field = 0.00_dp
@@ -1845,6 +1886,7 @@ contains
     call comms_bcast(photo_slab_max, 1)
     call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_slab_middle, 1)
+    call comms_bcast(photo_slab_mode, 1)
     call comms_bcast(photo_len_layers_value, 1)
     if (photo_len_layers_value .gt. 0) then
       if (.not. on_root) then

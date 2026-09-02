@@ -2783,7 +2783,8 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
       scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
-      num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle
+      num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle, &
+      photo_slab_mode, SLAB_MODE_LAYERS
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins
     use od_jdos_utils, only: jdos_nbins
@@ -2821,7 +2822,7 @@ contains
 
     width = 0.0_dp
     delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
-    if (photo_slab_middle .gt. 0.0_dp) then
+    if (photo_slab_mode .eq. SLAB_MODE_LAYERS) then
       half_slab_height = photo_slab_max - photo_slab_middle
     else
       half_slab_height = photo_slab_max - slab_middle_ref
