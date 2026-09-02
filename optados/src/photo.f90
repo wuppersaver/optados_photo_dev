@@ -92,6 +92,8 @@ module od_photo
   integer :: max_atoms
   integer :: max_bin_e, max_bin_k
   real(kind=dp) :: max_e_kinetic, max_k_transverse, plot_extra_upper = 1.0_dp
+  ! Margin added to the transverse momentum axis of the E_kin vs p maps, in 1/A.
+  real(kind=dp) :: k_extra_padding = 0.2_dp
   real(kind=dp) :: q_weight
   ! Added by Felix Mildner, 12/2022 and later
   integer, allocatable, dimension(:)  :: index_energy
@@ -4104,8 +4106,11 @@ contains
     end do
     call comms_reduce(max_k_transverse, 1, "MAX")
     call comms_bcast(max_k_transverse, 1)
-    ! Get max bin with some allowance
-    max_bin_k = ceiling((max_k_transverse + 0.2)/photo_pmat_bin_width)
+    ! Pad the extent so the gaussian broadening of the outermost contributions
+    ! is shown rather than cut off. The padded value is kept, because it is what
+    ! the header reports as the extent of the momentum axis.
+    max_k_transverse = max_k_transverse + k_extra_padding
+    max_bin_k = ceiling(max_k_transverse/photo_pmat_bin_width)
 
     ! calculating upper bound of energy range with some extra for plotting
     max_e_kinetic = temp_photon_energy - work_function_eff + plot_extra_upper
@@ -4132,6 +4137,11 @@ contains
     gauss_k = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
+    ! Reset the running total of unbroadened contributions. It is a module
+    ! variable, so without this it keeps its value from the previous photon
+    ! energy of a sweep and qe_norm below normalises the matrix to the QE
+    ! summed over every step so far instead of this one.
+    total_be_kmat_contribs = 0.0_dp
 
     if (index(photo_model, '3step') .gt. 0) then
       do atom = 1, max_atoms
@@ -4366,8 +4376,13 @@ contains
     window_width = 6
     k_window = window_width*ceiling(k_broadening/photo_pmat_bin_width)
     e_window = window_width*ceiling(photo_bindenergy_broadening/photo_pmat_bin_width)
-    ! get the maximum k as the k of a PW with E_excess+0.5 eV
+    ! Get the maximum k as the k of a PW with E_excess+0.5 eV. Unlike the
+    ! crystal-momentum variant this cannot be taken from the k-point grid --
+    ! the G+k sphere would make the matrices enormous -- so it is bounded here
+    ! and then padded by the same allowance, again so that the broadening of
+    ! the outermost contributions is not cut off.
     max_k_transverse = sqrt((2*e_mass*((temp_photon_energy - work_function_eff + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
+    max_k_transverse = max_k_transverse + k_extra_padding
     max_bin_k = ceiling(max_k_transverse/photo_pmat_bin_width)
 
     call elec_read_gk_grid()
@@ -4397,6 +4412,11 @@ contains
     gauss_k = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
+    ! Reset the running total of unbroadened contributions. It is a module
+    ! variable, so without this it keeps its value from the previous photon
+    ! energy of a sweep and qe_norm below normalises the matrix to the QE
+    ! summed over every step so far instead of this one.
+    total_be_kmat_contribs = 0.0_dp
 
     if (index(photo_model, '3step') .gt. 0) then
 
@@ -4735,6 +4755,11 @@ contains
     gauss_y = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
+    ! Reset the running total of unbroadened contributions. It is a module
+    ! variable, so without this it keeps its value from the previous photon
+    ! energy of a sweep and qe_norm below normalises the matrix to the QE
+    ! summed over every step so far instead of this one.
+    total_be_kmat_contribs = 0.0_dp
     ! array assignment for turning E_kin into electron momentum p
     ! along surface normal, offset by the minimal z_value, included
     ! in the printout
@@ -5084,6 +5109,11 @@ contains
     gauss_y = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
+    ! Reset the running total of unbroadened contributions. It is a module
+    ! variable, so without this it keeps its value from the previous photon
+    ! energy of a sweep and qe_norm below normalises the matrix to the QE
+    ! summed over every step so far instead of this one.
+    total_be_kmat_contribs = 0.0_dp
     ! conditional array assignment for turning E_kin into electron momentum p
     ! along surface normal
     where (E_kinetic - E_transverse .gt. 0.0_dp)
@@ -5870,7 +5900,6 @@ contains
     if (index(photo_model, '1step') .gt. 0) then
       do nsymm_op = 1, num_crystal_symmetry_operations
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
-        current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
         do atom = 1, max_atoms + 1
           ! do atom = 1, 1
           do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -5958,7 +5987,7 @@ contains
       write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
       write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
       write (matrix_unit, '(a44,f9.5)') '## Binding energy broadening width   [eV] : ', photo_bindenergy_broadening
-      write (matrix_unit, '(a19,i10,a3,i10,a2)') '## Matrix Shape                           : ( ', px_max, ' , ', py_max, ' )'
+      write (matrix_unit, '(a46,i10,a3,i10,a2)') '## Matrix Shape                           : ( ', px_max, ' , ', py_max, ' )'
 
       write (out_string, '(I0,"(1x,",a,")")') px_max, 'ES25.12E3'
       do ydx = 1, py_max
