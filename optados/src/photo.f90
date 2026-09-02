@@ -975,7 +975,13 @@ contains
           end do
           N_geom = size(matrix_weights, 5)
           call dos_utils_calculate_at_e(efermi, dos_at_e, dos_matrix_weights, weighted_dos_at_e)
-          weighted_dos_at_e = weighted_dos_at_e/atoms_per_box(box)
+          ! No per-atom normalisation here: weighted_dos_at_e is the sum over the
+          ! atoms in the box, exactly like weighted_jdos, and calc_epsilon_2
+          ! divides both by the same box_volumes(box). Dividing only the
+          ! intraband term by atoms_per_box would give the two terms different
+          ! normalisations and would break lateral supercells, where doubling
+          ! the in-plane cell correctly doubles box_volumes but must not also
+          ! introduce a spurious 1/N_atoms.
         end if
 
         if (on_root) then
