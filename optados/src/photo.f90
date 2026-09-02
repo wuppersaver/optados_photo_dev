@@ -1670,7 +1670,8 @@ contains
             elseif ((E_y(gdx, n_eigen, N_spin, N_k) .lt. tol)) then
               phi_arpes(gdx, n_eigen, N_spin, N_k) = 0.0_dp
             else
-             phi_arpes(gdx, n_eigen, N_spin, N_k) = atan2(E_y(gdx, n_eigen, N_spin, N_k), E_x(gdx, n_eigen, N_spin, N_k))*rad_to_deg
+              phi_arpes(gdx, n_eigen, N_spin, N_k) = &
+                atan2(E_y(gdx, n_eigen, N_spin, N_k), E_x(gdx, n_eigen, N_spin, N_k))*rad_to_deg
             end if
 
             ! Emission angle theta is the angle between emitted
