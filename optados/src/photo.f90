@@ -286,9 +286,15 @@ contains
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_atom failed')
     box_atom = 1000
 
-    ! Check that we have gamma = 90 deg as that is currently assumed for a lot of calculations!!
-    if (real_lattice(3, 1) .gt. 1.0E-5_dp .and. real_lattice(3, 2) .gt. 1.0E-5_dp) then
-      call io_error('Error: analyse_geometry - The c axis is not parallel to the cart. z axis - not currently implemented!')
+    ! real_lattice is stored column-wise, so (3,1) and (3,2) are the z-components
+    ! of a and b. Both must vanish for the slab normal to be cartesian z, which
+    ! a lot of what follows assumes, and which makes cell_area = cell_volume /
+    ! real_lattice(3,3) exact. Either one being non-zero breaks that, and a tilt
+    ! in the negative direction breaks it just as badly as a positive one, so the
+    ! test has to be .or. on the magnitudes.
+    if (abs(real_lattice(3, 1)) .gt. 1.0E-5_dp .or. abs(real_lattice(3, 2)) .gt. 1.0E-5_dp) then
+      call io_error('Error: analyse_geometry - the a and b lattice vectors are not in the cart. xy plane &
+      &(the slab normal is not along z) - not currently implemented!')
     end if
 
     do atom_1 = 1, num_atoms - 1
@@ -1822,12 +1828,15 @@ contains
                         /scale_factor) + 1
             if ((1.0_dp - scaled_x) .gt. 1E-10_dp) cycle
             g1 = LOG(scaled_x - 1.0_dp) + ((8.0_dp/3.0_dp) - 2.0_dp*LOG(2.0_dp))
+            ! g2 is a property of this state alone. It has to start from zero every
+            ! time: accumulating onto whatever the previous state left behind made
+            ! the IMFP depend on how many states preceded it, and hence on the band
+            ! structure of the particular slab and on the MPI decomposition.
+            g2 = 0.0_dp
             if (scaled_x .lt. 2.0_dp) then
               g2 = g2 + (2.0_dp/3.0_dp)*(SQRT(2.0_dp - scaled_x)**(3.0_dp))
               g2 = g2 + (2.0_dp*SQRT(2.0_dp - scaled_x))
               g2 = g2 + LOG(ABS((SQRT(2.0_dp - scaled_x) - 1.0_dp)/(SQRT(2.0_dp - scaled_x) + 1.0_dp)))
-            else
-              g2 = 0.0_dp
             end if
             band_imfp(n_eigen, N_spin, N_k) = bohr2ang*(4.0_dp*pi/3.0_dp)*(scaled_x/(g1 - g2))*(SQRT(2.0_dp*scale_factor/H2eV))
             ! write (stdout, *) "scaled_x", scaled_x, "g1", g1, "g2", g2, band_imfp(n_eigen, N_spin, N_k)
