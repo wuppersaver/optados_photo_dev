@@ -5585,7 +5585,7 @@ contains
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), gauss_e, temp_mat(2, 2), current_k(2), z_max, xy_max
     real(kind=dp) :: k_prefactor, ref_level, kx_broadening, ky_broadening, qe_contrib, time0, time1
     real(kind=dp) :: total_weighted, qe_norm
-    integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, ierr, window_width
+    integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, atom, ierr, window_width
     integer    :: matrix_unit, nsymm_op, x_center, y_center, xdx, ydx, xdx_min, xdx_max, ydx_min, ydx_max, px_max, py_max
     integer    :: total_ks, xdx_window, ydx_window, ydx_offset, xdx_offset
     character(len=100)                          :: out_string
@@ -5605,8 +5605,8 @@ contains
     ! calculate total number of k-points in the unreduced grid
     total_ks = kpoint_grid_dim(1)*kpoint_grid_dim(2)
     ! reference binding energy level, at which we want to create the map
-    ! E_photon - W_eff - E_map(user) - E_F -.gt. binding energy w.r.t. E_F
-    ref_level = photo_const_bindenergy_value - efermi
+    ! gauss_e below compares a band energy, so the level is E_F - E_b, which
+    ref_level = efermi - photo_const_bindenergy_value
     do i = 1, 2
       step(i) = 0.5_dp/real(kpoint_grid_dim(i), dp)
       sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
@@ -5696,7 +5696,7 @@ contains
               do n_eigen_init = 1, nbands
                 gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                 qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, atom))*k_prefactor &
-                             *arpes_mask(1, n_eigen_final, N_spin, N_k)
+                             *arpes_mask(1, n_eigen_init, N_spin, N_k)
                 total_be_contribs = total_be_contribs + qe_contrib
                 kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
                                                                 + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
@@ -5735,10 +5735,10 @@ contains
             end do
           end do
           do N_spin = 1, nspins
-            do n_eigen_init = 1, n_eigen_final - 1
+            do n_eigen_init = 1, nbands
               gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
               qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, max_atoms + 1))*k_prefactor &
-                           *arpes_mask(1, n_eigen_final, N_spin, N_k)
+                           *arpes_mask(1, n_eigen_init, N_spin, N_k)
               total_be_contribs = total_be_contribs + qe_contrib
               kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
                                                               + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
@@ -5827,7 +5827,7 @@ contains
         photo_theta_min, photo_theta_max
       write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
         photo_phi_min, photo_phi_max
-      write (matrix_unit, '(a44,f9.5)') '## Kinetic Energy of Electrons shown [eV] : ', ref_level
+      write (matrix_unit, '(a38,f9.5)') '## Band Energy of States shown [eV] : ', ref_level
       write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
       write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
       write (matrix_unit, '(a44,f9.5)') '## Binding energy broadening width   [eV] : ', photo_bindenergy_broadening
