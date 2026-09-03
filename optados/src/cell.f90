@@ -1194,6 +1194,18 @@ contains
 !print*,loop,kpoint_r_cart_tmp(:,loop),recip_lattice
     end do
 
+    ! Allocate explicitly rather than leaning on reallocation-on-assignment:
+    ! kpoint_r_cart is deallocated again by the photoemission code, so this
+    ! subroutine has to be able to bring it back on a later call.
+    if (allocated(kpoint_r_cart)) then
+      deallocate (kpoint_r_cart, stat=ierr)
+      if (ierr /= 0) call io_error('Error: cell_calc_kpoint_r_cart - &
+&     failed to deallocate kpoint_r_cart')
+    end if
+    allocate (kpoint_r_cart(3, num_kpoints_on_node(my_node_id)), stat=ierr)
+    if (ierr /= 0) call io_error('Error allocating kpoint_r_cart in&
+&    cell_calc_kpoint_r_cart')
+
     kpoint_r_cart = kpoint_r_cart_tmp
 !      do loop=1,num_kpoints_on_node(my_node_id)
 !      print*,kpoint_r_tmp(1,loop),kpoint_r_cart(1,loop),&

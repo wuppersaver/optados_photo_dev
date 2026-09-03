@@ -1754,7 +1754,7 @@ contains
     !===============================================================================
     use od_constants, only: dp, deg_to_rad, bohr2ang, H2eV, pi
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp
+    use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp, num_atoms
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root
     use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint, scissor_op
@@ -1765,7 +1765,10 @@ contains
 
     tolerance = 1.0E-12_dp
     time0 = io_time()
-    allocate (new_atom_coordinates(3, max_atoms), stat=ierr)
+    ! One entry per atom in the cell, not per explicitly treated atom: the copy
+    ! below is of the whole array, and the indexing that follows is by the
+    ! original atom index through atom_order, which is bounded by num_atoms.
+    allocate (new_atom_coordinates(3, num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_electron_esc - allocation of new_atom_coordinates failed')
 
     !Redefine new z coordinates where the first layer is at z=0
