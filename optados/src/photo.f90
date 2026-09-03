@@ -4962,17 +4962,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, max_bin_p(2))
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
@@ -4991,7 +4991,7 @@ contains
               zdx_min = max(z_center - zdx_window, 1)
               zdx_max = min(z_center + zdx_window, max_bin_p(3))
               do zdx = zdx_min, zdx_max
-                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                 p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                   p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                   + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5011,17 +5011,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, max_bin_p(2))
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
@@ -5037,7 +5037,7 @@ contains
               zdx_min = max(z_center - zdx_window, 1)
               zdx_max = min(z_center + zdx_window, max_bin_p(3))
               do zdx = zdx_min, zdx_max
-                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                 p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                   p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                   + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5060,17 +5060,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, max_bin_p(2))
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
@@ -5088,7 +5088,7 @@ contains
               zdx_min = max(z_center - zdx_window, 1)
               zdx_max = min(z_center + zdx_window, max_bin_p(3))
               do zdx = zdx_min, zdx_max
-                gauss_z = gaussian(p_z(n_eigen, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                gauss_z = gaussian(p_z(n_eigen, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                 p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                   p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                   + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5318,17 +5318,17 @@ contains
               current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
               k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
             end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
             xdx_min = max(x_center - xdx_window, 1)
             xdx_max = min(x_center + xdx_window, max_bin_p(1))
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
             ydx_min = max(y_center - ydx_window, 1)
             ydx_max = min(y_center + ydx_window, max_bin_p(2))
             do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
             end do
             do ydx = ydx_min, ydx_max
               do xdx = xdx_min, xdx_max
@@ -5358,7 +5358,7 @@ contains
                     zdx_min = max(z_center - zdx_window, 1)
                     zdx_max = min(z_center + zdx_window, max_bin_p(3))
                     do zdx = zdx_min, zdx_max
-                      gauss_z = gaussian(p_z(gdx, n_eigen_final, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                      gauss_z = gaussian(p_z(gdx, n_eigen_final, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                       p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                         p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                         + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5383,17 +5383,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, max_bin_p(2))
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
@@ -5424,7 +5424,7 @@ contains
                   zdx_min = max(z_center - zdx_window, 1)
                   zdx_max = min(z_center + zdx_window, max_bin_p(3))
                   do zdx = zdx_min, zdx_max
-                    gauss_z = gaussian(p_z(gdx, n_eigen_final, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                    gauss_z = gaussian(p_z(gdx, n_eigen_final, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                     p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                       p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                       + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5450,17 +5450,17 @@ contains
               current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
               k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
             end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
             xdx_min = max(x_center - xdx_window, 1)
             xdx_max = min(x_center + xdx_window, max_bin_p(1))
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
             ydx_min = max(y_center - ydx_window, 1)
             ydx_max = min(y_center + ydx_window, max_bin_p(2))
             do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
             end do
             do ydx = ydx_min, ydx_max
               do xdx = xdx_min, xdx_max
@@ -5487,7 +5487,7 @@ contains
                   zdx_min = max(z_center - zdx_window, 1)
                   zdx_max = min(z_center + zdx_window, max_bin_p(3))
                   do zdx = zdx_min, zdx_max
-                    gauss_z = gaussian(p_z(gdx, n_eigen, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                    gauss_z = gaussian(p_z(gdx, n_eigen, N_spin, N_k), kz_broadening, (zdx - 1)*photo_pmat_bin_width)
                     p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
                       p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
                       + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
@@ -5688,17 +5688,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, py_max)
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           gauss_xy = 0.0_dp
           do ydx = ydx_min, ydx_max
@@ -5732,17 +5732,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, py_max)
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           gauss_xy = 0.0_dp
           do ydx = ydx_min, ydx_max
@@ -5775,17 +5775,17 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
-          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
           do xdx = xdx_min, xdx_max
-            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
           end do
-          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
           ydx_min = max(y_center - ydx_window, 1)
           ydx_max = min(y_center + ydx_window, py_max)
           do ydx = ydx_min, ydx_max
-            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
           end do
           gauss_xy = 0.0_dp
           do ydx = ydx_min, ydx_max
@@ -6033,17 +6033,17 @@ contains
                 if (abs(gauss_e*qe_contrib) .lt. tiny_contribution) cycle
 
                 current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
-                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
                 xdx_min = max(x_center - xdx_window, 1)
                 xdx_max = min(x_center + xdx_window, px_max)
                 do xdx = xdx_min, xdx_max
-                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
                 end do
-                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
                 ydx_min = max(y_center - ydx_window, 1)
                 ydx_max = min(y_center + ydx_window, py_max)
                 do ydx = ydx_min, ydx_max
-                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
                 end do
                 do ydx = ydx_min, ydx_max
                   do xdx = xdx_min, xdx_max
@@ -6103,17 +6103,17 @@ contains
                 if (abs(gauss_e*qe_contrib) .lt. tiny_contribution) cycle
 
                 current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
-                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
                 xdx_min = max(x_center - xdx_window, 1)
                 xdx_max = min(x_center + xdx_window, px_max)
                 do xdx = xdx_min, xdx_max
-                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
                 end do
-                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
                 ydx_min = max(y_center - ydx_window, 1)
                 ydx_max = min(y_center + ydx_window, py_max)
                 do ydx = ydx_min, ydx_max
-                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
                 end do
                 do ydx = ydx_min, ydx_max
                   do xdx = xdx_min, xdx_max
@@ -6164,17 +6164,17 @@ contains
                 if (abs(gauss_e*qe_contrib) .lt. tiny_contribution) cycle
 
                 current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
-                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+                x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
                 xdx_min = max(x_center - xdx_window, 1)
                 xdx_max = min(x_center + xdx_window, px_max)
                 do xdx = xdx_min, xdx_max
-                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+                  gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset - 1)*photo_pmat_bin_width)
                 end do
-                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+                y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset + 1
                 ydx_min = max(y_center - ydx_window, 1)
                 ydx_max = min(y_center + ydx_window, py_max)
                 do ydx = ydx_min, ydx_max
-                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+                  gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset - 1)*photo_pmat_bin_width)
                 end do
                 do ydx = ydx_min, ydx_max
                   do xdx = xdx_min, xdx_max
