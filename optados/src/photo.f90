@@ -4172,8 +4172,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
     real(kind=dp), allocatable, dimension(:)          :: gauss_k
 
-    integer :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, kdx, edx, ierr, window_width, &
+    integer :: i, N_k, N_spin, n_eigen_init, n_eigen, first_final, kdx, edx, ierr, window_width, &
                matrix_unit, k_window, e_window, center_bin_e, center_bin_k, kdx_min, kdx_max, edx_min, edx_max
+    real(kind=dp), parameter :: tiny_contribution = 1.0e-30_dp
     real(kind=dp) :: step(1:2), sub_cell_length(1:2)
     real(kind=dp) :: k_broadening, temp_k, min_e, gauss_e, e_temp, qe_contrib, &
                      total_weighted, qe_norm, qe_factor, gk, time0, time1
@@ -4258,38 +4259,41 @@ contains
     total_be_kmat_contribs = 0.0_dp
 
     if (index(photo_model, '3step') .gt. 0) then
-      do atom = 1, max_atoms
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
-          ! calculate the bin position in k and e
-          center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
-          kdx_min = max(center_bin_k - k_window, 1)
-          kdx_max = min(center_bin_k + k_window, max_bin_k)
-          gk = (kdx_min - 1)*photo_pmat_bin_width
-          do kdx = kdx_min, kdx_max
-            gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
-            gk = gk + photo_pmat_bin_width
-          end do
-          do N_spin = 1, nspins
-            do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-              do n_eigen_init = 1, n_eigen_final - 1
-                qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, atom)*arpes_mask(1, n_eigen_init, N_spin, N_k)
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
-                edx_min = max(center_bin_e - e_window, 1)
-                edx_max = min(center_bin_e + e_window, max_bin_e)
-                e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
-                do edx = edx_min, edx_max
-                  gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, e_temp)
-                  e_temp = e_temp + photo_pmat_bin_width
-                  ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
-                                                        + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
-                end do ! e_kinetic
-              end do ! bands_init
-            end do ! bands_final
-          end do ! spins
-        end do ! kpts
-      end do ! atoms
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
+        ! calculate the bin position in k and e
+        center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+        kdx_min = max(center_bin_k - k_window, 1)
+        kdx_max = min(center_bin_k + k_window, max_bin_k)
+        gk = (kdx_min - 1)*photo_pmat_bin_width
+        do kdx = kdx_min, kdx_max
+          gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+          gk = gk + photo_pmat_bin_width
+        end do
+        do N_spin = 1, nspins
+          do n_eigen_init = 1, nbands - 1
+            ! The energy and k patches depend on the initial band and the k-point
+            ! only, so the sums over final bands and over atoms factor out of the
+            ! accumulation. The pair set is unchanged: a pair contributes when
+            ! final >= min_index_unocc and init < final.
+            first_final = max(min_index_unocc(N_spin, N_k), n_eigen_init + 1)
+            qe_contrib = sum(qe_tsm(n_eigen_init, first_final:nbands, N_spin, N_k, 1:max_atoms)) &
+                         *arpes_mask(1, n_eigen_init, N_spin, N_k)
+            total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+            if (abs(qe_contrib) .lt. tiny_contribution) cycle
+            center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+            edx_min = max(center_bin_e - e_window, 1)
+            edx_max = min(center_bin_e + e_window, max_bin_e)
+            e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+            do edx = edx_min, edx_max
+              gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, e_temp)
+              e_temp = e_temp + photo_pmat_bin_width
+              ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
+                                                    + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
+            end do ! e_kinetic
+          end do ! bands_init
+        end do ! spins
+      end do ! kpts
 
       do N_k = 1, num_kpoints_on_node(my_node_id)
         temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
@@ -4303,57 +4307,59 @@ contains
           gk = gk + photo_pmat_bin_width
         end do
         do N_spin = 1, nspins
-          do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-            do n_eigen_init = 1, n_eigen_final - 1
-              qe_contrib = qe_tsm(n_eigen_init, n_eigen_final, N_spin, N_k, max_atoms + 1)*arpes_mask(1, n_eigen_init, N_spin, N_k)
-              total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-              center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
-              edx_min = max(center_bin_e - e_window, 1)
-              edx_max = min(center_bin_e + e_window, max_bin_e)
-              e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
-              do edx = edx_min, edx_max
-                gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, e_temp)
-                e_temp = e_temp + photo_pmat_bin_width
-                ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
-                                                      + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
-              end do ! e_kinetic
-            end do ! bands_init
-          end do ! bands_final
+          do n_eigen_init = 1, nbands - 1
+            first_final = max(min_index_unocc(N_spin, N_k), n_eigen_init + 1)
+            qe_contrib = sum(qe_tsm(n_eigen_init, first_final:nbands, N_spin, N_k, max_atoms + 1)) &
+                         *arpes_mask(1, n_eigen_init, N_spin, N_k)
+            total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+            if (abs(qe_contrib) .lt. tiny_contribution) cycle
+            center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+            edx_min = max(center_bin_e - e_window, 1)
+            edx_max = min(center_bin_e + e_window, max_bin_e)
+            e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+            do edx = edx_min, edx_max
+              gauss_e = gaussian(E_kinetic(1, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, e_temp)
+              e_temp = e_temp + photo_pmat_bin_width
+              ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
+                                                    + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
+            end do ! e_kinetic
+          end do ! bands_init
         end do ! spins
       end do ! kpts
     end if
 
     if (index(photo_model, '1step') .gt. 0) then
-      do atom = 1, max_atoms + 1
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
-          ! calculate the bin position in k and e
-          center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
-          kdx_min = max(center_bin_k - k_window, 1)
-          kdx_max = min(center_bin_k + k_window, max_bin_k)
-          gk = (kdx_min - 1)*photo_pmat_bin_width
-          do kdx = kdx_min, kdx_max
-            gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
-            gk = gk + photo_pmat_bin_width
-          end do
-          do N_spin = 1, nspins
-            do n_eigen = 1, nbands
-              qe_contrib = qe_osm(n_eigen, N_spin, N_k, atom)*arpes_mask(1, n_eigen, N_spin, N_k)
-              total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-              center_bin_e = ceiling((E_kinetic(1, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
-              edx_min = max(center_bin_e - e_window, 1)
-              edx_max = min(center_bin_e + e_window, max_bin_e)
-              e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
-              do edx = edx_min, edx_max
-                gauss_e = gaussian(E_kinetic(1, n_eigen, N_spin, N_k), photo_bindenergy_broadening, e_temp)
-                e_temp = e_temp + photo_pmat_bin_width
-                ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
-                                                      + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
-              end do ! e_kinetic
-            end do ! bands
-          end do ! spins
-        end do ! kpts
-      end do ! atoms
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        temp_k = sqrt(kpoint_r_cart(1, N_k)**2 + kpoint_r_cart(2, N_k)**2)
+        ! calculate the bin position in k and e
+        center_bin_k = ceiling(temp_k/photo_pmat_bin_width)
+        kdx_min = max(center_bin_k - k_window, 1)
+        kdx_max = min(center_bin_k + k_window, max_bin_k)
+        gk = (kdx_min - 1)*photo_pmat_bin_width
+        do kdx = kdx_min, kdx_max
+          gauss_k(kdx) = gaussian(temp_k, k_broadening, gk)
+          gk = gk + photo_pmat_bin_width
+        end do
+        do N_spin = 1, nspins
+          do n_eigen = 1, nbands
+            ! Neither patch carries an atom index, so sum the atoms here.
+            qe_contrib = sum(qe_osm(n_eigen, N_spin, N_k, 1:max_atoms + 1)) &
+                         *arpes_mask(1, n_eigen, N_spin, N_k)
+            total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+            if (abs(qe_contrib) .lt. tiny_contribution) cycle
+            center_bin_e = ceiling((E_kinetic(1, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
+            edx_min = max(center_bin_e - e_window, 1)
+            edx_max = min(center_bin_e + e_window, max_bin_e)
+            e_temp = min_e + (edx_min - 1)*photo_pmat_bin_width
+            do edx = edx_min, edx_max
+              gauss_e = gaussian(E_kinetic(1, n_eigen, N_spin, N_k), photo_bindenergy_broadening, e_temp)
+              e_temp = e_temp + photo_pmat_bin_width
+              ekin_k_matrix(kdx_min:kdx_max, edx) = ekin_k_matrix(kdx_min:kdx_max, edx) &
+                                                    + gauss_e*gauss_k(kdx_min:kdx_max)*qe_contrib
+            end do ! e_kinetic
+          end do ! bands
+        end do ! spins
+      end do ! kpts
     end if
 
     call comms_reduce(ekin_k_matrix(1, 1), max_bin_e*max_bin_k, 'SUM')
@@ -4826,7 +4832,7 @@ contains
     use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, ev_to_j, hbar
     implicit none
 
-    integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, atom, ierr
+    integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, ierr
     integer    ::  matrix_unit, total_ks, nsymm_op, x_center, y_center, z_center, xdx, ydx, zdx
     integer    ::  xdx_offset, ydx_offset, zdx_offset, xdx_window, ydx_window, zdx_window
     integer    ::  xdx_min, xdx_max, ydx_min, ydx_max, zdx_min, zdx_max, window_width
@@ -4845,7 +4851,8 @@ contains
     character(len=10)                           :: char_e
     character(len=9)                            :: ctime             ! Temp. time string
     character(len=11)                           :: cdate             ! Temp. date string
-    real(kind=dp) :: time0, time1
+    real(kind=dp) :: time0, time1, time2
+    real(kind=dp), parameter :: tiny_contribution = 1.0e-30_dp
 
     time0 = io_time()
     if (on_root) then
@@ -4947,50 +4954,51 @@ contains
     if (index(photo_model, '3step') .gt. 0) then
       do nsymm_op = 1, num_crystal_symmetry_operations
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
-        do atom = 1, max_atoms
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            if (index(devel_flag, 'no_symmetry') .gt. 0) then
-              current_k = kpoint_r_cart(1:2, N_k)
-              k_prefactor = 1.0_dp/num_crystal_symmetry_operations
-            else
-              current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-              k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
-            end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
-            xdx_min = max(x_center - xdx_window, 1)
-            xdx_max = min(x_center + xdx_window, max_bin_p(1))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          if (index(devel_flag, 'no_symmetry') .gt. 0) then
+            current_k = kpoint_r_cart(1:2, N_k)
+            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+          else
+            current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
+            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          end if
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          xdx_min = max(x_center - xdx_window, 1)
+          xdx_max = min(x_center + xdx_window, max_bin_p(1))
+          do xdx = xdx_min, xdx_max
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+          end do
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          ydx_min = max(y_center - ydx_window, 1)
+          ydx_max = min(y_center + ydx_window, max_bin_p(2))
+          do ydx = ydx_min, ydx_max
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+          end do
+          do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
-            ydx_min = max(y_center - ydx_window, 1)
-            ydx_max = min(y_center + ydx_window, max_bin_p(2))
-            do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-            end do
-            do ydx = ydx_min, ydx_max
-              do xdx = xdx_min, xdx_max
-                gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
-              end do
-            end do
-            do N_spin = 1, nspins
-              do n_eigen_init = 1, nbands
-                qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, atom))* &
-                             arpes_mask(1, n_eigen_init, N_spin, N_k)*k_prefactor
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                z_center = nint((p_z(n_eigen_init, N_spin, N_k))/photo_pmat_bin_width) + 1
-                zdx_min = max(z_center - zdx_window, 1)
-                zdx_max = min(z_center + zdx_window, max_bin_p(3))
-                do zdx = zdx_min, zdx_max
-                  gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
-                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
-                    p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
-                    + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
-                end do ! pz
-              end do ! bands_initial
-            end do ! spins
-          end do ! kpts
-        end do ! atoms
+          end do
+          do N_spin = 1, nspins
+            do n_eigen_init = 1, nbands
+              ! The x/y patch and p_z carry no atom index, so the sum over atoms
+              ! factors out of the accumulation below and is done here instead.
+              qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, 1:max_atoms))* &
+                           arpes_mask(1, n_eigen_init, N_spin, N_k)*k_prefactor
+              total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+              if (abs(qe_contrib) .lt. tiny_contribution) cycle
+              z_center = nint((p_z(n_eigen_init, N_spin, N_k))/photo_pmat_bin_width) + 1
+              zdx_min = max(z_center - zdx_window, 1)
+              zdx_max = min(z_center + zdx_window, max_bin_p(3))
+              do zdx = zdx_min, zdx_max
+                gauss_z = gaussian(p_z(n_eigen_init, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
+                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
+                  + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
+              end do ! pz
+            end do ! bands_initial
+          end do ! spins
+        end do ! kpts
       end do ! symm_ops
 
       do nsymm_op = 1, num_crystal_symmetry_operations
@@ -5044,52 +5052,58 @@ contains
 
       do nsymm_op = 1, num_crystal_symmetry_operations
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
-        do atom = 1, max_atoms + 1
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            if (index(devel_flag, 'no_symmetry') .gt. 0) then
-              current_k = kpoint_r_cart(1:2, N_k)
-              k_prefactor = 1.0_dp/num_crystal_symmetry_operations
-            else
-              current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-              k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
-            end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
-            xdx_min = max(x_center - xdx_window, 1)
-            xdx_max = min(x_center + xdx_window, max_bin_p(1))
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          if (index(devel_flag, 'no_symmetry') .gt. 0) then
+            current_k = kpoint_r_cart(1:2, N_k)
+            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+          else
+            current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
+            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          end if
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          xdx_min = max(x_center - xdx_window, 1)
+          xdx_max = min(x_center + xdx_window, max_bin_p(1))
+          do xdx = xdx_min, xdx_max
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+          end do
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          ydx_min = max(y_center - ydx_window, 1)
+          ydx_max = min(y_center + ydx_window, max_bin_p(2))
+          do ydx = ydx_min, ydx_max
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+          end do
+          do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
-            ydx_min = max(y_center - ydx_window, 1)
-            ydx_max = min(y_center + ydx_window, max_bin_p(2))
-            do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-            end do
-            do ydx = ydx_min, ydx_max
-              do xdx = xdx_min, xdx_max
-                gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
-              end do
-            end do
-            do N_spin = 1, nspins
-              do n_eigen = 1, nbands
-                qe_contrib = qe_osm(n_eigen, N_spin, N_k, atom)*arpes_mask(1, n_eigen, N_spin, N_k)*k_prefactor
-                total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
-                z_center = nint(p_z(n_eigen, N_spin, N_k)/photo_pmat_bin_width) + 1
-                zdx_min = max(z_center - zdx_window, 1)
-                zdx_max = min(z_center + zdx_window, max_bin_p(3))
-                do zdx = zdx_min, zdx_max
-                  gauss_z = gaussian(p_z(n_eigen, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
-                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
-                    p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
-                    + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
-                end do ! pz
-              end do ! bands
-            end do ! spins
-          end do ! kpts
-        end do ! atoms
+          end do
+          do N_spin = 1, nspins
+            do n_eigen = 1, nbands
+              ! No atom index on the patch or p_z, so sum the atoms here.
+              qe_contrib = sum(qe_osm(n_eigen, N_spin, N_k, 1:max_atoms + 1))* &
+                           arpes_mask(1, n_eigen, N_spin, N_k)*k_prefactor
+              total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
+              if (abs(qe_contrib) .lt. tiny_contribution) cycle
+              z_center = nint(p_z(n_eigen, N_spin, N_k)/photo_pmat_bin_width) + 1
+              zdx_min = max(z_center - zdx_window, 1)
+              zdx_max = min(z_center + zdx_window, max_bin_p(3))
+              do zdx = zdx_min, zdx_max
+                gauss_z = gaussian(p_z(n_eigen, N_spin, N_k), kz_broadening, zdx*photo_pmat_bin_width)
+                p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) = &
+                  p_tensor(xdx_min:xdx_max, ydx_min:ydx_max, zdx) &
+                  + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_z*qe_contrib
+              end do ! pz
+            end do ! bands
+          end do ! spins
+        end do ! kpts
       end do ! symm_ops
     end if
 
+    if (on_root .and. iprint .gt. 1) then
+      time2 = io_time()
+      write (stdout, '(1x,a46,13x,f11.3,a8)') '+ Time to accumulate the momentum tensor', time2 - time0, ' (sec) +'
+      call flush(stdout)
+    end if
     call comms_reduce(p_tensor(1, 1, 1), max_bin_p(1)*max_bin_p(2)*max_bin_p(3), 'SUM')
     call comms_reduce(total_be_kmat_contribs, 1, 'SUM')
 
@@ -5585,7 +5599,8 @@ contains
     real(kind=dp) :: step(1:2), sub_cell_length(1:2), gauss_e, temp_mat(2, 2), current_k(2), z_max, xy_max
     real(kind=dp) :: k_prefactor, ref_level, kx_broadening, ky_broadening, qe_contrib, time0, time1
     real(kind=dp) :: total_weighted, qe_norm
-    integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, atom, ierr, window_width
+    real(kind=dp), parameter :: tiny_contribution = 1.0e-30_dp
+    integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, ierr, window_width
     integer    :: matrix_unit, nsymm_op, x_center, y_center, xdx, ydx, xdx_min, xdx_max, ydx_min, ydx_max, px_max, py_max
     integer    :: total_ks, xdx_window, ydx_window, ydx_offset, xdx_offset
     character(len=100)                          :: out_string
@@ -5665,45 +5680,46 @@ contains
     if (index(photo_model, '3step') .gt. 0) then
       do nsymm_op = 1, num_crystal_symmetry_operations
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
-        do atom = 1, max_atoms
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            if (index(devel_flag, 'no_symmetry') .gt. 0) then
-              current_k = kpoint_r_cart(1:2, N_k)
-              k_prefactor = 1.0_dp/num_crystal_symmetry_operations
-            else
-              current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-              k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
-            end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
-            xdx_min = max(x_center - xdx_window, 1)
-            xdx_max = min(x_center + xdx_window, px_max)
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          if (index(devel_flag, 'no_symmetry') .gt. 0) then
+            current_k = kpoint_r_cart(1:2, N_k)
+            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+          else
+            current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
+            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          end if
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          xdx_min = max(x_center - xdx_window, 1)
+          xdx_max = min(x_center + xdx_window, px_max)
+          do xdx = xdx_min, xdx_max
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+          end do
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          ydx_min = max(y_center - ydx_window, 1)
+          ydx_max = min(y_center + ydx_window, py_max)
+          do ydx = ydx_min, ydx_max
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+          end do
+          gauss_xy = 0.0_dp
+          do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
-            ydx_min = max(y_center - ydx_window, 1)
-            ydx_max = min(y_center + ydx_window, py_max)
-            do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-            end do
-            gauss_xy = 0.0_dp
-            do ydx = ydx_min, ydx_max
-              do xdx = xdx_min, xdx_max
-                gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
-              end do
-            end do
-            do N_spin = 1, nspins
-              do n_eigen_init = 1, nbands
-                gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
-                qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, atom))*k_prefactor &
-                             *arpes_mask(1, n_eigen_init, N_spin, N_k)
-                total_be_contribs = total_be_contribs + qe_contrib
-                kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
-                                                                + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
-              end do ! bands_init
-            end do ! spins
-          end do ! kpts
-        end do ! atoms
+          end do
+          do N_spin = 1, nspins
+            do n_eigen_init = 1, nbands
+              gauss_e = gaussian(band_energy(n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+              ! The x/y patch and gauss_e carry no atom index, so the sum over
+              ! atoms factors out of the accumulation below.
+              qe_contrib = sum(qe_tsm(n_eigen_init, 1:nbands, N_spin, N_k, 1:max_atoms))*k_prefactor &
+                           *arpes_mask(1, n_eigen_init, N_spin, N_k)
+              total_be_contribs = total_be_contribs + qe_contrib
+              if (abs(qe_contrib) .lt. tiny_contribution) cycle
+              kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
+                                                              + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
+            end do ! bands_init
+          end do ! spins
+        end do ! kpts
       end do ! symm_ops
 
       do nsymm_op = 1, num_crystal_symmetry_operations
@@ -5751,44 +5767,45 @@ contains
     if (index(photo_model, '1step') .gt. 0) then
       do nsymm_op = 1, num_crystal_symmetry_operations
         temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
-        do atom = 1, max_atoms + 1
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            if (index(devel_flag, 'no_symmetry') .gt. 0) then
-              current_k = kpoint_r_cart(1:2, N_k)
-              k_prefactor = 1.0_dp/num_crystal_symmetry_operations
-            else
-              current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-              k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
-            end if
-            x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
-            xdx_min = max(x_center - xdx_window, 1)
-            xdx_max = min(x_center + xdx_window, px_max)
+        do N_k = 1, num_kpoints_on_node(my_node_id)
+          if (index(devel_flag, 'no_symmetry') .gt. 0) then
+            current_k = kpoint_r_cart(1:2, N_k)
+            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+          else
+            current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
+            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          end if
+          x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset
+          xdx_min = max(x_center - xdx_window, 1)
+          xdx_max = min(x_center + xdx_window, px_max)
+          do xdx = xdx_min, xdx_max
+            gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+          end do
+          y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
+          ydx_min = max(y_center - ydx_window, 1)
+          ydx_max = min(y_center + ydx_window, py_max)
+          do ydx = ydx_min, ydx_max
+            gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
+          end do
+          gauss_xy = 0.0_dp
+          do ydx = ydx_min, ydx_max
             do xdx = xdx_min, xdx_max
-              gauss_x(xdx) = gaussian(current_k(1), kx_broadening, (xdx - xdx_offset)*photo_pmat_bin_width)
+              gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
             end do
-            y_center = nint(current_k(2)/photo_pmat_bin_width) + ydx_offset
-            ydx_min = max(y_center - ydx_window, 1)
-            ydx_max = min(y_center + ydx_window, py_max)
-            do ydx = ydx_min, ydx_max
-              gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
-            end do
-            gauss_xy = 0.0_dp
-            do ydx = ydx_min, ydx_max
-              do xdx = xdx_min, xdx_max
-                gauss_xy(xdx, ydx) = gauss_x(xdx)*gauss_y(ydx)
-              end do
-            end do
-            do N_spin = 1, nspins
-              do n_eigen = 1, nbands
-                gauss_e = gaussian(band_energy(n_eigen, N_spin, N_k), photo_bindenergy_broadening, ref_level)
-                qe_contrib = qe_osm(n_eigen, N_spin, N_k, atom)*arpes_mask(1, n_eigen, N_spin, N_k)*k_prefactor
-                total_be_contribs = total_be_contribs + qe_contrib
-                kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
-                                                                + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
-              end do ! bands
-            end do ! spins
-          end do ! kpts
-        end do ! atoms
+          end do
+          do N_spin = 1, nspins
+            do n_eigen = 1, nbands
+              gauss_e = gaussian(band_energy(n_eigen, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+              ! No atom index on the x/y patch, so sum the atoms here.
+              qe_contrib = sum(qe_osm(n_eigen, N_spin, N_k, 1:max_atoms + 1)) &
+                           *arpes_mask(1, n_eigen, N_spin, N_k)*k_prefactor
+              total_be_contribs = total_be_contribs + qe_contrib
+              if (abs(qe_contrib) .lt. tiny_contribution) cycle
+              kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) = kxky_matrix(xdx_min:xdx_max, ydx_min:ydx_max) &
+                                                              + gauss_xy(xdx_min:xdx_max, ydx_min:ydx_max)*gauss_e*qe_contrib
+            end do ! bands
+          end do ! spins
+        end do ! kpts
       end do ! symm_ops
     end if
 
