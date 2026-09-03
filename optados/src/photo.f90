@@ -5278,7 +5278,7 @@ contains
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                     *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                   do gdx = 1, photo_gkmax
-                    gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                    gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                                 *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                                 *electron_esc(gdx, n_eigen_init, N_spin, N_k, atom) &
                                 *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -5344,7 +5344,7 @@ contains
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
-                  gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                  gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                               *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -5918,7 +5918,7 @@ contains
                       /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                     *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                   do gdx = 1, photo_gkmax
-                    gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                    gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                                 *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                                 *electron_esc(gdx, n_eigen_init, N_spin, N_k, atom) &
                                 *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -5938,7 +5938,7 @@ contains
                     do ydx = ydx_min, ydx_max
                       gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
                     end do
-                    gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+                    gauss_e = gaussian(E_kinetic(gdx, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                     do ydx = ydx_min, ydx_max
                       do xdx = xdx_min, xdx_max
                         kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
@@ -5977,7 +5977,7 @@ contains
                      /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
-                  gk_factor = arpes_mask(gdx, n_eigen_final, N_spin, N_k) &
+                  gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                               *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -5997,7 +5997,7 @@ contains
                   do ydx = ydx_min, ydx_max
                     gauss_y(ydx) = gaussian(current_k(2), ky_broadening, (ydx - ydx_offset)*photo_pmat_bin_width)
                   end do
-                  gauss_e = gaussian(E_kinetic(gdx, n_eigen_final, N_spin, N_k), photo_bindenergy_broadening, ref_level)
+                  gauss_e = gaussian(E_kinetic(gdx, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                   do ydx = ydx_min, ydx_max
                     do xdx = xdx_min, xdx_max
                       kxky_matrix(xdx, ydx) = kxky_matrix(xdx, ydx) + gauss_x(xdx)*gauss_y(ydx)*gauss_e*qe_contrib
