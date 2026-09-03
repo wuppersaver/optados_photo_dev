@@ -48,7 +48,9 @@ module od_electronic
   !   Re A_11, Re A_22, Re A_33, Re A_12, Im A_12, Re A_13, Im A_13, Re A_23, Im A_23
   real(kind=dp), allocatable, public, save     :: fem_tensor(:, :, :, :, :)
   character(len=80), public, save              :: femfile_header
-  ! fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
+  ! fem_energy_info: n_Ef, Ef_min, Ef_step, Ef_broadening, Ef_origin -- all in eV.
+  ! Ef_origin is the Fermi energy on Castep's eigenvalue scale, recorded so the
+  ! window can be placed; it is not something OptaDOS has to reproduce.
   real(kind=dp), dimension(5), public, save            :: fem_energy_info
   real(kind=dp), allocatable, public, save     :: transmit_prob(:, :, :)
   character(len=80), public, save              :: tmprob_file_header

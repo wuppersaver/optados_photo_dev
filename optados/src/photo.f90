@@ -100,12 +100,14 @@ module od_photo
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
   real(kind=dp)                       :: temp_photon_energy, time_a, time_b
   integer, allocatable, dimension(:, :):: min_index_unocc
-  ! The Free Electron Matrix (FEM) elements are calculated for a specific E_fermi offset, workfct and photon
-  ! energies in Castep. Thus we must read it from the file and ensure they are compatible with the parameters
-  ! used for the OptaDOS run.
-  ! order in file fem_energy_info: energy_count, energy_min, energy_step, energy_fermi, energy_workfct
-  integer                             :: energy_count
-  real(kind=dp)                       :: energy_min, energy_step, energy_fermi, energy_workfct
+  ! The coherency tensor is calculated in Castep over a window of final-state
+  ! energies. That window is described by fem_energy_info, read from the file by
+  ! od_electronic, in the order
+  !   n_Ef, Ef_min, Ef_step, Ef_broadening, Ef_origin
+  ! all in eV. The lookup is referenced to the vacuum level rather than to a
+  ! Fermi energy or work function baked into the file, so nothing here has to
+  ! agree with a value Castep chose - only the window has to reach far enough
+  ! for the photon energies being swept.
 contains
 
   subroutine photo_calculate
@@ -662,7 +664,10 @@ contains
       if (photo_photon_max - photo_photon_min .lt. 1.0e-12_dp) then
         number_energies = 1
       else if (mod(num_energies, 1.0_dp) .gt. 1.0E-10_dp) then
-        number_energies = number_energies + 1
+        ! The bounds must span a whole number of jdos_spacing steps, because
+        ! each photon energy is mapped onto a JDOS bin index below.  A spacing
+        ! such as 0.05 has no exact binary representation, so the ratio may sit
+        ! just below an integer rather than on it; only that case is accepted.
         if (abs(mod(num_energies, 1.0_dp) - 1) .gt. 1.0E-10_dp) &
           call io_error('Error: calc_photon_energies - given photon sweep min/max values do not give integer # of photon steps')
       end if
