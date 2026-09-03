@@ -485,15 +485,89 @@ Within the one-electron photoemission approach, two distinct photoemission model
 
 Where $C_{j,\bf{G}}$ are the plane wave coefficients and $\bf{G}$ are the reciprocal lattice vectors. In the second step, the excited Bloch electrons will have a probability to travel to the surface of the material. Once the electrons reach the surface of the material, in the third step, the electrons will escape into the vacuum.
 
-\item[{\bf --}]  \verb#One step photoemission model# : The one step model final state in this work is described as
+\item[{\bf --}]  \verb#One step photoemission model# : The one step model has no final band in the crystal. The final state is a free-electron state in the vacuum continuum,
 
 \begin{equation}
 \psi_{j}{(\bf{r})} = e^{i \bf{k}\bf{r}}e^{-\frac{z \cdot sin (1-\theta (i,j,\bf{k}))}{\lambda(\omega) }}
     \label{1_final_electron_wave}
 \end{equation}
 
-where $\lambda(\omega)$ is the electrons scattering length and $sin (1-\theta (i,j,\bf{k}))$ considers the scattering length increase with emission angles away from the surface normal.
+where $\lambda(\omega)$ is the electrons scattering length and $sin (1-\theta (i,j,\bf{k}))$ considers the scattering length increase with emission angles away from the surface normal. How the matrix element to that continuum is formed is described in Section \ref{subsec:coherency_tensor}.
 \end{itemize}
+
+\subsection{The free-electron matrix element and the coherency tensor}
+\label{subsec:coherency_tensor}
+
+The final state of Equation \eqref{1_final_electron_wave} is not a single plane
+wave: at a given final energy $E_f$ every reciprocal lattice vector $\mathbf{G}$
+with $\left|\mathbf{k}+\mathbf{G}\right|^2/2 \approx E_f$ supplies an available
+free-electron state. These states are mutually orthogonal, so Fermi's golden rule
+adds their \emph{rates}, not their amplitudes, and the sum over them is what
+supplies the final-state density of states $\rho_f$.
+
+CASTEP evaluates this as a coherency tensor, written to a {\tt *.fem\_bin} file
+for each state and binned in final-state energy,
+
+\begin{equation}
+A_{ab}(n,\mathbf{k},E_f) = \sum_{\mathbf{G}} M^{\mathbf{G}}_{a} \left( M^{\mathbf{G}}_{b} \right)^{*}
+                           ~g\!\left(E_f - E_{\mathbf{k}+\mathbf{G}}\right)
+    \label{eq:coherency_tensor}
+\end{equation}
+
+where $M^{\mathbf{G}}_{a}$ is the plane wave coefficient of
+$v_a \left| n,\mathbf{k} \right\rangle$ for Cartesian direction $a$, $v_a$ is the
+velocity operator including its non-local and, where present, Hubbard and
+meta-GGA contributions, $E_{\mathbf{k}+\mathbf{G}} = \left|\mathbf{k}+\mathbf{G}\right|^2/2$
+and $g$ is a normalised Gaussian of width {\tt fem\_broadening}. $A_{ab}$ is
+Hermitian in $(a,b)$ and is stored as its six independent components in the order
+$(11,22,33,12,13,23)$.
+
+Because the sum in Equation \eqref{eq:coherency_tensor} is a sum of rates over
+orthogonal final states, the result does not depend on the cell volume. This is
+the property that distinguishes it from a coherent construction, in which the
+plane waves at a given energy are first summed into one wavepacket and the
+modulus of that sum is squared. A coherent sum gives a matrix element whose value
+depends on the relative phases of coefficients that describe physically distinct
+final states, and consequently on the size of the simulation cell through the
+density of $\mathbf{G}$ vectors.
+
+The photoemission matrix element for a light polarisation direction
+$\mathbf{\hat{q}}$ is recovered from the tensor by contraction,
+
+\begin{equation}
+M(i,\mathbf{k},s) = \frac{1}{(\hbar\omega)^2}\,\hat{q}_a \hat{q}_b\, A_{ab}(i,\mathbf{k},E_f)
+    \label{eq:fem_contract}
+\end{equation}
+
+with the imaginary parts of the off-diagonal components cancelling in pairs for
+real $\mathbf{\hat{q}}$. For {\tt optics\_geom : unpolar} the contraction is
+performed for the two directions perpendicular to {\tt optics\_qdir} and
+averaged, and where the cell has symmetry operations the polarisation direction
+is expanded over them first, exactly as for the optical matrix elements of
+Section \ref{subsec:opticprops}.
+
+The energy at which the tensor is sampled is
+
+\begin{equation}
+E_f = E(i,\mathbf{k},s) + \hbar\omega - E_{vac}
+    \label{eq:fem_lookup}
+\end{equation}
+
+referenced to the vacuum level rather than to the eigenvalue zero, and linearly
+interpolated between the two neighbouring bins. The reference matters. The
+tensor is binned by $\left|\mathbf{k}+\mathbf{G}\right|^2/2$, whose zero is the
+cell-averaged local potential, and that average shifts as vacuum is added to a
+slab -- by $2.7$ eV over a $10$ to $28$ \AA\ vacuum scan on an otherwise
+identical slab. A photoelectron travels in the vacuum, not in the average
+potential, so referencing the lookup to $E_{vac}$ is what makes the result
+independent of the amount of vacuum in the cell: across converged cells the
+spread in the computed quantity falls from $1.264$ eV to $0.070$ eV, and what
+remains is the work-function spread, which is physical.
+
+Requesting a final-state energy outside the stored window returns zero. Below the
+window there are no free-electron final states at all; above it the occurrence is
+counted and reported, since it means the window written by CASTEP was too narrow
+for the photon energy being used.
 
 \subsection{Atomic projection}
 \label{subsec:atomicproj}
@@ -596,9 +670,34 @@ where $u_f$ are the plane wave coefficients, $\mathbf{G}$ are the reciprocal lat
 where $\left|t(E_f,\mathbf{k_{||}})\right|^2$ represents the transmission probability for the electron in general and the sum $\sum_{(k+G)_\perp>0}$ is the contribution from all the plane wave components propagating towards the surface. The factor $\left|t(E_f,\mathbf{k_{||}})\right|^2$ is already included in Equation \eqref{eq:Heaviside}, so only the second factor is explicitly calculated in CASTEP and supplied to OptaDOS in a {\tt *.tmprob\_bin} file. Thus we can define
 
 \begin{equation}
-    T(E_f,\mathbf{k_{||}}) = \left| \sum_{(k+G)_\perp>0}u_f(\mathbf{G},\mathbf{k}) \right|^2
+    T(E_f,\mathbf{k_{||}}) = \frac{\sum_{(k+G)_\perp>0}\left|u_f(\mathbf{G},\mathbf{k})\right|^2}
+                                  {\sum_{\mathbf{G}}\left|u_f(\mathbf{G},\mathbf{k})\right|^2}
     \label{eq:transmit_prob}
 \end{equation}
+
+Two features of Equation \eqref{eq:transmit_prob} deserve comment.
+
+The numerator sums the squared moduli of the coefficients rather than squaring
+their sum. The plane waves are orthogonal final states, so the electron reaches
+the vacuum in one or another of them and the probabilities add; forming
+$\left|\sum_\mathbf{G} u_f\right|^2$ instead would add the amplitudes coherently
+and make the result depend on the arbitrary phase convention of each
+coefficient.
+
+The denominator normalises by the total plane-wave weight of the same state. It
+is written this way because with an ultrasoft pseudopotential the wavefunction is
+normalised as $\left\langle \phi \left| S \right| \phi \right\rangle = 1$ rather
+than $\left\langle \phi \mid \phi \right\rangle = 1$, so the augmentation charge
+carried by the projectors is missing from the plane-wave part and
+$\sum_\mathbf{G}\left|u_f\right|^2$ falls below unity. The shortfall is large and
+strongly state dependent: for Cu it is around $0.30$ for the localised $3d$
+states against $0.95$ for free-electron-like states. Without the denominator the
+quantity would therefore report the pseudopotential's augmentation charge as
+much as the surface physics, and $d$-derived bands would be suppressed by a
+factor of three relative to $sp$-derived ones for a reason that has nothing to do
+with transmission. Since $T$ is a probability it cannot depend on the choice of
+pseudopotential, and dividing by the total restores that. For a norm-conserving
+pseudopotential the denominator is unity and the normalisation does nothing.
 
 \subsection{Field emission}
 \label{subsec:fieldemission}
@@ -702,11 +801,80 @@ where $\mathbf{k}$ is in cartesian coordinates and
 [\alpha] = \{x \in  \mathbb{Z} \ &| -\alpha_{max} \leq x \leq \alpha_{max} \} \\
 [\beta] = \{x \in  \mathbb{Z} \ &| -\beta_{max} \leq x \leq \beta_{max} \}.
 \end{align*}
-The values of $\alpha_{max}$ and $\beta_{max}$ are chosen, so that $|c_x| < 3.8 $ \nicefrac{1}{\AA} and  $|c_y| < 3.8 $ \nicefrac{1}{\AA} to limit the number of grid points. The value on each of the grid points is calculated by summing up the $u_f$ coefficients for the $z$ direction as
+The values of $\alpha_{max}$ and $\beta_{max}$ are chosen, so that $|c_x| < 3.8 $ \nicefrac{1}{\AA} and  $|c_y| < 3.8 $ \nicefrac{1}{\AA} to limit the number of grid points. The value on each of the grid points is calculated by summing the squared plane wave coefficients over the $z$ direction and normalising by the total plane-wave weight of the state,
 \begin{equation}
-    w_{gk}(\mathbf{k_{x,y} + G_{x,y}}) = \sum_{G_z} \left| u_f(\mathbf{G},\mathbf{k_{x,y}}) \right|^2
+    w_{gk}(\mathbf{k_{x,y} + G_{x,y}}) = \frac{\sum_{G_z} \left| u_f(\mathbf{G},\mathbf{k_{x,y}}) \right|^2}
+                                              {\sum_{\mathbf{G}} \left| u_f(\mathbf{G},\mathbf{k}) \right|^2}
+    \label{eq:gkgrid_weight}
 \end{equation}
-where $u_f$ are the plane wave basis coefficients. The $c_{x,y}$ and $w_{gk}$ values are read from a {\tt *.gkgrid\_bin} file. The calculation of QE and MTE values is performed analogous to Section \ref{subsec:QE_MTE} for each of the grid points with $c_{x,y}$ replacing $\mathbf{k_{||}}$.
+where $u_f$ are the plane wave basis coefficients. The denominator is there for the reason given below Equation \eqref{eq:transmit_prob}: with an ultrasoft pseudopotential the plane-wave part of the state does not carry unit norm, so without it $w_{gk}$ would inherit the augmentation charge and weight localised states differently from free-electron-like ones for a purely technical reason. The weights then sum to one over the retained grid, up to whatever falls outside the $3.8$ \nicefrac{1}{\AA} cutoff; CASTEP reports the retained fraction at {\tt iprint} $\geq 2$, and in practice it is above $0.98$.
+
+The $c_{x,y}$ and $w_{gk}$ values are read from a {\tt *.gkgrid\_bin} file. The calculation of QE and MTE values is performed analogous to Section \ref{subsec:QE_MTE} for each of the grid points with $c_{x,y}$ replacing $\mathbf{k_{||}}$, and $w_{gk}$ weighting each grid point's contribution.
+
+Note that the $\mathbf{k+G}$ set generated for one irreducible $\mathbf{k}$ point is not symmetric about the origin -- an irreducible wedge cannot be. Any quantity that must respect the crystal point group, such as the outputs of Section \ref{subsec:momentum_outputs}, is therefore expanded over the symmetry operations of the cell before being binned.
+
+\subsection{Momentum resolved outputs}
+\label{subsec:momentum_outputs}
+
+Besides the integrated quantum efficiency and mean transverse energy, the module
+can write the emission resolved in energy and momentum: a kinetic energy against
+transverse momentum map, a $p_x$ against $p_y$ map at one binding energy, and the
+full $p_x,p_y,p_z$ tensor. These are selected with {\tt photo\_output} and all of
+them work with either setting of {\tt photo\_momentum}. Three conventions apply
+to all of them.
+
+\paragraph{Energy is assigned to the initial band.} Every emission quantity is
+indexed by the initial band with the photon energy folded in,
+
+\begin{equation}
+E_K(i,\mathbf{k},s) = E(i,\mathbf{k},s) + \hbar\omega - E_{vac}
+    \label{eq:map_indexing}
+\end{equation}
+
+so $E_K$ is the kinetic energy of a photoelectron that started in band $i$,
+rather than the kinetic energy of band $i$. In the one step model this is exact,
+since there is no final band to index by. In the three step model there is a
+discrete final band, and $E(j,\mathbf{k},s) - E_{vac}$ would be the exact kinetic
+energy of the emitted electron; Equation \eqref{eq:map_indexing} is used instead
+because its error is bounded by a resolution limit the model already has. Energy
+conservation is enforced by the broadened delta function of Equation
+\eqref{fermi_golden_rule}, so for any pair that contributes,
+$E(j) = E(i) + \hbar\omega$ holds only to within the broadening width -- of order
+$0.1$ to $0.5$ eV for the adaptive scheme. Assigning the exact final energy and
+then slicing it with a much narrower Gaussian would manufacture structure the
+approximation cannot support, whereas Equation \eqref{eq:map_indexing} places
+each pair at the energy the delta function is centred on. It also keeps the two
+models directly comparable.
+
+A consequence worth knowing is that the effective energy resolution of these
+outputs is the delta-function width, not {\tt photo\_bindenergy\_broadening}.
+
+\paragraph{The momentum grids are centred on zero.} A $p_x$ or $p_y$ axis of
+$2n+1$ bins runs from $-n$ to $+n$ in units of {\tt photo\_pmat\_bin\_width},
+with $p = 0$ on the central bin. The $p_z$ axis of the tensor starts at the value
+printed in the file header and increases by one bin width per index. Reading a
+map therefore only requires the shape and the bin width, both of which are in the
+header.
+
+\paragraph{The transverse distribution is symmetrised.} Contributions are
+expanded over the crystal symmetry operations before binning, so an output
+reproduces the point group of the surface even though the $\mathbf{k}$ points, or
+the $\mathbf{k+G}$ sets of Equation \eqref{eq:gkgrid_weight}, cover only an
+irreducible wedge. For a surface of $4mm$ symmetry, for instance, the two
+transverse marginals of the tensor are even and equal to each other, and the four
+quadrants carry equal weight.
+
+The extent of the transverse grid is set by the kinematics rather than by the
+cell: no emitted electron can carry more transverse momentum than
+$\sqrt{2m_e(\hbar\omega - W)}/\hbar$, since the remainder of its energy is needed
+for the motion along the surface normal, and the grid is sized to that bound with
+a small margin. It follows that the grid does not grow when a supercell is used,
+and that plane wave components lying outside it are components that cannot emit.
+
+Note that these outputs are written as formatted text and become large: the
+tensor is one number per grid point, which for a typical slab is a few hundred
+megabytes per photon energy. A {\tt photo\_energy\_sweep} writes one file per
+step.
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
@@ -1019,10 +1187,26 @@ and band indices.
 	\begin{itemize}
 	\item {\bf qe\_tensor}: Write out the contributions of each band for all k-points, spins and atoms. This can be used to study the specific origin of photoemitted electrons, for detailed visualisations and much more.
 	\item {\bf bindenergy\_curve}: Calculate and write out a {\bf QE vs binding energy} plot. A Gaussian broadening is applied. Additionally, the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
-    \item {\bf binding\_energy\_momentum\_map}: Calculate and write a {\bf binding energy vs transverse energy} map as a matrix with the value of each grid point representing the QE contribution at that point. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+    \item {\bf kinetic\_energy\_momentum\_map}: Calculate and write a {\bf kinetic energy vs transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
     \item {\bf const\_binding\_energy\_map}: Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a specified binding energy. The specified binding energy is w.r.t. $E_F$.
-    \item {\bf p\_tensor}: Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in $\frac{1}{\text{\AA}}$. Each value at that grid point represents the QE contribution at that specific set of electron momenta. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+    \item {\bf full\_momentum\_tensor}: Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in $\frac{1}{\text{\AA}}$. Each value at that grid point represents the QE contribution at that specific set of electron momenta. The contributions are Gaussian broadened and the ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
     \end{itemize}
+    Each of these three has a {\tt \_gkgrid} counterpart, called instead when
+    {\tt photo\_momentum : gkgrid}, which bins the transverse momentum over the
+    $\mathbf{k+G}$ grid rather than over the crystal $\mathbf{k}$ points. The
+    conventions common to all six are described in Section
+    \ref{subsec:momentum_outputs}.
+
+\item {\bf read\_transmit\_probabilities}: reads the surface transmission
+    probability of Equation \eqref{eq:transmit_prob} from a {\tt *.tmprob\_bin}
+    file, when {\tt photo\_use\_tmprob} is set. The probability is indexed by the
+    final band, since it is the final state that crosses the surface.
+
+\item {\bf elec\_read\_gk\_grid}: reads the $\mathbf{k+G}$ grid and its weights,
+    Equation \eqref{eq:gkgrid_weight}, from a {\tt *.gkgrid\_bin} file when
+    {\tt photo\_momentum : gkgrid}. Each of the momentum resolved routines frees
+    the grid on exit and re-reads it when called, so the order in which they run
+    does not matter.
 \end{itemize}
 
 
@@ -1482,14 +1666,18 @@ Write out the contributions of each band for all k-points, spins and atoms. This
 \item[{\bf --}]  \verb#bindenergy_curve#\\ \\
 Calculate and write out a \textit{QE} vs \textit{binding energy} curve. A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The energy bin width $= 0.001$ eV. The considered emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data, $e.g.$ energy distribution curves (EDC).
 \item[{\bf --}]  \verb#ekin_ptrans_map#\\ \\
-Calculate and write a \textit{kinetic energy} vs \textit{transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. The energy bin width $= 0.001$ eV. The transverse momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. \\
+Calculate and write a \textit{kinetic energy} vs \textit{transverse momentum} map as a matrix with the value of each grid point representing the QE contribution at that point. Both the energy and the transverse momentum bin widths are controlled by {\tt photo\_pmat\_bin\_width}. \\
 A Gaussian broadening of width {\tt photo\_bindenergy\_broadening} is applied. The broadening in \textbf{p} has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points. The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
 \item[{\bf --}]  \verb#const_bindenergy_p_map#\\ \\
-Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a constant binding energy across the entire map. The momentum bin width is controlled by {\tt photo\_kmat\_bin\_width}. The binding energy value is set by {\tt photo\_const\_bindenergy\_value} w.r.t. the Fermi energy ($E_F$).\\
+Calculate and write a {\boldmath $p_x$ vs $p_y$} matrix of grid points where the value at each grid point represents the total QE contribution at a constant binding energy across the entire map. The momentum bin width is controlled by {\tt photo\_pmat\_bin\_width}. The binding energy value is set by {\tt photo\_const\_bindenergy\_value} w.r.t. the Fermi energy ($E_F$).\\
 The contributions are Gaussian broadened in energy with a width of {\tt photo\_bindenergy \_broadening}. The broadening in the {\boldmath $p_x$ vs $p_y$} direction has a FWHM of \nicefrac{1}{2} distance between \textbf{k} points, $i.e.$ a half step between MP grid points.
 The emission angle ranges are limited by the values for the min/max values $\theta$ and $\phi$ set to allow for comparison with ARPES data.
 \item[{\bf --}]  \verb#p_tensor#\\ \\
-Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in \nicefrac{1}{\AA}. Each value at that grid point represents the QE contribution at that specific set of electron momenta values. \\The contributions are Gaussian broadened in {\boldmath$p_x$} and {\boldmath$p_y$} with a FWHM of half a step between k grid points, $i.e.$ MP grid points. In the {\boldmath$p_z$} direction the value {\tt photo\_bindenergy \_broadening} is converted to \nicefrac{1}{\AA} to broaden in the {\boldmath$p_z$} direction. The ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.
+Calculate and write a {\boldmath$p_x$,$p_y$,$p_z$} tensor of grid points for electron momenta in \nicefrac{1}{\AA}. Each value at that grid point represents the QE contribution at that specific set of electron momenta values. \\The contributions are Gaussian broadened in {\boldmath$p_x$} and {\boldmath$p_y$} with a FWHM of half a step between k grid points, $i.e.$ MP grid points. In the {\boldmath$p_z$} direction the value {\tt photo\_bindenergy \_broadening} is converted to \nicefrac{1}{\AA} to broaden in the {\boldmath$p_z$} direction. The ranges for emission angles $\theta$ and $\phi$ can be set to allow for comparison with ARPES data.\\
+This is the largest of the outputs: one number per grid point, typically a few
+hundred megabytes of text per photon energy, and one file per step of a
+{\tt photo\_energy\_sweep}. The tensor is normalised to its own integrated
+contribution rather than to the quantum efficiency, so its sum is not $QE_{tot}$.
 \end{itemize}
 
 \subsection[photo\_theta\_min]{\tt real(kind=dp) :: photo\_theta\_min}
@@ -1515,7 +1703,12 @@ The default value is $90 \degree$
 \subsection[photo\_bindenergy\_broadening]{\tt real(kind=dp) :: photo\_bindenergy\_broadening}
 Sets the Gaussian broadening width in the energy dimension for {\tt photo\_output}. \\
 
-The default value is $0.0257$ eV $ = k_b \cdot 298$ K
+The default value is $0.01285$ eV, half of $k_B \cdot 298$ K.
+
+Note that for the momentum resolved outputs this width sets the bin spacing but
+not the effective resolution, which is limited by the width of the broadened
+delta function enforcing energy conservation -- see Section
+\ref{subsec:momentum_outputs}.
 
 \subsection[photo\_pmat\_bin\_width]{\tt real(kind=dp) :: photo\_pmat\_bin\_width}
 Sets the bin width in the momentum dimension for {\tt photo\_output}.
