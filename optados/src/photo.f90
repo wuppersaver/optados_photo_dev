@@ -2844,6 +2844,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
+    real(kind=dp), allocatable, dimension(:) :: qe_per_kpt
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
@@ -3043,7 +3044,16 @@ contains
       if (ierr /= 0) call io_error('Error: calc_three_step_model - failed to deallocate gkgrid_weight')
     end if
 
-    if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) call print_3step_kpt_qe
+    if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) then
+      allocate (qe_per_kpt(num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of qe_per_kpt failed')
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        qe_per_kpt(N_k) = sum(qe_tsm(:, :, :, N_k, :))
+      end do
+      call write_kpt_qe(qe_per_kpt)
+      deallocate (qe_per_kpt, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_three_step_model - deallocation of qe_per_kpt failed')
+    end if
 
     time1 = io_time()
     if (on_root .and. iprint .gt. 1) then
@@ -3051,70 +3061,6 @@ contains
       write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 3step Photoemission', time1 - time0, ' (sec) +'
     end if
   end subroutine calc_three_step_model
-
-  subroutine print_3step_kpt_qe
-    use od_cell, only: num_kpoints_on_node
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
-    use od_parameters, only: photo_model
-    implicit none
-    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    integer :: N_k, ierr, qe_unit, token, inode
-    character(len=10)                           :: char_e
-    character(len=99)                           :: filename
-    character(len=9)                            :: ctime             ! Temp. time string
-    character(len=11)                           :: cdate             ! Temp. date string
-
-    if (on_root) then
-      qe_unit = io_file_unit()
-      write (char_e, '(F7.3)') temp_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
-      write (stdout, *) 'opening file'
-      open (unit=qe_unit, action='write', file=filename)
-      write (qe_unit, *) '## The k point dependent QE values'
-      call io_date(cdate, ctime)
-      write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
-    end if
-
-    allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: print_3step_kpt_qe - failed to allocate qe_k_temp on root')
-    token = -1
-
-    ! allocate and sum the 3step qe matrix on non-root
-    if (.not. on_root) then
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        qe_k_temp(N_k) = sum(qe_tsm(:, :, :, N_k, :))
-      end do
-      ! - wait for the token
-      call comms_recv(token, 1, 0)
-      ! - send the respective qe_matrix for that node
-      call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
-      ! - send token back to root node
-      call comms_send(token, 1, 0)
-    end if
-
-    if (on_root) then
-      do inode = 1, num_nodes - 1
-        ! - send to the token to notes in turn
-        call comms_send(token, 1, inode)
-        ! write(stdout, *) 'sent token to node and receiving data from', inode
-        call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
-        ! write out the qe_matrix to the file
-        do N_k = 1, num_kpoints_on_node(inode)
-          write (qe_unit, *) qe_k_temp(N_k)
-        end do
-        ! - receive the token from a node
-        call comms_recv(token, 1, inode)
-      end do
-      ! - write root qe_matrix elements
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        write (qe_unit, *) sum(qe_tsm(:, :, :, N_k, :))
-      end do
-      close (unit=qe_unit)
-    end if
-    deallocate (qe_k_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error: print_3step_kpt_qe - failed to deallocate qe_k_temp')
-  end subroutine print_3step_kpt_qe
 
   !===============================================================================
   subroutine photo_calculate_delta(delta_temp, calculate_bulk)
@@ -3582,6 +3528,83 @@ contains
   end function fem_contract
 
   !===============================================================================
+  subroutine write_kpt_qe(qe_per_kpt)
+    !*===============================================================================
+    ! Per-k-point QE totals, gathered from every node into one file:
+    ! <seed>_<model>_<hv>_k_point_QE.dat
+    !
+    ! One routine for both models. They had one each, identical apart from the
+    ! rank of the array being summed -- qe_tsm(:,:,:,N_k,:) against
+    ! qe_osm(:,:,N_k,:) -- so the caller now does that sum and passes the result.
+    !
+    ! Rows carry the global k index and come out in that order. The versions this
+    ! replaces wrote every other node first and root last, so the file ran
+    ! node 1 ... node N, root, which the one step copy had a comment apologising
+    ! for. Root now writes its own share first and labels every row, so the order
+    ! is the run's own and does not have to be reconstructed.
+    ! Felix Mildner, 2026
+    !===============================================================================
+    use od_cell, only: num_kpoints_on_node
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv
+    use od_io, only: io_error, io_file_unit, seedname, io_date
+    use od_parameters, only: photo_model
+    implicit none
+    ! inout, not in: comms_send_real declares its dummy inout even though it
+    ! does not modify the array, so an intent(in) actual will not compile.
+    real(kind=dp), intent(inout) :: qe_per_kpt(:)
+
+    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
+    integer :: N_k, ierr, qe_unit, token, inode, k_global
+    character(len=10) :: char_e
+    character(len=99) :: filename
+    character(len=9)  :: ctime
+    character(len=11) :: cdate
+
+    token = -1
+
+    if (.not. on_root) then
+      ! Wait for the token, hand over this node's share, give the token back.
+      call comms_recv(token, 1, 0)
+      call comms_send(qe_per_kpt(1), num_kpoints_on_node(my_node_id), 0)
+      call comms_send(token, 1, 0)
+      return
+    end if
+
+    qe_unit = io_file_unit()
+    write (char_e, '(F7.3)') temp_photon_energy
+    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
+    open (unit=qe_unit, action='write', file=filename)
+    call io_date(cdate, ctime)
+    write (qe_unit, '(a)') '## The k-point dependent QE values'
+    write (qe_unit, '(a,a,a,a)') '## OptaDOS photoemission, written on ', cdate, ' at ', ctime
+    write (qe_unit, '(a,a)') '## model: ', trim(photo_model)
+    write (qe_unit, '(a)') '## k_global   QE'
+
+    k_global = 0
+    do N_k = 1, num_kpoints_on_node(my_node_id)
+      k_global = k_global + 1
+      write (qe_unit, '(1x,i6,1x,E20.12E3)') k_global, qe_per_kpt(N_k)
+    end do
+
+    if (num_nodes .gt. 1) then
+      allocate (qe_k_temp(maxval(num_kpoints_on_node(0:num_nodes - 1))), stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_kpt_qe - failed to allocate qe_k_temp on root')
+      do inode = 1, num_nodes - 1
+        call comms_send(token, 1, inode)
+        call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
+        do N_k = 1, num_kpoints_on_node(inode)
+          k_global = k_global + 1
+          write (qe_unit, '(1x,i6,1x,E20.12E3)') k_global, qe_k_temp(N_k)
+        end do
+        call comms_recv(token, 1, inode)
+      end do
+      deallocate (qe_k_temp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: write_kpt_qe - failed to deallocate qe_k_temp')
+    end if
+
+    close (unit=qe_unit)
+  end subroutine write_kpt_qe
+
   subroutine write_qe_terms(fermi_dirac, emission_gauss, delta_temp)
     !*===============================================================================
     ! Write the factors entering the QE sum, one row per transition, to
@@ -3786,6 +3809,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
+    real(kind=dp), allocatable, dimension(:) :: qe_per_kpt
     integer :: N_k, N_spin, n_eigen, atom, ierr, gdx
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
@@ -3933,7 +3957,16 @@ contains
     if (index(devel_flag, 'print_qe_formula_values') .gt. 0) &
       call write_qe_terms(fermi_dirac, emission_gauss)
 
-    if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) call print_1step_kpt_qe
+    if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) then
+      allocate (qe_per_kpt(num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of qe_per_kpt failed')
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        qe_per_kpt(N_k) = sum(qe_osm(:, :, N_k, :))
+      end do
+      call write_kpt_qe(qe_per_kpt)
+      deallocate (qe_per_kpt, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_one_step_model - deallocation of qe_per_kpt failed')
+    end if
 
     time1 = io_time()
     if (on_root .and. iprint .gt. 1) then
@@ -3941,73 +3974,6 @@ contains
       write (stdout, '(1x,a39,20x,f11.3,a8)') '+ Time to calculate 1step Photoemission', time1 - time0, ' (sec) +'
     end if
   end subroutine calc_one_step_model
-
-  subroutine print_1step_kpt_qe
-    use od_cell, only: num_kpoints_on_node
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
-    use od_parameters, only: photo_model
-    implicit none
-    real(kind=dp), allocatable, dimension(:) :: qe_k_temp
-    integer :: N_k, ierr, qe_unit, token, inode
-    character(len=10)                           :: char_e
-    character(len=99)                           :: filename
-    character(len=9)                            :: ctime             ! Temp. time string
-    character(len=11)                           :: cdate             ! Temp. date string
-
-    if (on_root) then
-      qe_unit = io_file_unit()
-      write (char_e, '(F7.3)') temp_photon_energy
-      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
-      write (stdout, *) 'opening file'
-      open (unit=qe_unit, action='write', file=filename)
-      write (qe_unit, *) '## The k point dependent QE values'
-      call io_date(cdate, ctime)
-      write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
-    end if
-
-    allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
-    if (ierr /= 0) call io_error('Error: print_1step_kpt_qe - failed to allocate qe_k_temp on root')
-    token = -1
-
-    ! allocate and the 1step qe matrix on non-root
-    if (.not. on_root) then
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        qe_k_temp(N_k) = sum(qe_osm(:, :, N_k, :))
-      end do
-      ! - wait for the token
-      call comms_recv(token, 1, 0)
-      ! - send the respective qe_matrix for that node
-      call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
-      ! - send token back to root node
-      call comms_send(token, 1, 0)
-    end if
-
-    if (on_root) then
-      ! When all the files are read, the order is nodes#1 -> nodes#max -> root
-      ! The root gets all the extra kpoints, that do not fit neatly into the
-      ! integer division determined step size.
-      do inode = 1, num_nodes - 1
-        ! - send to the token to notes in turn
-        call comms_send(token, 1, inode)
-        ! - receive the qe_matrix from the other notes and write it to the file
-        call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
-        ! write out the qe_matrix to the file
-        do N_k = 1, num_kpoints_on_node(inode)
-          write (qe_unit, *) qe_k_temp(N_k)
-        end do
-        ! - receive the token from a node
-        call comms_recv(token, 1, inode)
-      end do
-      ! - write root qe_matrix elements
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        write (qe_unit, *) sum(qe_osm(:, :, N_k, :))
-      end do
-      close (unit=qe_unit)
-    end if
-    deallocate (qe_k_temp, stat=ierr)
-    if (ierr /= 0) call io_error('Error: print_1step_kpt_qe - failed to deallocate qe_k_temp')
-  end subroutine print_1step_kpt_qe
 
   !===============================================================================
   subroutine weighted_mean_te
