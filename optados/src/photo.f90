@@ -3356,11 +3356,14 @@ contains
     ! rank of the array being summed -- qe_tsm(:,:,:,N_k,:) against
     ! qe_osm(:,:,N_k,:) -- so the caller now does that sum and passes the result.
     !
-    ! Rows carry the global k index and come out in that order. The versions this
-    ! replaces wrote every other node first and root last, so the file ran
-    ! node 1 ... node N, root, which the one step copy had a comment apologising
-    ! for. Root now writes its own share first and labels every row, so the order
-    ! is the run's own and does not have to be reconstructed.
+    ! Rows carry the global k index and come out in that order. Note that node
+    ! 1 ... node N-1, root IS the global order: the readers in od_electronic
+    ! walk inodes = 1 ... num_nodes-1, sending each of those nodes its block,
+    ! and only then read root's own share, so root holds the LAST block. The
+    ! versions this replaces wrote in that same sequence and the one step copy
+    ! had a comment apologising for it -- the apology was misplaced, the order
+    ! was right. What was missing was the label, so nothing said which k-point
+    ! a row belonged to.
     ! Felix Mildner, 2026
     !===============================================================================
     use od_cell, only: num_kpoints_on_node
@@ -3400,10 +3403,6 @@ contains
     write (qe_unit, '(a)') '## k_global   QE'
 
     k_global = 0
-    do N_k = 1, num_kpoints_on_node(my_node_id)
-      k_global = k_global + 1
-      write (qe_unit, '(1x,i6,1x,E20.12E3)') k_global, qe_per_kpt(N_k)
-    end do
 
     if (num_nodes .gt. 1) then
       allocate (qe_k_temp(maxval(num_kpoints_on_node(0:num_nodes - 1))), stat=ierr)
@@ -3420,6 +3419,12 @@ contains
       deallocate (qe_k_temp, stat=ierr)
       if (ierr /= 0) call io_error('Error: write_kpt_qe - failed to deallocate qe_k_temp')
     end if
+
+    ! Root's block is the tail of the global list, so it is written last.
+    do N_k = 1, num_kpoints_on_node(my_node_id)
+      k_global = k_global + 1
+      write (qe_unit, '(1x,i6,1x,E20.12E3)') k_global, qe_per_kpt(N_k)
+    end do
 
     close (unit=qe_unit)
   end subroutine write_kpt_qe
@@ -3451,7 +3456,7 @@ contains
     ! flat in memory, which marshalling a million rows to root would not be.
     ! Felix Mildner, 2026
     !===============================================================================
-    use od_comms, only: on_root, num_nodes, comms_send, comms_recv
+    use od_comms, only: on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
     use od_parameters, only: photo_model, iprint
     implicit none
@@ -3470,8 +3475,17 @@ contains
     if (three_step .and. .not. present(delta_temp)) &
       call io_error('Error: write_qe_terms - the three step model needs its delta function')
 
+    ! seedname is read from the command line on root and never broadcast, so on
+    ! every other node it is still the zero-filled static it started as. trim()
+    ! strips blanks and not NULs, so len_trim is the full 80 there, and a name
+    ! built from it begins with a NUL byte: open() is handed an empty path and
+    ! the node dies before writing a row, leaving a file holding root's share
+    ! and nothing else. Root builds the name and the rest are told it. This is
+    ! the only open in the module that runs anywhere but root.
     write (char_e, '(F7.3)') temp_photon_energy
-    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_terms.dat'
+    if (on_root) filename = trim(seedname)//'_'//trim(photo_model)//'_'// &
+                            trim(adjustl(char_e))//'_qe_terms.dat'
+    call comms_bcast(filename, len(filename))
     token = -1
     n_rows = 0
 
@@ -3500,14 +3514,21 @@ contains
         write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
         write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
       end if
-      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
       close (unit=unit_no)
 
-      ! Hand the file to each node in turn so the rows land in node order.
+      ! Hand the file to each node in turn, then write root's own rows last.
+      ! Root holds the last block of the global k-point list, not the first, so
+      ! writing its share after everyone else's is what puts the file in
+      ! ascending k_global order rather than starting it two thirds of the way
+      ! through the list.
       do inode = 1, num_nodes - 1
         call comms_send(token, 1, inode)
         call comms_recv(token, 1, inode)
       end do
+
+      open (unit=unit_no, action='write', position='append', file=filename)
+      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
+      close (unit=unit_no)
     else
       call comms_recv(token, 1, 0)
       unit_no = io_file_unit()
@@ -3531,7 +3552,7 @@ contains
     !! the token pass write identically formatted rows.
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, transmit_prob
-    use od_comms, only: my_node_id
+    use od_comms, only: my_node_id, num_nodes
     implicit none
     integer, intent(in)                 :: unit_no
     logical, intent(in)                 :: three_step
@@ -3540,17 +3561,26 @@ contains
     real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
     real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
 
-    integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, inode, k_offset
+    integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, k_offset
     real(kind=dp) :: pdos_frac
 
     ! N_k is the index within this node's share, so on its own it says nothing
     ! about which k-point a row belongs to once there is more than one node --
     ! every node would write 1, 2, 3 and the file could not be read. Carry the
     ! global index as well.
-    k_offset = 0
-    do inode = 0, my_node_id - 1
-      k_offset = k_offset + num_kpoints_on_node(inode)
-    end do
+    !
+    ! Root does NOT hold the first block. elec_read_band_gradient and the other
+    ! readers walk inodes = 1 ... num_nodes-1, reading each of those nodes'
+    ! k-points and sending them on, and only then read root's own share -- so
+    ! root holds the LAST block of the global list and node 1 holds the first.
+    ! Summing num_kpoints_on_node(0:my_node_id-1) instead put root at the front
+    ! and shifted every other node up by root's count, which a two rank run of
+    ! the 21 k-point case showed directly: serial k = 1 came out labelled 12.
+    if (my_node_id .eq. 0) then
+      k_offset = sum(num_kpoints_on_node(1:num_nodes - 1))
+    else
+      k_offset = sum(num_kpoints_on_node(1:my_node_id - 1))
+    end if
 
     do atom = 1, max_atoms
       box = box_atom(atom)
