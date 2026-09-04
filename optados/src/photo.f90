@@ -95,6 +95,13 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
+  ! Dowell-Schmerge like model. Kept apart from qe_tsm, whose last index is
+  ! the box a transition belongs to: the DS model was reusing that index to
+  ! mean "which of five quantities", so the same module array had two
+  ! unrelated shapes, and slots 4 and 5 spent an nbands x nbands x nspins x nk
+  ! array on two scalars.
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: ds_qe_den, ds_qe_num, ds_mte_num
+  real(kind=dp) :: ds_dos_mte_num, ds_dos_mte_den
   real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm
   real(kind=dp), allocatable, dimension(:, :, :, :) :: gkgrid_weight
   integer :: photo_gkmax
@@ -2734,37 +2741,38 @@ contains
     ! Felix Mildner, May 2024
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
-    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
-      elec_read_band_curvature
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: photo_temperature, devel_flag, iprint, num_exclude_bands, &
-      exclude_bands, photo_model, fixed, adaptive, linear
-    use od_dos_utils, only: dos_adaptive, dos_fixed, dos_linear, doslin_sub_cell_corners, dos_utils_calculate, dos_E => E
-    use od_algorithms, only: gaussian
-    use od_io, only: stdout, io_error, io_file_unit, io_time, seedname, io_date
-    use od_jdos_utils, only: jdos_utils_calculate, jdos_energy_scale => setup_energy_scale
-    use od_constants, only: pi, kB, inv_sqrt_two_pi
+    use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state
+    use od_comms, only: my_node_id, on_root
+    use od_parameters, only: photo_temperature, iprint, num_exclude_bands, &
+      exclude_bands, fixed, adaptive, linear
+    use od_dos_utils, only: dos_adaptive, dos_fixed, dos_linear, dos_utils_calculate, dos_E => E
+    use od_io, only: stdout, io_error, io_time
+    use od_jdos_utils, only: jdos_energy_scale => setup_energy_scale
+    use od_constants, only: kB
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :)    :: fermi_dirac
     real(kind=dp), allocatable, dimension(:)          :: fd
     real(kind=dp), allocatable, dimension(:)          :: dos_temp
-    real(kind=dp), allocatable, dimension(:)          :: qe_k_temp
     real(kind=dp) :: argument, time0, time1, final_fd, initial_fd, excess_energy, delta_e, diff, &
                      initial_dos, final_dos, temp_value
-    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, i, qe_unit, token, inode, N_E, delta_index_photon, index_e
-    character(len=10)                           :: char_e
-    character(len=99)                           :: filename
-    character(len=9)                            :: ctime             ! Temp. time string
-    character(len=11)                           :: cdate             ! Temp. date string
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, ierr, N_E, delta_index_photon, index_e
 
     time0 = io_time()
 
-    if (.not. allocated(qe_tsm)) then
-      allocate (qe_tsm(nbands, nbands, nspins, num_kpoints_on_node(my_node_id), 5), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of qe_tsm failed')
+    if (.not. allocated(ds_qe_den)) then
+      allocate (ds_qe_den(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of ds_qe_den failed')
+      allocate (ds_qe_num(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of ds_qe_num failed')
+      allocate (ds_mte_num(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of ds_mte_num failed')
     end if
-    qe_tsm = 0.0_dp
+    ds_qe_den = 0.0_dp
+    ds_qe_num = 0.0_dp
+    ds_mte_num = 0.0_dp
+    ds_dos_mte_num = 0.0_dp
+    ds_dos_mte_den = 0.0_dp
 
     if (.not. allocated(fermi_dirac)) then
       allocate (fermi_dirac(nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -2797,8 +2805,9 @@ contains
     end do
 
     call jdos_energy_scale(E)
-    i = 0
-    if (on_root) write (stdout, *) '***   Calculating a simplified Dowell Schmerge like model for PE   ***'
+    if (on_root .and. iprint .gt. 1) then
+      write (stdout, '(1x,a78)') '|       Simplified Dowell-Schmerge like model, after Saha et al.             |'
+    end if
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -2813,41 +2822,46 @@ contains
           final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
           do n_eigen = 1, n_eigen_final - 1
             initial_fd = fermi_dirac(n_eigen, N_spin, N_k)
-            ! Calculating the QE denominator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 1) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                             electrons_per_state*kpoint_weight(N_k)* &
-                                                             final_fd*initial_fd
-            ! Calculating the QE numerator and MTE denominator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 2) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                             electrons_per_state*kpoint_weight(N_k)* &
-                                                             final_fd*initial_fd*excess_energy
-            ! Calculating the MTE numerator
-            qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, 3) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
-                                                             electrons_per_state*kpoint_weight(N_k)* &
-                                                             final_fd*initial_fd*excess_energy**2
+            ! The three sums share a common factor; form it once. The QE is
+            ! ds_qe_num/ds_qe_den and the MTE is half of ds_mte_num/ds_qe_num, so
+            ! the numerator of the first is the denominator of the second.
+            temp_value = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)* &
+                         electrons_per_state*kpoint_weight(N_k)*final_fd*initial_fd
+            ds_qe_den(n_eigen, n_eigen_final, N_spin, N_k) = temp_value
+            ds_qe_num(n_eigen, n_eigen_final, N_spin, N_k) = temp_value*excess_energy
+            ds_mte_num(n_eigen, n_eigen_final, N_spin, N_k) = temp_value*excess_energy**2
           end do
         end do
       end do
     end do
     call dos_utils_calculate()
     allocate (dos_temp(size(dos_E)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of dos_temp failed')
+    ! One of these is always set by the broadening keyword, but say so rather
+    ! than leaving dos_temp undefined if that ever stops being true.
     if (fixed) then
       dos_temp = sum(dos_fixed, dim=2)
-    end if
-    if (adaptive) then
+    else if (adaptive) then
       dos_temp = sum(dos_adaptive, dim=2)
-    end if
-    if (linear) then
+    else if (linear) then
       dos_temp = sum(dos_linear, dim=2)
+    else
+      call io_error('Error: calc_ds_like_model - no broadening scheme is active, so there is '// &
+                    'no density of states to build the DOS based estimate from')
     end if
-    ! get the
+
+    ! Fermi occupation on the DOS energy scale, and the bin holding the initial
+    ! state that a photon takes to the vacuum level.
     allocate (fd(size(dos_E)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_ds_like_model - allocation of fd failed')
     delta_e = dos_E(2) - dos_E(1)
-    ! write (stdout, *) 'delta_e', delta_e
     diff = 1.0E6_dp
     do N_e = 1, size(dos_E)
-      if (abs(dos_E(N_e) - work_function_eff + temp_photon_energy - efermi) .lt. diff) then
-        diff = abs(dos_E(N_e) - work_function_eff + temp_photon_energy - efermi)
+      ! evacuum_eff is work_function_eff + efermi, which is the same reference
+      ! the band loop above uses. Written that way in both places so the two
+      ! halves of this routine no longer state the same thing differently.
+      if (abs(dos_E(N_e) - evacuum_eff + temp_photon_energy) .lt. diff) then
+        diff = abs(dos_E(N_e) - evacuum_eff + temp_photon_energy)
         index_e = N_e
       end if
       argument = (dos_E(N_e) - efermi)/(kB*photo_temperature)
@@ -2860,17 +2874,21 @@ contains
       end if
     end do
     delta_index_photon = int(temp_photon_energy/delta_e)
-    ! write (stdout, *) 'delta_index_photon', delta_index_photon
     initial_fd = fd(index_e)
-    do while ((initial_fd .gt. 1.0E-50_dp) .or. ((index_e + delta_index_photon) .lt. (size(dos_E) - delta_index_photon - 2)))
+    ! Walk up the initial-state energy until either the states are empty or the
+    ! final state runs off the end of the grid. This was an .or., which continues
+    ! while *either* holds: the occupation cut-off then never fired, and had it
+    ! been the surviving condition the loop would have read past the end of fd
+    ! and dos_temp.
+    do while ((initial_fd .gt. 1.0E-50_dp) .and. ((index_e + delta_index_photon) .lt. (size(dos_E) - delta_index_photon - 2)))
       initial_fd = fd(index_e)
       final_fd = 1 - fd(index_e + delta_index_photon)
       initial_dos = dos_temp(index_e)
       final_dos = dos_temp(index_e + delta_index_photon)
-      excess_energy = dos_E(index_e + delta_index_photon) - work_function_eff - efermi
+      excess_energy = dos_E(index_e + delta_index_photon) - evacuum_eff
       temp_value = initial_dos*initial_fd*final_dos*final_fd*excess_energy
-      qe_tsm(1, 1, 1, 1, 4) = qe_tsm(1, 1, 1, 1, 4) + temp_value*excess_energy
-      qe_tsm(1, 1, 1, 1, 5) = qe_tsm(1, 1, 1, 1, 5) + temp_value
+      ds_dos_mte_num = ds_dos_mte_num + temp_value*excess_energy
+      ds_dos_mte_den = ds_dos_mte_den + temp_value
       index_e = index_e + 1
     end do
 
@@ -2890,57 +2908,6 @@ contains
       write (stdout, '(1x,a41,18x,f11.3,a8)') '+ Time to calculate DS like Photoemission', time1 - time0, ' (sec) +'
     end if
 
-    if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) then
-      if (on_root) then
-        qe_unit = io_file_unit()
-        write (char_e, '(F7.3)') temp_photon_energy
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_k_point_QE.dat'
-        write (stdout, *) 'opening file'
-        open (unit=qe_unit, action='write', file=filename)
-        write (qe_unit, *) '# The k point dependent QE values'
-        call io_date(cdate, ctime)
-        write (qe_unit, *) '## OptaDOS Photoemission: Printing QE K point Data on ', cdate, ' at ', ctime
-      end if
-
-      allocate (qe_k_temp(num_kpoints_on_node(0)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to allocate qe_k_temp on root')
-      token = -1
-
-      ! allocate and sum the 3step qe matrix on non-root
-      if (.not. on_root) then
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          qe_k_temp(N_k) = sum(qe_tsm(:, :, :, N_k, :))
-        end do
-        ! - wait for the token
-        call comms_recv(token, 1, 0)
-        ! - send the respective qe_matrix for that node
-        call comms_send(qe_k_temp(1), num_kpoints_on_node(my_node_id), 0)
-        ! - send token back to root node
-        call comms_send(token, 1, 0)
-      end if
-
-      if (on_root) then
-        do inode = 1, num_nodes - 1
-          ! - send to the token to notes in turn
-          call comms_send(token, 1, inode)
-          ! - receive the qe_matrix from the other notes and write it to the file
-          call comms_recv(qe_k_temp(1), num_kpoints_on_node(inode), inode)
-          ! write out the qe_matrix to the file
-          do N_k = 1, num_kpoints_on_node(inode)
-            write (qe_unit, *) qe_k_temp(N_k)
-          end do
-          ! - receive the token from a node
-          call comms_recv(token, 1, inode)
-        end do
-        ! - write root qe_matrix elements
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          write (qe_unit, *) sum(qe_tsm(:, :, :, N_k, :))
-        end do
-        close (unit=qe_unit)
-      end if
-      deallocate (qe_k_temp, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate qe_k_temp')
-    end if
     deallocate (dos_temp, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_ds_like_model - failed to deallocate dos_temp')
     deallocate (fd, stat=ierr)
@@ -4151,16 +4118,15 @@ contains
 
     else if (index(photo_model, 'dosds') .gt. 0) then
 
-      qe_term1 = sum(qe_tsm(:, :, :, :, 2))
+      qe_term1 = sum(ds_qe_num)
       call comms_reduce(qe_term1, 1, 'SUM')
-      qe_term2 = sum(qe_tsm(:, :, :, :, 1))
+      qe_term2 = sum(ds_qe_den)
       call comms_reduce(qe_term2, 1, 'SUM')
-      mte_term1 = sum(qe_tsm(:, :, :, :, 3))
+      mte_term1 = sum(ds_mte_num)
       call comms_reduce(mte_term1, 1, 'SUM')
-      mte_term2 = sum(qe_tsm(:, :, :, :, 2))
-      call comms_reduce(mte_term2, 1, 'SUM')
       total_qe = qe_term1/qe_term2
-      mean_te = 0.5*(mte_term1/mte_term2)
+      ! The numerator of the QE is the denominator of the MTE.
+      mean_te = 0.5_dp*(mte_term1/qe_term1)
 
     end if
 
@@ -4211,7 +4177,7 @@ contains
       write (stdout, 236) '|       MTE from single band contrib.  (eV) :', mean_te, '      |'
       write (stdout, '(1x,a78)') '|       **********        DOS based MTE estimate            **********       |'
       write (stdout, 236) '|       MTE estimate from DOS          (eV) :', &
-        0.5_dp*qe_tsm(1, 1, 1, 1, 4)/qe_tsm(1, 1, 1, 1, 5), '   |'
+        0.5_dp*ds_dos_mte_num/ds_dos_mte_den, '   |'
     else
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
       ! Larger number of digits for debugging purposes
@@ -7304,6 +7270,14 @@ contains
     if (allocated(qe_tsm)) then
       deallocate (qe_tsm, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate qe_tsm')
+    end if
+    if (allocated(ds_qe_den)) then
+      deallocate (ds_qe_den, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate ds_qe_den')
+      deallocate (ds_qe_num, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate ds_qe_num')
+      deallocate (ds_mte_num, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate ds_mte_num')
     end if
 
     if (allocated(qe_osm)) then
