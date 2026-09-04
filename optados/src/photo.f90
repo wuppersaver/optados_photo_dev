@@ -2734,11 +2734,11 @@ contains
 
   subroutine calc_ds_like_model
     !*===============================================================================
-    ! This subroutine calculates the QE and MTE using a simplified model following a
-    ! Dowell-Schmerge like Model by Saha et al.
-    ! This is an approximation of their model, as the contributions are taken from
+    ! This subroutine calculates the QE and MTE using a both the DOS dependent model
+    ! and a simplified model following the Dowell-Schmerge like Model by Saha et al.
+    ! The simplified model is an approximation, as the contributions are taken from
     ! individual bands, rather than the total DOS of the cell.
-    ! Felix Mildner, May 2024
+    ! Felix Mildner, after May 2024
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state
@@ -2858,8 +2858,7 @@ contains
     diff = 1.0E6_dp
     do N_e = 1, size(dos_E)
       ! evacuum_eff is work_function_eff + efermi, which is the same reference
-      ! the band loop above uses. Written that way in both places so the two
-      ! halves of this routine no longer state the same thing differently.
+      ! the band loop above uses.
       if (abs(dos_E(N_e) - evacuum_eff + temp_photon_energy) .lt. diff) then
         diff = abs(dos_E(N_e) - evacuum_eff + temp_photon_energy)
         index_e = N_e
@@ -2876,10 +2875,7 @@ contains
     delta_index_photon = int(temp_photon_energy/delta_e)
     initial_fd = fd(index_e)
     ! Walk up the initial-state energy until either the states are empty or the
-    ! final state runs off the end of the grid. This was an .or., which continues
-    ! while *either* holds: the occupation cut-off then never fired, and had it
-    ! been the surviving condition the loop would have read past the end of fd
-    ! and dos_temp.
+    ! final state runs off the end of the grid.
     do while ((initial_fd .gt. 1.0E-50_dp) .and. ((index_e + delta_index_photon) .lt. (size(dos_E) - delta_index_photon - 2)))
       initial_fd = fd(index_e)
       final_fd = 1 - fd(index_e + delta_index_photon)
@@ -7271,6 +7267,7 @@ contains
       deallocate (qe_tsm, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate qe_tsm')
     end if
+
     if (allocated(ds_qe_den)) then
       deallocate (ds_qe_den, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate ds_qe_den')
