@@ -64,7 +64,11 @@ module od_photo
   real(kind=dp), dimension(:), allocatable :: boxes_top_z_coord
   logical                                  :: single_layer
   real(kind=dp), dimension(:, :), allocatable :: new_atom_coordinates
-  real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_arpes
+  !! Fraction of the symmetry images of the transverse momentum whose azimuth
+  !! falls inside the acceptance wedge. Used by the outputs that have no azimuth
+  !! axis and therefore no symmetry loop of their own; the map and tensor
+  !! routines test each image directly with phi_accepted instead.
+  real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_accept_frac
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
@@ -1597,6 +1601,86 @@ contains
     end if
   end subroutine adaptive_simpson
 
+  !===============================================================================
+  function phi_accepted(kx, ky) result(inside)
+    !*===============================================================================
+    ! Is this transverse momentum inside the azimuthal acceptance wedge?
+    !
+    ! The wedge is a direction, photo_phi_centre, plus a half width. Testing it as
+    ! |phi - centre| <= halfwidth would need wrap-around arithmetic; the angle
+    ! between the momentum and the acceptance direction is the same condition
+    ! written as a dot product, which wraps for free and needs no atan2:
+    !
+    !   cos(angle) = (k . u)/|k| >= cos(halfwidth),   u = (cos centre, sin centre)
+    !
+    ! A half width of 180 deg gives cos = -1 and accepts everything, as it must.
+    ! Normal emission has no azimuth at all and is accepted by any wedge.
+    !===============================================================================
+    use od_constants, only: deg_to_rad
+    use od_parameters, only: photo_phi_centre, photo_phi_halfwidth
+    implicit none
+    real(kind=dp), intent(in) :: kx, ky
+    logical                   :: inside
+    real(kind=dp)             :: k_norm
+    real(kind=dp), parameter  :: k_tol = 1.0E-12_dp
+
+    k_norm = sqrt(kx*kx + ky*ky)
+    if (k_norm .lt. k_tol) then
+      inside = .true.
+      return
+    end if
+    inside = (kx*cos(photo_phi_centre*deg_to_rad) + ky*sin(photo_phi_centre*deg_to_rad))/k_norm &
+             .ge. cos(photo_phi_halfwidth*deg_to_rad)
+  end function phi_accepted
+
+  !===============================================================================
+  function phi_star_fraction(kx, ky) result(frac)
+    !*===============================================================================
+    ! The fraction of the symmetry star of this transverse momentum that lies
+    ! inside the acceptance wedge.
+    !
+    ! An irreducible k-point carries the weight of its whole star, and the crystal
+    ! symmetry operations rotate the transverse momentum around the surface
+    ! normal, so a single irreducible point emits into as many azimuths as it has
+    ! images. The outputs that resolve the azimuth place each image separately and
+    ! test it with phi_accepted; the ones that do not - the EDC and the maps whose
+    ! momentum axis is |k| - have nowhere to put them, and the right weight for
+    ! them is the fraction of the star that survives the wedge.
+    !
+    ! With one operation this is 0 or 1, identical to phi_accepted, so a structure
+    ! with no symmetry needs no special case.
+    !===============================================================================
+    use od_cell, only: num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_parameters, only: devel_flag
+    implicit none
+    real(kind=dp), intent(in) :: kx, ky
+    real(kind=dp)             :: frac
+    real(kind=dp)             :: image(2)
+    integer                   :: nsymm_op, n_accept, n_symm
+
+    if (index(devel_flag, 'no_symmetry') .gt. 0) then
+      frac = 0.0_dp
+      if (phi_accepted(kx, ky)) frac = 1.0_dp
+      return
+    end if
+
+    n_symm = 0
+    if (allocated(crystal_symmetry_operations)) n_symm = num_crystal_symmetry_operations
+    if (n_symm .lt. 1) then
+      ! No symmetry block in the -out.cell, so the point stands only for itself.
+      frac = 0.0_dp
+      if (phi_accepted(kx, ky)) frac = 1.0_dp
+      return
+    end if
+
+    n_accept = 0
+    do nsymm_op = 1, n_symm
+      image = matmul(crystal_symmetry_operations(1:2, 1:2, nsymm_op), (/kx, ky/))
+      if (phi_accepted(image(1), image(2))) n_accept = n_accept + 1
+    end do
+    frac = real(n_accept, dp)/real(n_symm, dp)
+  end function phi_star_fraction
+
   subroutine calc_angle
     !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
@@ -1668,12 +1752,14 @@ contains
     ! Impossible value as default that is equal to no emission
     theta_internal = 91.0_dp
 
-    if (.not. allocated(phi_arpes)) then
-      allocate (phi_arpes(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_arpes failed')
+    if (.not. allocated(phi_accept_frac)) then
+      allocate (phi_accept_frac(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_angle - allocation of phi_accept_frac failed')
     end if
-    ! Default value to as set along x axis
-    phi_arpes = 0.0_dp
+    ! Nothing accepted until the transverse momentum says otherwise. States that
+    ! cannot emit are dropped by theta, which keeps its 91 deg sentinel; do not
+    ! rely on this default to exclude them.
+    phi_accept_frac = 0.0_dp
 
     if (.not. allocated(E_kinetic)) then
       allocate (E_kinetic(photo_gkmax, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
@@ -1720,18 +1806,20 @@ contains
             end if
             E_transverse(gdx, n_eigen, N_spin, N_k) = E_x(gdx, n_eigen, N_spin, N_k) + E_y(gdx, n_eigen, N_spin, N_k)
 
-            ! Emission angle phi is the angle between the emitted
-            ! electron vector and the positive x-axis. If there is no transverse
-            ! momentum for the electron, we assume phi to go along x-axis,
-            ! as arctan2 is not defined if 0/0
-            if ((E_x(gdx, n_eigen, N_spin, N_k) .lt. tol) .and. (E_y(gdx, n_eigen, N_spin, N_k) .lt. tol)) then
-              phi_arpes(gdx, n_eigen, N_spin, N_k) = 0.0_dp
-              ! Since arctan for x/0 is illdefined, we catch it here and set phi along x-axis
-            elseif ((E_y(gdx, n_eigen, N_spin, N_k) .lt. tol)) then
-              phi_arpes(gdx, n_eigen, N_spin, N_k) = 0.0_dp
+            ! The azimuth has to come from the signed transverse momentum, not
+            ! from E_x and E_y: those are proportional to kx^2 and ky^2, so they
+            ! have lost the signs that atan2 needs for the quadrant, and the
+            ! angle they give is distorted as well. One irreducible k-point
+            ! stands for its whole symmetry star, and the outputs that use this
+            ! array have no azimuth axis to place the images on, so what is
+            ! stored is the fraction of the star that lands in the wedge.
+            if (index(photo_momentum, 'gkgrid') .gt. 0) then
+              phi_accept_frac(gdx, n_eigen, N_spin, N_k) = &
+                phi_star_fraction(photo_gkgrid(1, gdx, n_eigen, N_spin, N_k), &
+                                  photo_gkgrid(2, gdx, n_eigen, N_spin, N_k))
             else
-              phi_arpes(gdx, n_eigen, N_spin, N_k) = &
-                atan2(E_y(gdx, n_eigen, N_spin, N_k), E_x(gdx, n_eigen, N_spin, N_k))*rad_to_deg
+              phi_accept_frac(gdx, n_eigen, N_spin, N_k) = &
+                phi_star_fraction(kpoint_r_cart(1, N_k), kpoint_r_cart(2, N_k))
             end if
 
             ! Emission angle theta is the angle between emitted
@@ -1743,14 +1831,18 @@ contains
             if (E_kinetic(gdx, n_eigen, N_spin, N_k) .lt. E_transverse(gdx, n_eigen, N_spin, N_k)) cycle
             ! Angle of electron outside material, after passing the surface and loosing E(work_function)
             ! acos(E_normal/E_kinetic)
-            theta_arpes(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) &
-                                                            - E_transverse(gdx, n_eigen, N_spin, N_k)) &
-                                                           /E_kinetic(gdx, n_eigen, N_spin, N_k)))*rad_to_deg
+            ! cos(theta) = k_z/|k|, a ratio of momenta. E_normal/E_kinetic is
+            ! k_z^2/k^2, so it is cos^2(theta) and needs the square root before
+            ! the acos. Both limits are exact either way, which is why leaving it
+            ! out was invisible at normal and at grazing emission.
+            theta_arpes(gdx, n_eigen, N_spin, N_k) = (acos(sqrt((E_kinetic(gdx, n_eigen, N_spin, N_k) &
+                                                                 - E_transverse(gdx, n_eigen, N_spin, N_k)) &
+                                                                /E_kinetic(gdx, n_eigen, N_spin, N_k))))*rad_to_deg
             ! Angle of electron within material, before passing the surface
-            theta_internal(gdx, n_eigen, N_spin, N_k) = (acos((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
-                                                               - E_transverse(gdx, n_eigen, N_spin, N_k)) &
-                                                              /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
-                                                                work_function_eff)))*rad_to_deg
+            theta_internal(gdx, n_eigen, N_spin, N_k) = (acos(sqrt((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+                                                                    - E_transverse(gdx, n_eigen, N_spin, N_k)) &
+                                                                   /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
+                                                                     work_function_eff))))*rad_to_deg
           end do ! Gkgrid
         end do ! bands
       end do ! spins
@@ -3821,7 +3913,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_theta_min, photo_theta_max, photo_temperature, photo_phi_min, photo_phi_max, scissor_op
+    use od_parameters, only: photo_theta_min, photo_theta_max, photo_temperature, scissor_op
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit, io_time, io_date
@@ -3888,12 +3980,14 @@ contains
               emission_gauss(gdx, n_eigen, N_spin, N_k) = gaussian(e_normal, width, 0.0_dp)/norm_vac
             end if
 
+            ! Polar acceptance only. Theta is invariant under the in-plane
+            ! symmetry operations, so testing it at the irreducible k-point is
+            ! exact. The azimuth is not, and is handled where the emission
+            ! direction is actually known - phi_accepted inside the symmetry
+            ! loops, phi_accept_frac everywhere else.
             if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
                 theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
-              if (phi_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_phi_min .and. &
-                  phi_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_phi_max) then
-                arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
-              end if
+              arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
             end if
           end do
         end do
@@ -3941,8 +4035,8 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_min, &
-      photo_phi_max, photo_bindenergy_broadening, iprint, optics_geom, optics_qdir
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
@@ -4043,7 +4137,7 @@ contains
                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
-                  gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
+                  gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
                               *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                               *electron_esc(gdx, n_eigen_init, N_spin, N_k, atom) &
                               *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -4078,7 +4172,7 @@ contains
                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
-                gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
+                gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                             *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -4109,7 +4203,7 @@ contains
                                      /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               do gdx = 1, photo_gkmax
-                gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
+                gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k)*phi_accept_frac(gdx, n_eigen, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                             *emission_gauss(gdx, n_eigen, N_spin, N_k)
@@ -4169,8 +4263,8 @@ contains
       write (binding_unit, '(1x,a35,f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
       write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
         photo_theta_min, photo_theta_max
-      write (binding_unit, '(1x,a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-        photo_phi_min, photo_phi_max
+      write (binding_unit, '(1x,a63,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - work_function_eff)
       write (binding_unit, '(1x,a66,1x,a50)') '## Binding Energy (EB) [eV] | Total QE from sum(atoms + bulk) @ EB',&
       &'| Contributions from: atom1 | atom2 | ... | bulk |'
@@ -4215,8 +4309,8 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_min, &
-      photo_phi_max, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
@@ -4334,7 +4428,7 @@ contains
             ! final >= min_index_unocc and init < final.
             first_final = max(min_index_unocc(N_spin, N_k), n_eigen_init + 1)
             qe_contrib = sum(qe_tsm(n_eigen_init, first_final:nbands, N_spin, N_k, 1:max_atoms)) &
-                         *arpes_mask(1, n_eigen_init, N_spin, N_k)
+                         *arpes_mask(1, n_eigen_init, N_spin, N_k)*phi_accept_frac(1, n_eigen_init, N_spin, N_k)
             total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
             if (abs(qe_contrib) .lt. tiny_contribution) cycle
             center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
@@ -4366,7 +4460,7 @@ contains
           do n_eigen_init = 1, nbands - 1
             first_final = max(min_index_unocc(N_spin, N_k), n_eigen_init + 1)
             qe_contrib = sum(qe_tsm(n_eigen_init, first_final:nbands, N_spin, N_k, max_atoms + 1)) &
-                         *arpes_mask(1, n_eigen_init, N_spin, N_k)
+                         *arpes_mask(1, n_eigen_init, N_spin, N_k)*phi_accept_frac(1, n_eigen_init, N_spin, N_k)
             total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
             if (abs(qe_contrib) .lt. tiny_contribution) cycle
             center_bin_e = ceiling((E_kinetic(1, n_eigen_init, N_spin, N_k) - min_e)/photo_pmat_bin_width)
@@ -4400,7 +4494,7 @@ contains
           do n_eigen = 1, nbands
             ! Neither patch carries an atom index, so sum the atoms here.
             qe_contrib = sum(qe_osm(n_eigen, N_spin, N_k, 1:max_atoms + 1)) &
-                         *arpes_mask(1, n_eigen, N_spin, N_k)
+                         *arpes_mask(1, n_eigen, N_spin, N_k)*phi_accept_frac(1, n_eigen, N_spin, N_k)
             total_be_kmat_contribs = total_be_kmat_contribs + qe_contrib
             if (abs(qe_contrib) .lt. tiny_contribution) cycle
             center_bin_e = ceiling((E_kinetic(1, n_eigen, N_spin, N_k) - min_e)/photo_pmat_bin_width)
@@ -4452,8 +4546,8 @@ contains
       write (matrix_unit, '(a36,f9.5)') '## Binding Energy Broadening [eV] : ', photo_bindenergy_broadening
       write (matrix_unit, '(a65,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg] : ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a55,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg] : ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg] : ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a35,f9.5)') '## Fermi Energy Ekin offset [eV] : ', max_e_kinetic - plot_extra_upper
       write (matrix_unit, '(a34,f9.5)') '## Max k_transverse value [1/A] : ', max_k_transverse
       write (matrix_unit, '(a20,f9.5)') '## Bin width [eV] : ', photo_pmat_bin_width
@@ -4496,8 +4590,8 @@ contains
       kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
       photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_min, &
-      photo_phi_max, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
@@ -4636,7 +4730,7 @@ contains
 
             do gdx = 1, photo_gkmax
               ! Everything here is invariant under the atom and final-band sums.
-              gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
+              gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
                           *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                           *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
               ! Below threshold emission_gauss is exponentially small and the
@@ -4710,7 +4804,7 @@ contains
             if (abs(sum_final) .lt. tiny_contribution) cycle
 
             do gdx = 1, photo_gkmax
-              gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
+              gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
                           *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                           *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
                           *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -4761,7 +4855,7 @@ contains
             if (abs(temp_contribution) .lt. tiny_contribution) cycle
 
             do gdx = 1, photo_gkmax
-              gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
+              gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k)*phi_accept_frac(gdx, n_eigen, N_spin, N_k) &
                           *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                           *emission_gauss(gdx, n_eigen, N_spin, N_k)
               if (abs(gk_factor) .lt. tiny_contribution) cycle
@@ -4836,8 +4930,8 @@ contains
       write (matrix_unit, '(a36,f9.5)') '## Binding Energy Broadening [eV] : ', photo_bindenergy_broadening
       write (matrix_unit, '(a65,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg] : ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a55,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg] : ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg] : ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a35,f9.5)') '## Fermi Energy Ekin offset [eV] : ', max_e_kinetic - plot_extra_upper
       write (matrix_unit, '(a34,f9.5)') '## Max k_transverse value [1/A] : ', max_k_transverse
       write (matrix_unit, '(a20,f9.5)') '## Bin width [eV] : ', photo_pmat_bin_width
@@ -4879,8 +4973,8 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_min, &
-      photo_phi_max, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
       optics_qdir, photo_momentum
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -5018,6 +5112,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
@@ -5067,6 +5166,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
@@ -5116,6 +5220,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, max_bin_p(1))
@@ -5190,8 +5299,8 @@ contains
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a14,f9.5)') '## Bin width: ', photo_pmat_bin_width
       write (matrix_unit, '(a47)') '## Note: x and y are from -k to +k including 0!'
       write (matrix_unit, '(a29,f9.5)') '## p_z value of first z_bin: ', z_min
@@ -5278,6 +5387,9 @@ contains
         current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
         k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
       end if
+      ! As above: this is the emission direction of this image, so the wedge
+      ! can be tested here and nowhere earlier.
+      if (.not. phi_accepted(current_k(1), current_k(2))) cycle
       weighted = qe_contrib*k_prefactor
       total_be_kmat_contribs = total_be_kmat_contribs + weighted
 
@@ -5321,8 +5433,8 @@ contains
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
       photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_min, &
-      photo_phi_max, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
       optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -5618,8 +5730,8 @@ contains
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a14,f9.5)') '## Bin width: ', photo_pmat_bin_width
       write (matrix_unit, '(a61)') '## Note: x and y are from -k to +k including 0, z is 0 to kz!'
       write (matrix_unit, '(a19,3(i7,a3))') '## Matrix Shape: ( ', max_bin_p(1), ' , ', max_bin_p(2), ' , ', max_bin_p(3), ' )'
@@ -5667,7 +5779,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_phi_min, photo_phi_max, &
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, &
       devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
     use od_algorithms, only: gaussian
@@ -5773,6 +5885,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
@@ -5817,6 +5934,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
@@ -5860,6 +5982,11 @@ contains
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
             k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
           end if
+          ! current_k is the emission direction of this symmetry image, so the
+          ! azimuthal acceptance can finally be tested against something real.
+          ! At the irreducible k-point it could not: one point stands for its
+          ! whole star, and the star spans many azimuths.
+          if (.not. phi_accepted(current_k(1), current_k(2))) cycle
           x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
           xdx_min = max(x_center - xdx_window, 1)
           xdx_max = min(x_center + xdx_window, px_max)
@@ -5927,8 +6054,8 @@ contains
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a38,f9.5)') '## Band Energy of States shown [eV] : ', ref_level
       write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
       write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
@@ -5972,7 +6099,8 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_calc_kpoint_r_cart, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, photo_phi_min, photo_phi_max, &
+    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
+      photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir, &
       photo_const_bindenergy_value
     use od_algorithms, only: gaussian
@@ -6095,6 +6223,11 @@ contains
               if (abs(sum_final) .lt. tiny_contribution) cycle
 
               do gdx = 1, photo_gkmax
+                ! Hoisted above the running total: this is the emission direction
+                ! of the current symmetry image, and an image outside the azimuthal
+                ! wedge must contribute to neither the map nor the normalisation.
+                current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
+                if (.not. phi_accepted(current_k(1), current_k(2))) cycle
                 gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *emission_gauss(gdx, n_eigen_init, N_spin, N_k)
@@ -6174,6 +6307,10 @@ contains
               if (abs(sum_final) .lt. tiny_contribution) cycle
 
               do gdx = 1, photo_gkmax
+                ! Hoisted above the running total: this is the emission direction
+                ! of the current symmetry image, and an image outside the azimuthal
+                ! wedge must contribute to neither the map nor the normalisation.
+                if (.not. phi_accepted(current_k(1), current_k(2))) cycle
                 gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
                             *electron_esc(gdx, n_eigen_init, N_spin, N_k, max_atoms + 1) &
@@ -6187,7 +6324,6 @@ contains
                 gauss_e = gaussian(E_kinetic(gdx, n_eigen_init, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                 if (abs(gauss_e*qe_contrib) .lt. tiny_contribution) cycle
 
-                current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
                 x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
                 xdx_min = max(x_center - xdx_window, 1)
                 xdx_max = min(x_center + xdx_window, px_max)
@@ -6228,6 +6364,11 @@ contains
               if (abs(temp_contribution) .lt. tiny_contribution) cycle
 
               do gdx = 1, photo_gkmax
+                ! Hoisted above the running total: this is the emission direction
+                ! of the current symmetry image, and an image outside the azimuthal
+                ! wedge must contribute to neither the map nor the normalisation.
+                current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
+                if (.not. phi_accepted(current_k(1), current_k(2))) cycle
                 gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k) &
                             *gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                             *emission_gauss(gdx, n_eigen, N_spin, N_k)
@@ -6248,7 +6389,6 @@ contains
                 gauss_e = gaussian(E_kinetic(gdx, n_eigen, N_spin, N_k), photo_bindenergy_broadening, ref_level)
                 if (abs(gauss_e*qe_contrib) .lt. tiny_contribution) cycle
 
-                current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
                 x_center = nint(current_k(1)/photo_pmat_bin_width) + xdx_offset + 1
                 xdx_min = max(x_center - xdx_window, 1)
                 xdx_max = min(x_center + xdx_window, px_max)
@@ -6305,8 +6445,8 @@ contains
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
         photo_theta_min, photo_theta_max
-      write (matrix_unit, '(a54,2(1x,f7.2))') '## Emission angle phi min, max (w.r.t. x-axis) [deg]: ', &
-        photo_phi_min, photo_phi_max
+      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
+        photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a44,f9.5)') '## Kinetic Energy of Electrons shown [eV] : ', ref_level
       write (matrix_unit, '(a44,f9.5)') '## Reference Energy of Map (E-E_F)   [eV] : ', photo_const_bindenergy_value
       write (matrix_unit, '(a44,f9.5)') '## Momentum bin width               [1/A] : ', photo_pmat_bin_width
@@ -6690,9 +6830,9 @@ contains
     implicit none
     integer :: ierr
 
-    if (allocated(phi_arpes)) then
-      deallocate (phi_arpes, stat=ierr)
-      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate phi_arpes')
+    if (allocated(phi_accept_frac)) then
+      deallocate (phi_accept_frac, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate phi_accept_frac')
     end if
 
     if (allocated(theta_arpes)) then

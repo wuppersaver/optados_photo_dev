@@ -146,8 +146,8 @@ module od_parameters
   integer, public, save       :: photo_len_imfp_value
   real(kind=dp), dimension(:), allocatable, public, save :: photo_imfp_value
   character(len=20), public, save :: photo_imfp_model
-  real(kind=dp), public, save :: photo_phi_min
-  real(kind=dp), public, save :: photo_phi_max
+  real(kind=dp), public, save :: photo_phi_centre
+  real(kind=dp), public, save :: photo_phi_halfwidth
   real(kind=dp), public, save :: photo_theta_min
   real(kind=dp), public, save :: photo_theta_max
   real(kind=dp), public, save :: photo_bindenergy_broadening
@@ -188,6 +188,7 @@ contains
 
     !local variables
     integer :: i_temp, loop, ierr
+    real(kind=dp) :: deprecated_r   ! sink for keywords that are read only to be refused
     logical :: found
     ! Presence flags kept separate from `found`, which is overwritten by every
     ! param_get_keyword call and so cannot be used for cross-keyword checks.
@@ -621,10 +622,27 @@ contains
     call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
     photo_theta_max = 90.0_dp
     call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
-    photo_phi_min = 0.0_dp
-    call param_get_keyword('photo_phi_min', found, r_value=photo_phi_min)
-    photo_phi_max = 90.0_dp
-    call param_get_keyword('photo_phi_max', found, r_value=photo_phi_max)
+    ! The azimuthal acceptance is a direction plus a half width rather than a
+    ! min and a max, because an analyser centred on the +x axis spans -30 to +30
+    ! and a min/max pair cannot express a window that wraps through 180 deg.
+    ! The default half width of 180 deg accepts the whole circle.
+    photo_phi_centre = 0.0_dp
+    call param_get_keyword('photo_phi_centre', found, r_value=photo_phi_centre)
+    photo_phi_halfwidth = 180.0_dp
+    call param_get_keyword('photo_phi_halfwidth', found, r_value=photo_phi_halfwidth)
+    if (photo_phi_halfwidth .le. 0.0_dp .or. photo_phi_halfwidth .gt. 180.0_dp) &
+      call io_error('Error: photo_phi_halfwidth must be greater than 0 and at most 180 degrees')
+    ! photo_phi_min/max described a folded azimuth that only ever ran 0-90 deg and
+    ! selected a four-fold set of wedges. Refusing them is better than silently
+    ! reinterpreting an old input file against the signed azimuth.
+    call param_get_keyword('photo_phi_min', found, r_value=deprecated_r)
+    if (found) call io_error('Error: photo_phi_min has been replaced by photo_phi_centre and '// &
+                             'photo_phi_halfwidth. The old keywords acted on a folded azimuth '// &
+                             'and selected one wedge per quadrant; the new ones act on the '// &
+                             'signed azimuth over -180 to 180 deg and select a single wedge.')
+    call param_get_keyword('photo_phi_max', found, r_value=deprecated_r)
+    if (found) call io_error('Error: photo_phi_max has been replaced by photo_phi_centre and '// &
+                             'photo_phi_halfwidth. See the photo_phi_min message.')
 
     photo_bindenergy_broadening = 0.01285_dp
     call param_get_keyword('photo_bindenergy_broadening', found, r_value=photo_bindenergy_broadening)
@@ -1107,8 +1125,8 @@ contains
       if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
-        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - min -           (deg)          :', photo_phi_min, '|'
-        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - max -           (deg)          :', photo_phi_max, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - centre -        (deg)          :', photo_phi_centre, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - half width -    (deg)          :', photo_phi_halfwidth, '|'
       end if
       if (index(photo_output, 'ekin_ptrans_map') > 0 .or. index(photo_output, 'p_tensor') > 0) then
         write (stdout, '(1x,a46,4x,1f8.5,19x,a1)') '|  P Matrix Bin Width (1/A)                  :', photo_pmat_bin_width, '|'
@@ -1911,8 +1929,8 @@ contains
     call comms_bcast(photo_output, len(photo_output))
     call comms_bcast(photo_theta_min, 1)
     call comms_bcast(photo_theta_max, 1)
-    call comms_bcast(photo_phi_min, 1)
-    call comms_bcast(photo_phi_max, 1)
+    call comms_bcast(photo_phi_centre, 1)
+    call comms_bcast(photo_phi_halfwidth, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)
     call comms_bcast(photo_pmat_bin_width, 1)
     call comms_bcast(photo_const_bindenergy_value, 1)
