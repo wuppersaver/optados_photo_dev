@@ -72,8 +72,17 @@ def read_den_fmt(path):
     return z, planes, c
 
 
-def atom_z_from_cell(path):
-    """Cartesian z of every atom, in Angstrom, from a CASTEP -out.cell."""
+def atom_z_from_cell(path, c=None):
+    """Cartesian z of every atom, in Angstrom, from a CASTEP -out.cell.
+
+    ``c`` is the cell height used to scale fractional coordinates, and should
+    come from the ``.den_fmt`` header rather than from the cell file. The two
+    agree when both were written by the same run, which is the normal case -- but
+    the density is the grid these coordinates are compared against, so it is the
+    one to trust. A disagreement is reported rather than silently resolved: it
+    means the two files came from different runs, and every boundary printed
+    below would be wrong by that ratio.
+    """
     lattice, frac, cart = [], [], []
     block = None
     for line in open(path):
@@ -90,11 +99,22 @@ def atom_z_from_cell(path):
             frac.append(float(line.split()[3]))
         elif block == 'positions_abs' and len(line.split()) >= 4:
             cart.append(float(line.split()[3]))
+    c_cell = lattice[2][2] if len(lattice) >= 3 else None
+    if c is not None and c_cell is not None and abs(c_cell - c) > 1e-4 * max(c, 1.0):
+        sys.stderr.write(
+            'warning: %s has c = %.5f Ang but the .den_fmt has c = %.5f. They\n'
+            '         should agree when both come from the same run. Using the\n'
+            '         density value, since that is the grid the boundaries are\n'
+            '         found on.\n' % (path, c_cell, c))
+
     if cart:
         return np.sort(np.array(cart))
-    if not frac or len(lattice) < 3:
+    if not frac:
         raise ValueError('%s: no positions found' % path)
-    return np.sort(np.array(frac) * lattice[2][2])
+    scale = c if c is not None else c_cell
+    if scale is None:
+        raise ValueError('%s: no lattice, and no cell height supplied' % path)
+    return np.sort(np.array(frac) * scale)
 
 
 def group_layers(atom_z):
@@ -206,7 +226,7 @@ def analyse(seed, fraction=0.005, root='.', criterion='charge'):
     den = os.path.join(root, seed + '.den_fmt')
     cell = os.path.join(root, seed + '-out.cell')
     z, rho, c = read_den_fmt(den)
-    atom_z = atom_z_from_cell(cell)
+    atom_z = atom_z_from_cell(cell, c)
     layers = group_layers(atom_z)
     centroids = [float(l.mean()) for l in layers]
 
