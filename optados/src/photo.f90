@@ -3695,9 +3695,9 @@ contains
   !===============================================================================
   subroutine write_qe_terms(fermi_dirac, emission_gauss, delta_temp)
     !*===============================================================================
-    ! Write the factors entering the QE sum, one row per contributing transition,
-    ! to <seed>_<model>_<hv>_qe_terms[_nodeNN].dat. Works for either the three
-    ! step or the one step model.
+    ! Write the factors entering the QE sum, one row per transition, to
+    ! <seed>_<model>_<hv>_qe_terms.dat. Works for either the three step or the
+    ! one step model.
     !
     ! Deliberately a post-pass over arrays the sum has already filled, rather
     ! than a write inside it. The version this replaces tested devel_flag in the
@@ -3708,68 +3708,106 @@ contains
     ! array elements the sum multiplied together, so the file says what the run
     ! actually did.
     !
-    ! Rows are emitted only where the transition contributed. The full index
-    ! space is of order 1E7 rows for a 13 layer slab; the energy conserving delta
-    ! leaves almost all of them at zero, so what lands in the file is the set of
-    ! transitions that mattered at this photon energy.
+    ! Every transition the sum visits is written, including the ones that
+    ! contributed nothing. That is the point of the file: when a transition is
+    ! zero and should not be, the row shows which factor killed it. It is large
+    ! -- of order 1E6 rows for a 13 layer slab at one k-point per direction, more
+    ! with a gkgrid -- and that is accepted.
     !
-    ! In parallel each node writes its own file, since gathering a list this long
-    ! to root would cost more than the dump itself. The complete data set is the
-    ! concatenation of them; in serial there is one file and no suffix.
+    ! One file, not one per node. The rows are written in turn: root writes the
+    ! header and its own k-points, then hands a token to each node in order, and
+    ! each appends its own. Passing a token rather than the data keeps this
+    ! flat in memory, which marshalling a million rows to root would not be.
     ! Felix Mildner, 2026
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, atoms_label_tmp
-    use od_electronic, only: nbands, nspins, band_energy, electrons_per_state, transmit_prob
-    use od_comms, only: my_node_id, on_root, num_nodes
-    use od_parameters, only: photo_model, iprint
+    use od_comms, only: on_root, num_nodes, comms_send, comms_recv
     use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
+    use od_parameters, only: photo_model, iprint
     implicit none
     real(kind=dp), intent(in)           :: fermi_dirac(:, :, :)
     real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
     real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
 
-    integer :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, unit_no, ierr, first_final
-    integer :: n_rows
-    real(kind=dp)      :: contribution, pdos_frac
+    integer            :: unit_no, inode, token, n_rows
     logical            :: three_step
     character(len=10)  :: char_e
     character(len=9)   :: ctime
     character(len=11)  :: cdate
     character(len=99)  :: filename
-    character(len=8)   :: node_tag
 
     three_step = index(photo_model, '3step') .gt. 0
     if (three_step .and. .not. present(delta_temp)) &
       call io_error('Error: write_qe_terms - the three step model needs its delta function')
 
-    node_tag = ' '
-    if (num_nodes .gt. 1) write (node_tag, '(a5,i3.3)') '_node', my_node_id
     write (char_e, '(F7.3)') temp_photon_energy
-    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
-               '_qe_terms'//trim(node_tag)//'.dat'
+    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_terms.dat'
+    token = -1
+    n_rows = 0
 
-    unit_no = io_file_unit()
-    open (unit=unit_no, action='write', file=filename)
-    call io_date(cdate, ctime)
-    write (unit_no, '(a)') '# OptaDOS photoemission: the terms entering the QE sum'
-    write (unit_no, '(a,a,a,a)') '# written on ', cdate, ' at ', ctime
-    write (unit_no, '(a,a)') '# model        : ', trim(photo_model)
-    write (unit_no, '(a,f10.4,a)') '# photon energy: ', temp_photon_energy, ' eV'
-    write (unit_no, '(a,i0)') '# node         : ', my_node_id
-    write (unit_no, '(a)') '# only transitions with a non-zero contribution are listed'
-    if (three_step) then
-      write (unit_no, '(a)') '# atom box k spin n_init n_final gdx  then, in order:'
-      write (unit_no, '(a)') '#   contribution E_init E_final matrix_weight delta transmit_prob'
-      write (unit_no, '(a)') '#   electron_esc kpoint_weight I_layer emission_gauss fd_init fd_final'
-      write (unit_no, '(a)') '#   pdos_fraction field_emission gkgrid_weight E_transverse'
+    if (on_root) then
+      unit_no = io_file_unit()
+      open (unit=unit_no, action='write', file=filename)
+      call io_date(cdate, ctime)
+      write (unit_no, '(a)') '# OptaDOS photoemission: the terms entering the QE sum'
+      write (unit_no, '(a,a,a,a)') '# written on ', cdate, ' at ', ctime
+      write (unit_no, '(a,a)') '# model        : ', trim(photo_model)
+      write (unit_no, '(a,f10.4,a)') '# photon energy: ', temp_photon_energy, ' eV'
+      write (unit_no, '(a)') '# every transition the QE sum visits is listed, including those'
+      write (unit_no, '(a)') '# contributing nothing -- the row shows which factor is zero'
+      if (three_step) then
+        write (unit_no, '(a)') '# atom box k spin n_init n_final gdx  then, in order:'
+        write (unit_no, '(a)') '#   contribution E_init E_final matrix_weight delta transmit_prob'
+        write (unit_no, '(a)') '#   electron_esc kpoint_weight I_layer emission_gauss fd_init fd_final'
+        write (unit_no, '(a)') '#   pdos_fraction field_emission gkgrid_weight E_transverse'
+      else
+        write (unit_no, '(a)') '# atom box k spin n_eigen gdx  then, in order:'
+        write (unit_no, '(a)') '#   contribution E_init matrix_weight electron_esc kpoint_weight'
+        write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
+        write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
+      end if
+      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
+      close (unit=unit_no)
+
+      ! Hand the file to each node in turn so the rows land in node order.
+      do inode = 1, num_nodes - 1
+        call comms_send(token, 1, inode)
+        call comms_recv(token, 1, inode)
+      end do
     else
-      write (unit_no, '(a)') '# atom box k spin n_eigen gdx  then, in order:'
-      write (unit_no, '(a)') '#   contribution E_init matrix_weight electron_esc kpoint_weight'
-      write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
-      write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
+      call comms_recv(token, 1, 0)
+      unit_no = io_file_unit()
+      open (unit=unit_no, action='write', position='append', file=filename)
+      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
+      close (unit=unit_no)
+      call comms_send(token, 1, 0)
     end if
 
-    n_rows = 0
+    if (on_root .and. iprint .gt. 1) then
+      ! n_rows counts this node's share only; in parallel the file holds the sum
+      ! over nodes, so say which is being reported rather than print a number
+      ! that means something different depending on the node count.
+      write (stdout, '(1x,a1,5x,a,i0,a,22x,a1)') '|', 'Wrote ', n_rows, ' QE terms from root', '|'
+    end if
+  end subroutine write_qe_terms
+
+  subroutine write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
+    !! One node's share of the QE term dump. Split out from write_qe_terms so
+    !! that the loop appears once and both the root and the non-root branch of
+    !! the token pass write identically formatted rows.
+    use od_cell, only: num_kpoints_on_node, kpoint_weight
+    use od_electronic, only: nbands, nspins, band_energy, transmit_prob
+    use od_comms, only: my_node_id
+    implicit none
+    integer, intent(in)                 :: unit_no
+    logical, intent(in)                 :: three_step
+    integer, intent(inout)              :: n_rows
+    real(kind=dp), intent(in)           :: fermi_dirac(:, :, :)
+    real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
+    real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
+
+    integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box
+    real(kind=dp) :: pdos_frac
+
     do atom = 1, max_atoms
       box = box_atom(atom)
       do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -3777,14 +3815,13 @@ contains
           if (three_step) then
             do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
               do n_eigen = 1, n_eigen_final - 1
+                pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                            /pdos_weights_k_band(n_eigen, N_spin, N_k)
                 do gdx = 1, photo_gkmax
-                  contribution = qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom)
-                  if (abs(contribution) .le. 0.0_dp) cycle
-                  pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                              /pdos_weights_k_band(n_eigen, N_spin, N_k)
                   write (unit_no, '(7(1x,i6),16(1x,E17.9E3))') &
                     atom, box, N_k, N_spin, n_eigen, n_eigen_final, gdx, &
-                    contribution, band_energy(n_eigen, N_spin, N_k), &
+                    qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom), &
+                    band_energy(n_eigen, N_spin, N_k), &
                     band_energy(n_eigen_final, N_spin, N_k), &
                     photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k), &
                     delta_temp(n_eigen, n_eigen_final, N_spin, N_k), &
@@ -3803,14 +3840,13 @@ contains
             end do
           else
             do n_eigen = 1, nbands
+              pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                          /pdos_weights_k_band(n_eigen, N_spin, N_k)
               do gdx = 1, photo_gkmax
-                contribution = qe_osm(n_eigen, N_spin, N_k, atom)
-                if (abs(contribution) .le. 0.0_dp) cycle
-                pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                            /pdos_weights_k_band(n_eigen, N_spin, N_k)
                 write (unit_no, '(6(1x,i6),12(1x,E17.9E3))') &
                   atom, box, N_k, N_spin, n_eigen, gdx, &
-                  contribution, band_energy(n_eigen, N_spin, N_k), &
+                  qe_osm(n_eigen, N_spin, N_k, atom), &
+                  band_energy(n_eigen, N_spin, N_k), &
                   foptical_matrix_weights(n_eigen, N_spin, N_k), &
                   electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
                   I_layer(box, current_photo_energy_index), &
@@ -3826,12 +3862,7 @@ contains
         end do
       end do
     end do
-    close (unit=unit_no)
-
-    if (on_root .and. iprint .gt. 1) then
-      write (stdout, '(1x,a1,5x,a,i0,a,20x,a1)') '|', 'Wrote ', n_rows, ' QE terms to file', '|'
-    end if
-  end subroutine write_qe_terms
+  end subroutine write_qe_terms_rows
 
   subroutine calc_one_step_model
     !===============================================================================
