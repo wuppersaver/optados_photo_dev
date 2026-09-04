@@ -275,7 +275,12 @@ contains
       photo_slab_mode, SLAB_MODE_LAYERS
     implicit none
     integer :: ierr, atom, counter, i, j, ic, atom_index, first, temp, atom_1, atom_2
-    integer :: n_layers
+    integer :: n_layers, n_species_seen, isp
+    integer, allocatable, dimension(:, :)    :: layer_species_count
+    character(len=10), allocatable, dimension(:) :: species_seen
+    logical                                  :: same_species_set, same_species_counts
+    character(len=80)                        :: comp_str, temp_str
+    real(kind=dp)                            :: h_min, h_max, h_mean
     real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     real(kind=dp)                            :: max_gap, typical_gap, layer_tol
     real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid
@@ -505,6 +510,120 @@ contains
 
       ! bottom of the deepest explicit box - where the bulk extrapolation starts
       slab_middle_ref = boxes_top_z_coord(num_boxes) - box_heights(num_boxes)
+
+      ! ----------------------------------------------------------------------
+      ! Can the inferred-layer model describe this structure at all?
+      !
+      ! Everything downstream assumes the layers are equivalent repeats of one
+      ! material: num_boxes keeps the top half of them whatever they contain,
+      ! box_volumes gives each the same kind of extent, one epsilon per box sets
+      ! the optics of that box - the topmost one alone fixes the reflectivity of
+      ! the whole surface - and bulk_emission repeats the deepest explicit box
+      ! downwards as though everything below it were more of the same.
+      !
+      ! None of that survives an interface, an adsorbate, or a compound whose
+      ! planes alternate in species. An upright CO on Cu, for instance, clusters
+      ! into a one-atom O layer above a one-atom C layer, and the oxygen's
+      ! dielectric function then becomes the reflectivity of the copper surface.
+      ! Say so and stop, rather than return a confident wrong answer.
+      ! ----------------------------------------------------------------------
+      allocate (species_seen(num_atoms), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of species_seen failed')
+      n_species_seen = 0
+      do atom = 1, num_atoms
+        isp = 0
+        do i = 1, n_species_seen
+          if (trim(species_seen(i)) .eq. trim(atoms_label_tmp(atom_order(atom)))) isp = i
+        end do
+        if (isp .eq. 0) then
+          n_species_seen = n_species_seen + 1
+          species_seen(n_species_seen) = atoms_label_tmp(atom_order(atom))
+        end if
+      end do
+
+      allocate (layer_species_count(n_species_seen, n_layers), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_species_count failed')
+      layer_species_count = 0
+      do atom = 1, num_atoms
+        do i = 1, n_species_seen
+          if (trim(species_seen(i)) .eq. trim(atoms_label_tmp(atom_order(atom)))) then
+            layer_species_count(i, box_atom(atom)) = layer_species_count(i, box_atom(atom)) + 1
+          end if
+        end do
+      end do
+
+      ! Which species are present is the fatal test; how many of each there are
+      ! is only a warning, since a vacancy or a reconstruction changes the counts
+      ! without making the layers different materials.
+      same_species_set = .true.
+      same_species_counts = .true.
+      do i = 2, n_layers
+        do isp = 1, n_species_seen
+          if ((layer_species_count(isp, i) .gt. 0) .neqv. (layer_species_count(isp, 1) .gt. 0)) &
+            same_species_set = .false.
+          if (layer_species_count(isp, i) .ne. layer_species_count(isp, 1)) same_species_counts = .false.
+        end do
+      end do
+
+      if (.not. same_species_set) then
+        if (on_root) then
+          write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+          write (stdout, '(1x,a78)') '| The inferred layers do not all contain the same species, so this           |'
+          write (stdout, '(1x,a78)') '| structure is an interface, an adsorbate system, or a compound with         |'
+          write (stdout, '(1x,a78)') '| alternating planes. The layer model cannot describe it: it takes the       |'
+          write (stdout, '(1x,a78)') '| top half of the stack as the explicit region whatever is in it, gives      |'
+          write (stdout, '(1x,a78)') '| the topmost layer the optical constants of the whole surface, and          |'
+          write (stdout, '(1x,a78)') '| extrapolates the deepest explicit layer downwards as though the            |'
+          write (stdout, '(1x,a78)') '| substrate were made of it.                                                 |'
+          write (stdout, '(1x,a78)') '|                                                                            |'
+          write (stdout, '(1x,a78)') '| Layer | Composition, top layer first                                       |'
+          do i = 1, n_layers
+            comp_str = ' '
+            do isp = 1, n_species_seen
+              if (layer_species_count(isp, i) .gt. 0) then
+                write (temp_str, '(1x,a,i0)') trim(species_seen(isp)), layer_species_count(isp, i)
+                comp_str = trim(comp_str)//trim(temp_str)
+              end if
+            end do
+            write (stdout, '(1x,a1,i6,1x,a1,1x,a67,a1)') '|', i, '|', adjustl(comp_str), '|'
+          end do
+          write (stdout, '(1x,a78)') '|                                                                            |'
+          write (stdout, '(1x,a78)') '| Set the layers yourself with photo_layers_tops and photo_slab_middle.      |'
+          write (stdout, '(1x,a78)') '| Those tile the slab exactly and let you group a full repeat unit of        |'
+          write (stdout, '(1x,a78)') '| material into one layer rather than one plane of one species.              |'
+          write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+        end if
+        call io_error('Error: analyse_geometry - the inferred layers are not all the same material. '// &
+                      'Use photo_layers_tops and photo_slab_middle to define them explicitly.')
+      end if
+
+      if (.not. same_species_counts .and. on_root) then
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        write (stdout, '(1x,a78)') '! Warning: the inferred layers hold the same species but not the same        !'
+        write (stdout, '(1x,a78)') '! numbers of them, as a vacancy or a reconstruction would give. Each layer   !'
+        write (stdout, '(1x,a78)') '! still gets the same kind of box volume, so their optical constants are     !'
+        write (stdout, '(1x,a78)') '! not on an equal footing.                                                   !'
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+      end if
+
+      ! The layer spacings feed box_volumes and the optical path lengths, and the
+      ! boxes only tile the slab exactly when consecutive spacings are equal.
+      h_min = minval(layer_centroid(1:n_layers - 1) - layer_centroid(2:n_layers))
+      h_max = maxval(layer_centroid(1:n_layers - 1) - layer_centroid(2:n_layers))
+      h_mean = (layer_centroid(1) - layer_centroid(n_layers))/real(n_layers - 1, dp)
+      if ((h_max - h_min) .gt. 0.01_dp*h_mean .and. on_root) then
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        write (temp_str, '(a,f7.4,a,f7.4,a)') 'Warning: the inferred layer spacings vary, from ', &
+          h_min, ' to ', h_max, ' Ang.'
+        write (stdout, '(1x,a1,1x,a74,1x,a1)') '!', adjustl(temp_str), '!'
+        write (stdout, '(1x,a78)') '! Consecutive boxes then overlap or leave a gap by half that difference,     !'
+        write (stdout, '(1x,a78)') '! and their volumes no longer add up to the slab. Give photo_layers_tops     !'
+        write (stdout, '(1x,a78)') '! instead if that matters for this structure.                                !'
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+      end if
+
+      deallocate (layer_species_count, species_seen, stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of the composition check arrays failed')
 
       atoms_per_box = 0
       do i = 1, num_boxes
