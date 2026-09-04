@@ -615,15 +615,53 @@ The angle $\theta(i,j,\bf{k})$ indicates that electrons that travels with a high
 
 \begin{equation}
 \begin{split}
-\theta_{int}{(i,j, {\bf{k}},s)} &= \arccos \sqrt{\frac{E_K(j,{\bf{k}},s)+W-E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)+W}}\\
+\theta_{int}{(i,j, {\bf{k}},s)} &= \arccos \sqrt{\frac{E_K(j,{\bf{k}},s)+V_0-E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)+V_0}}\\
 \theta_{ext}{(i,j, {\bf{k}},s)} &= \arccos \sqrt{\frac{E_K(j,{\bf{k}},s)-E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}}
 \end{split}
 \label{theta}
 \end{equation}
 
-where $E_\parallel(i,\bf{k})$ is the transverse energy, $E_K(j,\bf{k})$ is the final state kinetic energy and $W$ is the work function. The angle $\theta_{ext}$ is used to determine if emission is possible under the chosen conditions, while $\theta_{int}$ is used to model the electron's propagation distance.
+where $E_\parallel(i,\bf{k})$ is the transverse energy, $E_K(j,\bf{k})$ is the final state kinetic energy and $V_0$ is the inner potential, set by {\tt photo\_inner\_potential}. The angle $\theta_{ext}$ is used to determine if emission is possible under the chosen conditions, while $\theta_{int}$ is used to model the electron's propagation distance.
 
 The numerator is the energy along the surface normal, $E_K - E_\parallel$, and the square root is not optional. $\theta$ is defined by a ratio of momenta, $\cos\theta = k_z/|k|$, and converting each momentum into an energy squares it, so the bare energy ratio is $\cos^2\theta$ rather than $\cos\theta$. Both limits agree either way -- normal emission gives a ratio of one and grazing emission a ratio of zero -- so the difference is invisible at the ends of the range and largest in the middle, reaching $15.8^\circ$ at $E_\parallel/E_K = 2/3$.
+
+\subsection{The inner potential}
+\label{subsec:inner_potential}
+
+$V_0$ is the depth of the well the photoelectron climbs out of, measured from the
+vacuum level down to the bottom of the free-electron-like final state band. It is
+not the work function, which is measured from the Fermi level: for Cu the two are
+roughly 4.3 and 13.5 eV, so taking the work function for the barrier understates
+the refraction by about a factor of three.
+
+There is no safe way to derive it automatically, which is why it is a keyword.
+Two estimates are worth having, and both are printed by {\tt workfct.py} from the
+same planar-averaged {\tt .pot\_fmt} already used for the work function:
+
+\begin{itemize}
+\item $E_{vac} - \min(\varepsilon_{n\bf{k}})$, about 13.5 eV for these slabs and
+      in line with the 13--14 eV usually fitted for Cu. It is right only when the
+      lowest computed band happens to be the free-electron-like one, which is a
+      property of the valence window of the pseudopotential rather than of the
+      material -- a Cu potential carrying 3s and 3p as semicore moves it by 70 eV
+      or more.
+\item $E_{vac} - \langle V_{loc}\rangle_{bulk}$, from the \emph{macroscopic}
+      average of the planar-averaged local potential: a convolution with a
+      normalised box one lattice period wide along $z$, which removes the
+      oscillation with the atomic planes and leaves a plateau wherever the
+      material is bulk-like. Well defined and quick to converge with slab
+      thickness, but it is the mean local potential, which lies below the band
+      bottom by the zero-point kinetic energy of the Bloch state and by the
+      non-local part of the pseudopotential, so it overestimates $V_0$.
+\end{itemize}
+
+In practice $V_0$ is fitted from photon-energy-dependent normal-emission
+measurements. Use the band estimate as a starting value where the valence window
+is known to be clean, use the flatness of the macroscopic average as the
+diagnostic that the slab has a bulk-like middle at all, and state the value
+chosen. The answer is not very sensitive once $V_0$ is in the right range: on a
+five-layer Cu slab at 6 eV the quantum efficiency moves by 3.0\% on going from
+the work function to 13.5 eV, and only 0.6\% further on going to 22.8 eV.
 
 \subsection{Transverse momentum conservation}
 
@@ -1669,6 +1707,25 @@ There is no default value
 \subsection[photo\_work\_function]{\tt real(kind=dp) :: photo\_work\_function}
 
 Sets the assumed work function for the calculation. This needs to be determined/estimated by the user.
+
+There is no default value
+
+\subsection[photo\_inner\_potential]{\tt real(kind=dp) :: photo\_inner\_potential}
+
+Sets the inner potential $V_0$, the depth of the well below the vacuum level, in
+eV. This is the barrier an escaping electron climbs, and it is what sets the
+refraction at the surface through $\theta_{int}$ in
+Equation~\ref{theta}. See Section~\ref{subsec:inner_potential}.
+
+It is not the work function. The work function is measured from the Fermi level
+and the inner potential from the bottom of the free-electron-like final state
+band; for Cu they are about 4.3 and 13.5 eV. Using the work function bends the
+electron too little, leaves $\theta_{int}$ too large and makes the escape path
+$1/\cos\theta_{int}$ too long.
+
+Left unset, the code falls back to {\tt photo\_work\_function} and says so in the
+output. That is what earlier versions always did, so no existing input changes
+its answer, but the fallback is known to be too small.
 
 There is no default value
 

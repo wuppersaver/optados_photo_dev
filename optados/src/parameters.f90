@@ -144,6 +144,13 @@ module od_parameters
   integer, public, save       :: photo_len_layers_value
   real(kind=dp), dimension(:), allocatable, public, save :: photo_layers_tops
   real(kind=dp), public, save :: photo_work_function
+  !! Inner potential: the depth of the well below the vacuum level, which is the
+  !! barrier an escaping electron climbs and therefore what sets the refraction
+  !! at the surface. Not the work function - that is measured from E_F, this from
+  !! the bottom of the free-electron-like final state band, and for Cu they are
+  !! about 4.3 and 13.5 eV.
+  real(kind=dp), public, save :: photo_inner_potential
+  logical, public, save       :: photo_inner_potential_set
   real(kind=dp), public, save :: photo_bulk_cutoff
   real(kind=dp), public, save :: photo_temperature
   real(kind=dp), public, save :: photo_elec_field
@@ -585,6 +592,22 @@ contains
         call io_error('Error: photo_slab_middle must lie below the deepest entry '// &
                       'in photo_layers_tops')
     end select
+
+    ! Left unset the code falls back to the work function, which is what it always
+    ! used, so no existing input moves; calc_angle says so loudly when it does.
+    photo_inner_potential = 0.0_dp
+    call param_get_keyword('photo_inner_potential', photo_inner_potential_set, &
+                           r_value=photo_inner_potential)
+    if (photo_inner_potential_set) then
+      if (photo_inner_potential .le. 0.0_dp) &
+        call io_error('Error: photo_inner_potential must be positive - it is the depth of the '// &
+                      'well below the vacuum level, not a level')
+      if (photo_inner_potential .lt. photo_work_function) &
+        call io_error('Error: photo_inner_potential is smaller than photo_work_function. The '// &
+                      'inner potential is measured from the bottom of the final state band and '// &
+                      'the work function from the Fermi level, so it cannot be the smaller of '// &
+                      'the two')
+    end if
 
     ! Electric field in V/m
     photo_elec_field = 0.00_dp
@@ -1934,6 +1957,8 @@ contains
       call comms_bcast(photo_photon_max, 1)
     end if
     call comms_bcast(photo_work_function, 1)
+    call comms_bcast(photo_inner_potential, 1)
+    call comms_bcast(photo_inner_potential_set, 1)
     call comms_bcast(photo_slab_max, 1)
     call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_slab_middle, 1)

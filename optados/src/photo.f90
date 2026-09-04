@@ -93,6 +93,12 @@ module od_photo
   real(kind=dp), allocatable, dimension(:) :: layer_qe
   integer, dimension(:), allocatable :: atom_order
   real(kind=dp) :: work_function_eff
+  !! The step an escaping electron climbs, used for the refraction at the
+  !! surface. photo_inner_potential when it is given, otherwise the work
+  !! function, which is what the code always used and is too small by roughly a
+  !! factor of three for a metal.
+  real(kind=dp) :: surface_barrier
+  logical       :: barrier_warned = .false.
   real(kind=dp) :: evacuum
   real(kind=dp) :: evacuum_eff
   real(kind=dp) :: total_field_emission
@@ -1856,7 +1862,8 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, &
       photo_gkgrid, elec_read_gk_grid
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_momentum, devel_flag, iprint, scissor_op
+    use od_parameters, only: photo_momentum, devel_flag, iprint, scissor_op, &
+      photo_inner_potential, photo_inner_potential_set
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout, io_time
@@ -1938,6 +1945,28 @@ contains
     if (ierr /= 0) call io_error('Error: calc_angle - allocation of E_y failed')
     E_y = 0.0_dp
 
+    ! The refraction at the surface is set by the depth of the well the electron
+    ! climbs out of, which is the inner potential, measured from the bottom of the
+    ! free-electron-like final state band. The work function is measured from the
+    ! Fermi level and is far smaller - about 4.3 against 13.5 eV for Cu - so using
+    ! it bends the electron too little, leaves theta_internal too large, and makes
+    ! the escape path 1/cos(theta) too long.
+    if (photo_inner_potential_set) then
+      surface_barrier = photo_inner_potential
+    else
+      surface_barrier = work_function_eff
+      if (on_root .and. .not. barrier_warned) then
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        write (stdout, '(1x,a78)') '! Warning: photo_inner_potential is not set, so the refraction at the surface !'
+        write (stdout, '(1x,a78)') '! falls back to the work function. That is the barrier measured from the      !'
+        write (stdout, '(1x,a78)') '! Fermi level rather than from the bottom of the final state band, so it is   !'
+        write (stdout, '(1x,a78)') '! far too small - roughly 4.3 against 13.5 eV for Cu - and escape depths come !'
+        write (stdout, '(1x,a78)') '! out too short. workfct.py prints an estimate to feed the keyword.           !'
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        barrier_warned = .true.
+      end if
+    end if
+
     if (index(photo_momentum, 'crystal') .gt. 0) call cell_calc_kpoint_r_cart
 
     if ((index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) .or. &
@@ -2002,10 +2031,10 @@ contains
                                                                  - E_transverse(gdx, n_eigen, N_spin, N_k)) &
                                                                 /E_kinetic(gdx, n_eigen, N_spin, N_k))))*rad_to_deg
             ! Angle of electron within material, before passing the surface
-            theta_internal(gdx, n_eigen, N_spin, N_k) = (acos(sqrt((E_kinetic(gdx, n_eigen, N_spin, N_k) + work_function_eff &
+            theta_internal(gdx, n_eigen, N_spin, N_k) = (acos(sqrt((E_kinetic(gdx, n_eigen, N_spin, N_k) + surface_barrier &
                                                                     - E_transverse(gdx, n_eigen, N_spin, N_k)) &
                                                                    /(E_kinetic(gdx, n_eigen, N_spin, N_k) + &
-                                                                     work_function_eff))))*rad_to_deg
+                                                                     surface_barrier))))*rad_to_deg
           end do ! Gkgrid
         end do ! bands
       end do ! spins
