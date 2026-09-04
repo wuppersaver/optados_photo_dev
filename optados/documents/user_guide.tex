@@ -1807,7 +1807,19 @@ The default is the midpoint of {\tt photo\_slab\_min} and {\tt photo\_slab\_max}
 
 \subsection[photo\_layers\_tops]{\tt real(kind=dp) :: photo\_layers\_tops(\#layers)}
 
-This vector sets the top $z$-coordinate of each layer, going from the surface towards the middle, separated by spaces. The first entry is the slab surface and therefore fixes {\tt photo\_slab\_max}; the remaining entries are the boundaries between the boxes, and {\tt photo\_slab\_middle} closes the last one.
+This is a vector of values on a single line, separated by spaces --- not a
+block. It sets the top $z$-coordinate of each layer in \AA, going from the
+surface towards the middle:
+
+\begin{verbatim}
+photo_layers_tops : 31.5503 28.8781 27.0966 25.3150 23.5335 21.7520 19.9713
+photo_slab_middle : 18.1890
+\end{verbatim}
+
+The first entry is the slab surface and therefore fixes {\tt
+photo\_slab\_max}, which must not then be set separately; the remaining entries
+are the boundaries between the boxes, and {\tt photo\_slab\_middle} closes the
+last one. The number of entries is the number of explicitly treated boxes.
 
 Giving them explicitly overrides the boundaries OptaDOS would otherwise infer, and is the way to describe anything the inference cannot: an interface, an adsorbate, or a compound whose planes alternate in species. OptaDOS refuses those rather than guessing --- see Section~\ref{subsec:layer_boxes}.
 
