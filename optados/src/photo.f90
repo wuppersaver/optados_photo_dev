@@ -824,6 +824,11 @@ contains
 
     allocate (min_index_unocc(nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_band_info - allocation of min_index_unocc failed')
+    ! If every band at a (spin, k) lies below E_F the search below never assigns,
+    ! so start from nbands + 1: that makes every "is this an unoccupied band"
+    ! test false and every "loop over the unoccupied bands" zero-trip, rather
+    ! than leaving the entry undefined.
+    min_index_unocc = nbands + 1
 
     do N_k = 1, num_kpoints_on_node(my_node_id)  ! Loop over kpoints
       do N_spin = 1, nspins
@@ -898,12 +903,12 @@ contains
     use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
     use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
     use od_comms, only: my_node_id, on_root
-    use od_io, only: io_error, stdout, seedname, io_date
+    use od_io, only: io_error, stdout, seedname, io_date, io_file_unit
     use od_parameters, only: devel_flag
     implicit none
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
-    integer :: N_k, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit = 32
+    integer :: N_k, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit
     integer, allocatable, dimension(:) :: orbital_atom
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
@@ -1006,6 +1011,7 @@ contains
       end do
       call io_date(cdate, ctime)
       ! write out atomic/box weights
+      pdos_unit = io_file_unit()
       open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_boxes.dat')
       write (pdos_unit, '(1x,a28)') '############################'
       write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Boxes-Weights on ', cdate, ' at ', ctime
@@ -1025,6 +1031,7 @@ contains
       end do
       close (unit=pdos_unit)
 
+      pdos_unit = io_file_unit()
       open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_atoms.dat')
       write (pdos_unit, '(1x,a28)') '############################'
       write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
@@ -1045,6 +1052,7 @@ contains
       close (unit=pdos_unit)
 
       ! Write out the k-band weights
+      pdos_unit = io_file_unit()
       open (unit=pdos_unit, action='write', file=trim(seedname)//'_pdos_k_band.dat')
       write (pdos_unit, '(1x,a28)') '############################'
       write (pdos_unit, *) '# OptaDOS Photoemission: Printing PDOS-Weights-K-Band on ', cdate, ' at ', ctime
@@ -1098,7 +1106,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
     integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, ierr, energy, box
-    integer :: jdos_bin, i, s, is, idos, wjdos_unit = 23, initial, ome_unit
+    integer :: jdos_bin, i, s, is, idos, wjdos_unit, initial, ome_unit
     real(kind=dp)    :: time0, time1
     character(len=3) :: atom_s
     character(len=9)                            :: ctime             ! Temp. time string
@@ -1241,6 +1249,7 @@ contains
 
         if (on_root .and. iprint .gt. 2) then
           write (atom_s, '(I3)') box + 100
+          wjdos_unit = io_file_unit()
           open (unit=wjdos_unit, action='write', file=trim(seedname)//'_weighted_jdos_'//trim(adjustl(atom_s))//'.dat')
           write (wjdos_unit, '(1x,a28)') '############################'
           write (wjdos_unit, '(1x,a19,1x,a99)') '# Weighted JDOS for', seedname
@@ -2292,9 +2301,9 @@ contains
 
     time0 = io_time()
     if (index(photo_imfp_model, 'layers') .gt. 0) then
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/bulk_repeat)
+      num_layers = ceiling((atom_imfp(max_atoms)*photo_bulk_cutoff)/bulk_repeat)
     else if (index(photo_imfp_model, 'const') .gt. 0) then
-      num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/bulk_repeat)
+      num_layers = ceiling((photo_imfp_value(1)*photo_bulk_cutoff)/bulk_repeat)
     else if (index(photo_imfp_model, 'cu_curve') .gt. 0) then
       ! Calculate the emission probability for at most 1000 layers,
       ! since the propagation IMFPs for low energy electrons can be
@@ -2302,7 +2311,7 @@ contains
       band_imfp_max = maxval(band_imfp)
       call comms_reduce(band_imfp_max, 1, 'MAX')
       call comms_bcast(band_imfp_max, 1)
-      num_layers = min(1000, int((band_imfp_max*photo_bulk_cutoff)/bulk_repeat))
+      num_layers = min(1000, ceiling((band_imfp_max*photo_bulk_cutoff)/bulk_repeat))
     end if
 
     allocate (bulk_light_tmp(num_layers), stat=ierr)
