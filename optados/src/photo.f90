@@ -126,7 +126,6 @@ module od_photo
   real(kind=dp) :: max_e_kinetic, max_k_transverse, plot_extra_upper = 1.0_dp
   ! Margin added to the transverse momentum axis of the E_kin vs p maps, in 1/A.
   real(kind=dp) :: k_extra_padding = 0.2_dp
-  real(kind=dp) :: q_weight
   ! Added by Felix Mildner, 12/2022 and later
   integer, allocatable, dimension(:)  :: index_energy
   integer                             :: number_energies, current_energy_index, current_photo_energy_index
@@ -308,7 +307,7 @@ contains
     logical                                  :: symmetric_stack
     character(len=80)                        :: comp_str, temp_str
     real(kind=dp)                            :: h_min, h_max, h_mean
-    real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
+    real(kind=dp)                            :: diff_temp, current_top
     real(kind=dp)                            :: max_gap, typical_gap, layer_tol
     real(kind=dp)                            :: z_middle_tol, wrap_gap
     character(len=78)                        :: box_msg
@@ -728,7 +727,7 @@ contains
         end do
         if (isp .eq. 0) then
           n_species_seen = n_species_seen + 1
-          species_seen(n_species_seen) = atoms_label_tmp(atom_order(atom))
+          species_seen(n_species_seen) = trim(atoms_label_tmp(atom_order(atom)))
         end if
       end do
 
@@ -1036,7 +1035,7 @@ contains
   subroutine make_pdos_weights_atoms
     !!This subroutine is equivalent to pdos_merge of pdos.F90, but only for atoms
     use od_electronic, only: pdos_orbital, pdos_weights, pdos_mwab, nspins
-    use od_cell, only: num_kpoints_on_node, num_atoms, cell_calc_kpoint_r_cart, kpoint_r_cart
+    use od_cell, only: num_kpoints_on_node, num_atoms
     use od_comms, only: my_node_id, on_root
     use od_io, only: io_error, stdout, seedname, io_date, io_file_unit
     use od_parameters, only: devel_flag
@@ -1211,10 +1210,10 @@ contains
     !! This subroutine calculates the projected optical characteristics for each layer.
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
       epsilon, refract, absorp, reflect, intra, write_absorp, write_epsilon, write_reflect, write_refract
-    use od_io, only: stdout, io_error, io_time, seedname, io_date, io_file_unit
+    use od_io, only: stdout, io_error, io_time, seedname, io_file_unit
     use od_electronic, only: elec_read_optical_mat, nbands, nspins, efermi, elec_dealloc_optical, elec_read_band_gradient, &
       nbands, nspins, band_energy
-    use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
+    use od_cell, only: num_kpoints_on_node
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, iprint, jdos_max_energy, photo_model
@@ -1225,12 +1224,9 @@ contains
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
     real(kind=dp), allocatable, dimension(:, :) :: dos_at_e
     integer :: N_k, N2, N_spin, n_eigen, n_eigen_final, ierr, energy, box
-    integer :: jdos_bin, i, s, is, idos, wjdos_unit, initial, ome_unit
+    integer :: is, idos, wjdos_unit
     real(kind=dp)    :: time0, time1
     character(len=3) :: atom_s
-    character(len=9)                            :: ctime             ! Temp. time string
-    character(len=11)                           :: cdate             ! Temp. date string
-    character(len=4) :: initial_s
 
     time0 = io_time()
 
@@ -1510,7 +1506,7 @@ contains
     real(kind=dp) :: reflectivity
     integer       :: box, iter
     real(kind=dp) :: probe_depth, depth, weight, weight_sum, sum_1, sum_2
-    real(kind=dp) :: eps_1, eps_2, modulus, n_index, kappa, kappa_bulk, alpha
+    real(kind=dp) :: eps_1, eps_2, kappa, kappa_bulk, alpha
 
     eps_1 = epsilon_photo(num_boxes, energy, 1)
     eps_2 = epsilon_photo(num_boxes, energy, 2)
@@ -1937,7 +1933,6 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_y
-    real(kind=dp) :: tol = 1.0E-10_dp
     real(kind=dp) :: time0, time1
 
     time0 = io_time()
@@ -2140,7 +2135,7 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp, num_atoms
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root, comms_reduce
-    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, iprint
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
     real(kind=dp) :: tolerance, total_depth
@@ -2661,7 +2656,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: photo_temperature, devel_flag, photo_energy_sweep, iprint, &
+    use od_parameters, only: photo_temperature, devel_flag, iprint, &
       photo_output, photo_use_tmprob
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2992,8 +2987,7 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
       hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
-      num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle, &
-      photo_slab_mode, SLAB_MODE_LAYERS
+      num_exclude_bands, jdos_max_energy
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins
     use od_jdos_utils, only: jdos_nbins
@@ -3114,12 +3108,12 @@ contains
     ! edited by Felix Mildner, after April 2024
     !===============================================================================
     use od_constants, only: dp, kB
-    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, fem_tensor, &
+    use od_electronic, only: nbands, nspins, num_electrons, electrons_per_state, &
       & fem_energy_info, band_energy, efermi
     use od_cell, only: num_kpoints_on_node, cell_get_symmetry, num_crystal_symmetry_operations, &
       & crystal_symmetry_operations
-    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, photo_energy_sweep, &
-      & iprint, photo_temperature
+    use od_parameters, only: optics_geom, optics_qdir, legacy_file_format, devel_flag, &
+      & photo_temperature
     use od_io, only: io_error, stdout
     use od_comms, only: my_node_id, on_root, comms_reduce
 
@@ -3625,7 +3619,7 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
-    use od_comms, only: my_node_id, num_nodes
+    use od_comms, only: my_node_id
     use od_parameters, only: photo_temperature, devel_flag, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -3816,7 +3810,7 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: inv_sqrt_two_pi
     implicit none
-    real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1, mte_term2
+    real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1
     integer                                  :: atom, ierr
 
     time0 = io_time()
@@ -5532,9 +5526,9 @@ contains
     ! written by Felix Mildner, after May 2025
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+      kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
-      photo_gkgrid, elec_read_gk_grid
+      elec_read_gk_grid
     use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, &
       optics_qdir
