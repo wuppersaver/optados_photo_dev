@@ -1588,7 +1588,32 @@ Resolution at which to compute the DOS and related properties.
 Default value is 0.01eV.
 
 \subsection[scissor\_op]{\tt real(kind=dp) :: scissor\_op}
-Value of the scissor operator.
+Value of the scissor operator, a rigid shift of the conduction manifold applied
+to the transition energies in the JDOS and the optical response, to compensate a
+DFT band gap that is too small.
+
+{\bf It is not accepted with {\tt task : photoemission} and stops the
+calculation.}  The three-step model emits into the free-electron-like states at
+and just above the vacuum level, and the only handle the code has on
+``conduction'' is ``above the Fermi level'', which catches those final states as
+well as the bound conduction bands.  They carry no gap error, so shifting them
+misaligns the two halves of the model: the joint density of states then selects a
+final band a scissor {\em below} the vacuum level while the escape probability is
+computed for an electron a scissor {\em above} it.  Near threshold, where the
+whole quantum efficiency sits, that asks for states a gapped material does not
+have, and the emission comes out suppressed by an amount set by the size of the
+DFT gap error rather than by any physics.  The failure is silent -- a plausible,
+smaller number -- which is why it is refused rather than warned about.
+
+The line cannot be drawn any better inside the model.  Separating the bound
+conduction bands from the continuum requires the vacuum level, which is placed at
+{\tt photo\_work\_function} above the Fermi level, which for a gapped system is
+itself determined by the gap.
+
+Correct the gap upstream instead.  A hybrid or meta-GGA functional, DFT+U, or GW
+eigenvalues written into the {\tt .bands} file all work: the photoemission task
+reads the energies from that file and does not care how they were produced, and
+correcting them there fixes the final states as well as the gap.
 
 Default value is 0\,eV (\emph{i.e.} not used)
 

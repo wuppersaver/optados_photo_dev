@@ -411,6 +411,31 @@ contains
 
     scissor_op = 0.0_dp !! change
     call param_get_keyword('scissor_op', found, r_value=scissor_op)
+    ! A scissor cannot be represented in the photoemission model. It is a rigid
+    ! shift of the conduction manifold relative to the valence manifold, and the
+    ! only handle the code has on "conduction" is "above the Fermi level" - which
+    ! also catches the free-electron-like final states above the vacuum level.
+    ! Those are the states the three step model emits into, they carry no gap
+    ! error, and moving them breaks the alignment the escape step depends on: the
+    ! delta function then selects a final band a scissor below the vacuum level
+    ! while the escape probability is computed for an electron a scissor above it.
+    ! Near threshold, which is where the whole QE sits, that asks for states a
+    ! gapped material does not have, and the emission is suppressed by an amount
+    ! set by the DFT gap error rather than by any physics. The line cannot be
+    ! drawn better either: separating the bound conduction bands from the
+    ! continuum needs the vacuum level, which comes from the Fermi level, which
+    ! for a gapped system comes from the gap.
+    if (photo .and. abs(scissor_op) .gt. 1.0e-10_dp) &
+      call io_error('Error: scissor_op is not supported with task : photoemission. The three '// &
+                    'step model needs the free-electron-like final states aligned to the '// &
+                    'vacuum level, and a rigid shift of everything above the Fermi level '// &
+                    'moves them along with the bound conduction bands. The failure is a '// &
+                    'silent suppression of the emission near threshold, not an error, which '// &
+                    'is why this stops rather than warns. Correct the gap upstream instead, '// &
+                    'with a hybrid or meta-GGA functional, DFT+U, or GW eigenvalues written '// &
+                    'into the .bands file - the photoemission task reads the energies from '// &
+                    'there and does not care how they were produced. scissor_op still works '// &
+                    'for task : optics and task : jdos.')
 
     optics_qdir = 0.0_dp
     call param_get_keyword_vector('optics_qdir', found, 3, r_value=optics_qdir)
