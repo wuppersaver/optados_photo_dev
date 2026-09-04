@@ -1137,13 +1137,13 @@ contains
     end do
 
     if (index(devel_flag, 'output_pdos_weights') .gt. 0 .and. on_root) then
-      call cell_calc_kpoint_r_cart
-      write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
-      i = 0
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        write (stdout, '(1x,I4,4x,3(1x,E22.15))') i, kpoint_r_cart(:, N_k)
-        i = i + 1
-      end do
+      ! The k-point listing that used to open this block is gone, for the same
+      ! reason as the one under print_qe_formula_values: it called
+      ! cell_calc_kpoint_r_cart from inside an on_root branch, and that routine
+      ! deallocates and reallocates the shared kpoint_r_cart, so root rewrote an
+      ! array the other ranks were using from a path they never take. It also
+      ! listed only root's own k-points, numbered from zero within root, which
+      ! said nothing useful once there was more than one node.
       call io_date(cdate, ctime)
       ! write out atomic/box weights
       pdos_unit = io_file_unit()
@@ -2282,16 +2282,14 @@ contains
 
     if (index(photo_momentum, 'crystal') .gt. 0) call cell_calc_kpoint_r_cart
 
-    if ((index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) .or. &
-        (index(devel_flag, 'print_qe_matrix_full') .gt. 0 .and. on_root) &
-        .or. (index(devel_flag, 'print_qe_matrix_reduced') .gt. 0 .and. on_root)) then
-      call cell_calc_kpoint_r_cart
-      write (stdout, '(a78)') "+---------------- Printing K-Points in Cartesian Coordinates ----------------+"
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        write (stdout, '(3(1x,E22.15))') kpoint_r_cart(:, N_k)
-      end do
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
+    ! A root-only k-point listing used to sit here, under print_qe_formula_values
+    ! and two flags that did nothing else anywhere in the module. It called
+    ! cell_calc_kpoint_r_cart from inside an on_root block, and that routine
+    ! deallocates and reallocates kpoint_r_cart -- so root rewrote an array every
+    ! other rank was using, from a branch they never enter. In parallel the run
+    ! stopped at that heading. It also only ever listed root's own k-points,
+    ! labelled by their index within root, so it was misleading even when it
+    ! worked. print_qe_formula_values now does one thing: write_qe_terms.
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -3754,13 +3752,17 @@ contains
       write (unit_no, '(a,f10.4,a)') '# photon energy: ', temp_photon_energy, ' eV'
       write (unit_no, '(a)') '# every transition the QE sum visits is listed, including those'
       write (unit_no, '(a)') '# contributing nothing -- the row shows which factor is zero'
+      write (unit_no, '(a)') '# k_global is the k-point index over the whole run; sorting on it'
+      write (unit_no, '(a)') '# makes a parallel file directly comparable with a serial one'
       if (three_step) then
-        write (unit_no, '(a)') '# atom box k spin n_init n_final gdx  then, in order:'
+        write (unit_no, '(a)') '# atom box k_global node k_local spin n_init n_final gdx'
+        write (unit_no, '(a)') '# then, in order:'
         write (unit_no, '(a)') '#   contribution E_init E_final matrix_weight delta transmit_prob'
         write (unit_no, '(a)') '#   electron_esc kpoint_weight I_layer emission_gauss fd_init fd_final'
         write (unit_no, '(a)') '#   pdos_fraction field_emission gkgrid_weight E_transverse'
       else
-        write (unit_no, '(a)') '# atom box k spin n_eigen gdx  then, in order:'
+        write (unit_no, '(a)') '# atom box k_global node k_local spin n_eigen gdx'
+        write (unit_no, '(a)') '# then, in order:'
         write (unit_no, '(a)') '#   contribution E_init matrix_weight electron_esc kpoint_weight'
         write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
         write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
@@ -3805,8 +3807,17 @@ contains
     real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
     real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
 
-    integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box
+    integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, inode, k_offset
     real(kind=dp) :: pdos_frac
+
+    ! N_k is the index within this node's share, so on its own it says nothing
+    ! about which k-point a row belongs to once there is more than one node --
+    ! every node would write 1, 2, 3 and the file could not be read. Carry the
+    ! global index as well.
+    k_offset = 0
+    do inode = 0, my_node_id - 1
+      k_offset = k_offset + num_kpoints_on_node(inode)
+    end do
 
     do atom = 1, max_atoms
       box = box_atom(atom)
@@ -3818,8 +3829,9 @@ contains
                 pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                             /pdos_weights_k_band(n_eigen, N_spin, N_k)
                 do gdx = 1, photo_gkmax
-                  write (unit_no, '(7(1x,i6),16(1x,E17.9E3))') &
-                    atom, box, N_k, N_spin, n_eigen, n_eigen_final, gdx, &
+                  write (unit_no, '(9(1x,i6),16(1x,E17.9E3))') &
+                    atom, box, k_offset + N_k, my_node_id, N_k, N_spin, &
+                    n_eigen, n_eigen_final, gdx, &
                     qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom), &
                     band_energy(n_eigen, N_spin, N_k), &
                     band_energy(n_eigen_final, N_spin, N_k), &
@@ -3843,8 +3855,8 @@ contains
               pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                           /pdos_weights_k_band(n_eigen, N_spin, N_k)
               do gdx = 1, photo_gkmax
-                write (unit_no, '(6(1x,i6),12(1x,E17.9E3))') &
-                  atom, box, N_k, N_spin, n_eigen, gdx, &
+                write (unit_no, '(8(1x,i6),12(1x,E17.9E3))') &
+                  atom, box, k_offset + N_k, my_node_id, N_k, N_spin, n_eigen, gdx, &
                   qe_osm(n_eigen, N_spin, N_k, atom), &
                   band_energy(n_eigen, N_spin, N_k), &
                   foptical_matrix_weights(n_eigen, N_spin, N_k), &
