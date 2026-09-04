@@ -592,16 +592,72 @@ n(i,{\bf{k}},T,s) = \frac{1}{e^{(E_{F}-E_i ({\bf{k}},s))/k_BT}+1}
 
 where $E_F$ is the Fermi energy and $k_B$ is the Boltzmann constant.
 
+\subsection{Layers, boxes and the slab boundaries}
+\label{subsec:layer_boxes}
+
+The slab is divided into boxes, one per atomic layer, and most of what follows is
+computed per box: a dielectric function from the states projected onto its atoms,
+an absorption coefficient, an escape depth. The division is a single geometry
+however it is supplied.
+
+The slab runs from $z_{top}$ down to $z_{middle}$ and is cut by $N+1$ planes,
+
+\begin{equation}
+z_{top} = b_0 > b_1 > \dots > b_N = z_{middle}
+\end{equation}
+
+so box $i$ occupies $[b_i, b_{i-1}]$ and has volume $(b_{i-1}-b_i)A$ with $A$ the
+in-plane cell area. The boxes tile the slab exactly, so their volumes add up to
+it, and every atom belongs to one of them. Everything below $z_{middle}$ is
+covered by the bulk extrapolation of Section~\ref{subsec:momentum_outputs}.
+
+$z_{top}$ is {\tt photo\_slab\_max} and $z_{middle}$ follows from
+{\tt photo\_slab\_middle}, or from the midpoint of the slab bounds if that is not
+given. The interior planes $b_1 \dots b_{N-1}$ are {\tt photo\_layers\_tops} when
+those are supplied. Otherwise they are inferred: the atoms are clustered into
+layers by their spacing in $z$, and each boundary is placed midway between
+neighbouring layer centroids. That reduces to a box per layer of the bulk
+interlayer spacing when the slab is evenly spaced, and still tiles when it is
+not.
+
+Three lengths follow from this and they are not the same:
+
+\begin{itemize}
+\item the \emph{box height} $b_{i-1}-b_i$, which sets the volume that normalises
+      that box's dielectric function;
+\item the \emph{layer gap} $c_i - c_{i+1}$ between the centroids of neighbouring
+      layers, which is the distance the light travels from the atoms of one layer
+      to those of the next;
+\item the \emph{bulk repeat}, the interlayer spacing of the material below the
+      explicit region, which is what the bulk extrapolation steps by.
+\end{itemize}
+
+They coincide only for an evenly spaced slab whose boundaries fall midway between
+its layers, which is why they are computed separately.
+
+\paragraph{What the inference will not do.} The layers are only meaningful as
+equivalent repeats of one material: the explicit region is chosen by depth
+alone, each box gets one dielectric function, the topmost box's optical constants
+stand for the whole surface, and the deepest explicit box is repeated downwards
+as though the substrate were made of it. An interface, an adsorbate, or a
+compound whose planes alternate in species breaks all four. OptaDOS therefore
+checks that the inferred layers all hold the same species and stops if they do
+not, printing the composition it found. Differing numbers of atoms per layer, and
+layer spacings that vary, are reported as warnings rather than errors. In each
+case the remedy is {\tt photo\_layers\_tops}, which says exactly what is wanted
+and allows a full repeat unit of a material to be one layer rather than one plane
+of one species.
+
 \subsection{Light decay}
 
 The intensity of the light at each atom $\mu$ of the surface, expressed as
 
 \begin{equation}
-I(\omega,\mu) = I(\omega, \mu-1)e^{-\alpha(\omega,\mu)t(\mu)}-R(\omega,\mu)
+I(\omega,\mu) = I(\omega, \mu-1)\,e^{-\frac{1}{2}[\alpha(\omega,\mu-1)+\alpha(\omega,\mu)]\,d(\mu-1,\mu)}
     \label{Intensity}
 \end{equation}
 
-where $\alpha(\omega,\mu)$ is the absorption coefficient within each layer, $t(\mu)$ is the length of the light path and $R(\omega,\mu)$ is the reflective coefficient of the surface. The calculation of the optical characteristics is analogous to the equations in Section \ref{subsec:opticprops}, but the contributions from each layer is calculated by weighting the electronic structure by the weights $W$ from Section \ref{subsec:opticprops}.
+with $I(\omega,1) = I_0 - R(\omega,1)$, where $\alpha(\omega,\mu)$ is the absorption coefficient of layer $\mu$, $d(\mu-1,\mu)$ is the layer gap of Section~\ref{subsec:layer_boxes} and $R$ is the reflectivity. The step from one layer to the next crosses part of each of the two boxes, since the boundary between them lies inside the gap, so the exponent takes the mean of the two absorption coefficients over that one distance. Below the explicit region every step is through another repeat of the same material, so a single coefficient and the bulk repeat spacing are used instead. The calculation of the optical characteristics is analogous to the equations in Section \ref{subsec:opticprops}, but the contributions from each layer is calculated by weighting the electronic structure by the weights $W$ from Section \ref{subsec:opticprops}.
 
 \subsection{Electron transport}
 Determining absorption in each sub-surface layer requires the use of an explicit electron transport model for each of the layers. In the current implementation, a simple model of the inelastic scattering rate is used for the electron transport in the three step model and the escape probability of a free electron as it travels through a material in the one step model. The inelastic mean free path theory explains that electrons can only travel a certain average distance without suffering an inelastic scattering event. The assumption that once an electron suffers an inelastic scattering event the electron will be reabsorbed is adopted in this work, resulting in an escape function for the $i \rightarrow j$ excitation as a function of the escape depth;
@@ -1684,23 +1740,31 @@ If {\tt task = photo\_energy\_sweep} this represents the final energy of the pho
 {\bf ATTENTION} : If setting photo\_photon\_min/max the difference between them has to be an integer multiple (including 0) of {\tt jdos\_spacing}, otherwise OptaDOS will give an error message and terminate.
 
 \subsection[photo\_slab\_min]{\tt real(kind=dp) :: photo\_slab\_min}
-Sets the assumed lower boundary of the material's slab in case only the upper and lower limit are given. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the lowest z-coordinate plus that atom's vdW-radius.
+Sets the base of the slab, $z_{bottom}$, in \AA. Together with {\tt photo\_slab\_max} it brackets the material. It fixes the default position of the explicit/bulk boundary, at the midpoint of the two, and for a slab that is a single atomic layer it is the base of the one box. This needs to be determined by the user; the fall-off of the planar-averaged electron density is the usual criterion, and {\tt workfct.py} in the analysis scripts computes that average.
 
 There is no default value
 
 \subsection[photo\_slab\_max]{\tt real(kind=dp) :: photo\_slab\_max}
-Sets the assumed upper boundary of the material's slab in case only the upper and lower limit are given. This value is used to calculate the slab's volume and center. It should be the same distance from the assumed center of the material slab to ensure the slab's center can be reliably found by OptaDOS. This needs to be determined/estimated by the user and could for example be the coordinate of the atom with the highest z-coordinate plus that atom's vdW-radius.
+Sets the surface of the slab, $z_{top}$, in \AA. The outermost box extends up to it, so a surface taken from the density fall-off gives that box the larger extent it physically has rather than half an interlayer spacing. It is also the top of the confinement length used for the broadening of the photoemission JDOS. Determined by the user in the same way as {\tt photo\_slab\_min}.
+
+When {\tt photo\_layers\_tops} is given, this is taken from its first entry and must not be set separately.
 
 There is no default value
 
 \subsection[photo\_slab\_middle]{\tt real(kind=dp) :: photo\_slab\_middle}
-Sets the assumed middle of the slab in the case that the layer boundaries are determined by the user input. When this is set, {\tt photo\_slab\_min} and {\tt photo\_slab\_max} \textbf{cannot} be set and {\tt photo\_layers\_tops} \textbf{must} be set. This value is used to calculate the height of the innermost layer with the last value in the vector of {\tt photo\_layers\_tops}.
+Sets where the explicitly treated region ends and the bulk extrapolation begins, in \AA. Every layer whose centroid lies above it is treated explicitly.
 
-There is no default value
+Only the choice of layer is taken from this value: the boundary itself is then placed midway between the last explicit layer and the first bulk one, like every other boundary, so the exact number does not leak into that box's volume or its optical constants. Any value selecting the same layer gives the same answer.
+
+It may be given with {\tt photo\_slab\_min} and {\tt photo\_slab\_max}, and must be given with {\tt photo\_layers\_tops}. Left unset with slab bounds it defaults to the midpoint of the two, which keeps roughly the top half of the layers.
+
+The default is the midpoint of {\tt photo\_slab\_min} and {\tt photo\_slab\_max}
 
 \subsection[photo\_layers\_tops]{\tt real(kind=dp) :: photo\_layers\_tops(\#layers)}
 
-This vector sets the assumed top $z$-coordinate for the layers going from the surface towards the middle. Split each value by a space. The first value is inferred to be the slab boundary and each layer that the user wants to include in the calculation needs to be represented in the vector. This makes it possible to calculate the layer heights, layer volumes and atoms in a layer. Some more user input is needed than if {\tt photo\_slab\_min} and {\tt photo\_slab\_max} were set, but there are way less assumptions by the program.
+This vector sets the top $z$-coordinate of each layer, going from the surface towards the middle, separated by spaces. The first entry is the slab surface and therefore fixes {\tt photo\_slab\_max}; the remaining entries are the boundaries between the boxes, and {\tt photo\_slab\_middle} closes the last one.
+
+Giving them explicitly overrides the boundaries OptaDOS would otherwise infer, and is the way to describe anything the inference cannot: an interface, an adsorbate, or a compound whose planes alternate in species. OptaDOS refuses those rather than guessing --- see Section~\ref{subsec:layer_boxes}.
 
 There is no default value
 
