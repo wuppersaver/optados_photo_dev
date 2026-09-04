@@ -3005,18 +3005,6 @@ contains
       write (stdout, '(1x,a78)') '+--------------------------- Calculating 3Step QE ---------------------------+'
     end if
 
-    ! TODO : Write an extra function, which writes all the values to an external file
-    ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root .and. .not. photo_energy_sweep) &
-    !   then
-    !   i = 16 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
-    !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 3step QE Values ------------+'
-    !   write (stdout, '(16(1x,a17))') 'calced_qe_value', 'initial_state_energy', 'final_state_energy', 'spectral_func', &
-    !     'photo_matrix_weights', &
-    !     'delta_temp', 'electron_esc', 'kpoint_weight', 'I_layer', 'emisison_gauss', 'transverse_gauss', 'vacuum_gauss', &
-    !     'fermi_dirac','final_fd', 'pdos_weights_atoms', 'pdos_weights_k_band'
-    !   write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', max_atoms, nbands, nbands, nspins, num_kpoints_on_node(my_node_id), i
-    ! end if
-
     ! Preparing the fermi dirac occupations and gaussian broadened emission
     ! Heaviside step function for the emission probability
     do N_k = 1, num_kpoints_on_node(my_node_id)
@@ -3083,16 +3071,6 @@ contains
                 te_tsm(n_eigen_init, N_spin, N_k, atom) = te_tsm(n_eigen_init, N_spin, N_k, atom) &
                                                           + temp_contribution*te_gk_factor
 
-                ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) then
-                !   write (stdout, '(6(1x,I4))') gdx,n_eigen, n_eigen_final, N_spin, N_k, atom
-                !   write (stdout, '(14(1x,E17.9E3))') qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom),&
-                !     band_energy(n_eigen, N_spin, N_k), band_energy(n_eigen_final, N_spin, N_k),&
-                !     gkgrid_weight(gdx, n_eigen_init, N_spin, N_k), matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, 1), &
-                !     delta_temp(n_eigen, n_eigen_final, N_spin, N_k), electron_esc(gdx, n_eigen_final, N_spin, N_k, atom), &
-                !     kpoint_weight(N_k), I_layer(box_atom(atom), current_photo_energy_index), &
-                !     emission_gauss(gdx, n_eigen_init, N_spin, N_k), fermi_dirac(n_eigen_init, N_spin, N_k), final_fd,&
-                !     pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), pdos_weights_k_band(n_eigen, N_spin, N_k)
-                ! end if
               end do
             end do
           end do
@@ -3133,9 +3111,11 @@ contains
       end do
     end if
 
-    ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) then
-    !   write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    ! end if
+    ! One test per photon energy, outside every loop. delta_temp is still
+    ! allocated here and is one of the factors being reported, so this has to
+    ! come before it is released.
+    if (index(devel_flag, 'print_qe_formula_values') .gt. 0) &
+      call write_qe_terms(fermi_dirac, emission_gauss, delta_temp)
 
     if (allocated(delta_temp)) then
       deallocate (delta_temp, stat=ierr)
@@ -3713,6 +3693,146 @@ contains
   end function fem_contract
 
   !===============================================================================
+  subroutine write_qe_terms(fermi_dirac, emission_gauss, delta_temp)
+    !*===============================================================================
+    ! Write the factors entering the QE sum, one row per contributing transition,
+    ! to <seed>_<model>_<hv>_qe_terms[_nodeNN].dat. Works for either the three
+    ! step or the one step model.
+    !
+    ! Deliberately a post-pass over arrays the sum has already filled, rather
+    ! than a write inside it. The version this replaces tested devel_flag in the
+    ! innermost loop, which runs atoms x k-points x spins x nbands x nbands x
+    ! photo_gkmax times and where profiling found the branch to be a hotspot --
+    ! false on every one of those iterations in every ordinary run. The test is
+    ! now made once, at the call site. Nothing is recomputed: these are the same
+    ! array elements the sum multiplied together, so the file says what the run
+    ! actually did.
+    !
+    ! Rows are emitted only where the transition contributed. The full index
+    ! space is of order 1E7 rows for a 13 layer slab; the energy conserving delta
+    ! leaves almost all of them at zero, so what lands in the file is the set of
+    ! transitions that mattered at this photon energy.
+    !
+    ! In parallel each node writes its own file, since gathering a list this long
+    ! to root would cost more than the dump itself. The complete data set is the
+    ! concatenation of them; in serial there is one file and no suffix.
+    ! Felix Mildner, 2026
+    !===============================================================================
+    use od_cell, only: num_kpoints_on_node, kpoint_weight, atoms_label_tmp
+    use od_electronic, only: nbands, nspins, band_energy, electrons_per_state, transmit_prob
+    use od_comms, only: my_node_id, on_root, num_nodes
+    use od_parameters, only: photo_model, iprint
+    use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
+    implicit none
+    real(kind=dp), intent(in)           :: fermi_dirac(:, :, :)
+    real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
+    real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
+
+    integer :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, unit_no, ierr, first_final
+    integer :: n_rows
+    real(kind=dp)      :: contribution, pdos_frac
+    logical            :: three_step
+    character(len=10)  :: char_e
+    character(len=9)   :: ctime
+    character(len=11)  :: cdate
+    character(len=99)  :: filename
+    character(len=8)   :: node_tag
+
+    three_step = index(photo_model, '3step') .gt. 0
+    if (three_step .and. .not. present(delta_temp)) &
+      call io_error('Error: write_qe_terms - the three step model needs its delta function')
+
+    node_tag = ' '
+    if (num_nodes .gt. 1) write (node_tag, '(a5,i3.3)') '_node', my_node_id
+    write (char_e, '(F7.3)') temp_photon_energy
+    filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))// &
+               '_qe_terms'//trim(node_tag)//'.dat'
+
+    unit_no = io_file_unit()
+    open (unit=unit_no, action='write', file=filename)
+    call io_date(cdate, ctime)
+    write (unit_no, '(a)') '# OptaDOS photoemission: the terms entering the QE sum'
+    write (unit_no, '(a,a,a,a)') '# written on ', cdate, ' at ', ctime
+    write (unit_no, '(a,a)') '# model        : ', trim(photo_model)
+    write (unit_no, '(a,f10.4,a)') '# photon energy: ', temp_photon_energy, ' eV'
+    write (unit_no, '(a,i0)') '# node         : ', my_node_id
+    write (unit_no, '(a)') '# only transitions with a non-zero contribution are listed'
+    if (three_step) then
+      write (unit_no, '(a)') '# atom box k spin n_init n_final gdx  then, in order:'
+      write (unit_no, '(a)') '#   contribution E_init E_final matrix_weight delta transmit_prob'
+      write (unit_no, '(a)') '#   electron_esc kpoint_weight I_layer emission_gauss fd_init fd_final'
+      write (unit_no, '(a)') '#   pdos_fraction field_emission gkgrid_weight E_transverse'
+    else
+      write (unit_no, '(a)') '# atom box k spin n_eigen gdx  then, in order:'
+      write (unit_no, '(a)') '#   contribution E_init matrix_weight electron_esc kpoint_weight'
+      write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
+      write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
+    end if
+
+    n_rows = 0
+    do atom = 1, max_atoms
+      box = box_atom(atom)
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        do N_spin = 1, nspins
+          if (three_step) then
+            do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
+              do n_eigen = 1, n_eigen_final - 1
+                do gdx = 1, photo_gkmax
+                  contribution = qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom)
+                  if (abs(contribution) .le. 0.0_dp) cycle
+                  pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                              /pdos_weights_k_band(n_eigen, N_spin, N_k)
+                  write (unit_no, '(7(1x,i6),16(1x,E17.9E3))') &
+                    atom, box, N_k, N_spin, n_eigen, n_eigen_final, gdx, &
+                    contribution, band_energy(n_eigen, N_spin, N_k), &
+                    band_energy(n_eigen_final, N_spin, N_k), &
+                    photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k), &
+                    delta_temp(n_eigen, n_eigen_final, N_spin, N_k), &
+                    transmit_prob(n_eigen_final, N_k, N_spin), &
+                    electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+                    I_layer(box, current_photo_energy_index), &
+                    emission_gauss(gdx, n_eigen, N_spin, N_k), &
+                    fermi_dirac(n_eigen, N_spin, N_k), &
+                    1.0_dp - fermi_dirac(n_eigen_final, N_spin, N_k), &
+                    pdos_frac, field_emission(n_eigen, N_spin, N_k), &
+                    gkgrid_weight(gdx, n_eigen, N_spin, N_k), &
+                    E_transverse(gdx, n_eigen, N_spin, N_k)
+                  n_rows = n_rows + 1
+                end do
+              end do
+            end do
+          else
+            do n_eigen = 1, nbands
+              do gdx = 1, photo_gkmax
+                contribution = qe_osm(n_eigen, N_spin, N_k, atom)
+                if (abs(contribution) .le. 0.0_dp) cycle
+                pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
+                            /pdos_weights_k_band(n_eigen, N_spin, N_k)
+                write (unit_no, '(6(1x,i6),12(1x,E17.9E3))') &
+                  atom, box, N_k, N_spin, n_eigen, gdx, &
+                  contribution, band_energy(n_eigen, N_spin, N_k), &
+                  foptical_matrix_weights(n_eigen, N_spin, N_k), &
+                  electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
+                  I_layer(box, current_photo_energy_index), &
+                  emission_gauss(gdx, n_eigen, N_spin, N_k), &
+                  fermi_dirac(n_eigen, N_spin, N_k), pdos_frac, &
+                  field_emission(n_eigen, N_spin, N_k), &
+                  gkgrid_weight(gdx, n_eigen, N_spin, N_k), &
+                  E_transverse(gdx, n_eigen, N_spin, N_k)
+                n_rows = n_rows + 1
+              end do
+            end do
+          end if
+        end do
+      end do
+    end do
+    close (unit=unit_no)
+
+    if (on_root .and. iprint .gt. 1) then
+      write (stdout, '(1x,a1,5x,a,i0,a,20x,a1)') '|', 'Wrote ', n_rows, ' QE terms to file', '|'
+    end if
+  end subroutine write_qe_terms
+
   subroutine calc_one_step_model
     !===============================================================================
     ! This subroutine calculates the QE using a one step model.
@@ -3789,15 +3909,6 @@ contains
     te_osm = 0.0_dp
 
     ! TODO: Create extra printing function for both photo models
-    ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root .and. .not. photo_energy_sweep) then
-    !   i = 14 ! Defines the number of columns printed in the loop - needed for reshaping the data array during postprocessing
-    !   write (stdout, '(1x,a78)') '+------------ Printing list of values going into 1step QE Values ------------+'
-    !   write (stdout, '(14(7x,a17))') 'calced_qe_value', 'contribution', 'band_energy', 'gkgrid_weight', &
-    !    'foptical_matrix_weights', &
-    !    'electron_esc', 'kpoint_weight', 'I_layer', 'emission_gauss', 'transverse_gauss', 'vacuum_gauss', 'fermi_dirac', &
-    !    'pdos_weights_atoms', 'pdos_weights_k_band'
-    !   write (stdout, '(1x,a11,6(1x,I4))') 'Array Shape', i, max_atoms, nbands, nspins, num_kpoints_on_node(my_node_id)
-    ! end if
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -3874,18 +3985,6 @@ contains
                                                    + temp_contribution*gk_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*te_gk_factor
-              ! if ((temp_contribution*gk_factor) .gt. 0.0_dp .and. index(devel_flag, 'print_qe_formula_values') .gt. 0 &
-              !     .and. on_root) then
-              !   write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
-              !   write (stdout, '(14(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*gk_factor, &
-              !     band_energy(n_eigen, N_spin, N_k), &
-              !     gkgrid_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_spin, N_k), &
-              !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-              !     I_layer(box_atom(atom), current_photo_energy_index), emission_gauss(gdx, n_eigen, N_spin, N_k), &
-              !     transverse_gauss(gdx, n_eigen, N_spin, N_k), vacuum_gauss(n_eigen, N_spin, N_k) &
-              !     fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
-              !     pdos_weights_k_band(n_eigen, N_spin, N_k)
-              ! end if
             end do
           end do
         end do
@@ -3913,26 +4012,11 @@ contains
                                                             + temp_contribution*gk_factor
               te_osm(n_eigen, N_spin, N_k, max_atoms + 1) = te_osm(n_eigen, N_spin, N_k, max_atoms + 1) &
                                                             + temp_contribution*te_gk_factor
-              ! if ((temp_contribution*gk_factor) .gt. 0.0_dp .and. index(devel_flag, 'print_qe_formula_values') .gt. 0 &
-              !     .and. on_root) then
-              !   write (stdout, '(5(1x,I4))') gdx, n_eigen, N_spin, N_k, atom
-              !   write (stdout, '(14(7x,E17.9E3))') qe_osm(n_eigen, N_spin, N_k, atom), temp_contribution*gk_factor, &
-              !     band_energy(n_eigen, N_spin, N_k), &
-              !     gkgrid_weight(gdx, n_eigen, N_spin, N_k), foptical_matrix_weights(n_eigen, N_spin, N_k), &
-              !     electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-              !     I_layer(box_atom(atom), current_photo_energy_index), emission_gauss(gdx, n_eigen, N_spin, N_k), &
-              !     transverse_gauss(gdx, n_eigen, N_spin, N_k), vacuum_gauss(n_eigen, N_spin, N_k) &
-              !     fermi_dirac(n_eigen, N_spin, N_k), pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
-              !     pdos_weights_k_band(n_eigen, N_spin, N_k)
-              ! end if
             end do
           end do
         end do
       end do
     end if
-    ! if (index(devel_flag, 'print_qe_formula_values') .gt. 0 .and. on_root) then
-    !   write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    ! end if
 
     if (allocated(dbg_m)) then
       call comms_reduce(dbg_m(1), nbands, 'SUM')
@@ -3952,6 +4036,10 @@ contains
       deallocate (dbg_m, dbg_fd, dbg_pdos, dbg_gk, dbg_qe, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate the 1step term breakdown')
     end if
+
+    ! One test per photon energy, outside every loop.
+    if (index(devel_flag, 'print_qe_formula_values') .gt. 0) &
+      call write_qe_terms(fermi_dirac, emission_gauss)
 
     if (index(devel_flag, 'print_kpt_qe_data') .gt. 0) call print_1step_kpt_qe
 
