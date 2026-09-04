@@ -43,6 +43,10 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: electron_esc
   real(kind=dp), dimension(:, :), allocatable :: I_layer
   real(kind=dp), allocatable, dimension(:, :) :: reflect_photo
+  ! Per-box dielectric function, (box, energy, 1:2) for eps_1 and eps_2.
+  ! Kept because the slab reflectivity has to be formed by averaging epsilon
+  ! and not by averaging anything computed from it.
+  real(kind=dp), allocatable, dimension(:, :, :) :: epsilon_photo
   real(kind=dp), allocatable, dimension(:, :) :: absorp_photo
   real(kind=dp), allocatable, dimension(:, :) :: refract
   real(kind=dp), allocatable, dimension(:)  :: reflect
@@ -298,6 +302,8 @@ contains
     real(kind=dp)                            :: h_min, h_max, h_mean
     real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     real(kind=dp)                            :: max_gap, typical_gap, layer_tol
+    real(kind=dp)                            :: z_middle_tol
+    character(len=78)                        :: box_msg
     real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid
     integer, allocatable, dimension(:)       :: atoms_in_layer
     logical                                  :: layers_from_input
@@ -486,10 +492,48 @@ contains
     else if (single_layer) then
       num_boxes = 1
     else
-      num_boxes = 0
-      do i = 1, n_layers
-        if (layer_centroid(i) .gt. z_middle) num_boxes = num_boxes + 1
-      end do
+      ! A layer lying *on* the dividing plane is treated explicitly. The old
+      ! layer-count form of this, num_boxes = (n_layers + 1)/2, could not get
+      ! this wrong because it never compared a coordinate; stating the split
+      ! geometrically instead made the middle layer of a slab with an odd number
+      ! of layers a coin toss, because that layer sits exactly on the default
+      ! z_middle = 0.5*(photo_slab_max + photo_slab_min). The same 13 layer slab
+      ! gave 7 explicit boxes at one vacuum spacing and 6 at another, decided by
+      ! rounding in the fourth decimal of the bounds on a margin of 1E-7 Ang.
+      !
+      ! The tolerance is a hundredth of the typical layer spacing, so it can only
+      ! ever catch a layer that is coincident with the plane: the nearest
+      ! genuinely distinct layer is half a spacing away, fifty times further out.
+      ! For an evenly spaced slab this reproduces (n_layers + 1)/2 exactly, while
+      ! an unevenly spaced one still splits on geometry rather than on how many
+      ! layers the inference happened to find.
+      if (photo_slab_middle_set) then
+        z_middle_tol = 0.01_dp*typical_gap
+        num_boxes = 0
+        do i = 1, n_layers
+          if (layer_centroid(i) .gt. z_middle - z_middle_tol) num_boxes = num_boxes + 1
+        end do
+      else
+        ! Half the inferred layers, counted rather than measured. Stating the
+        ! split geometrically instead -- counting the centroids above
+        ! 0.5*(photo_slab_max + photo_slab_min) -- makes it inherit the
+        ! arbitrariness of both bounds, which are the user's choice of where the
+        ! electron density has fallen off rather than a property of the
+        ! structure. Moving photo_slab_max by 0.5 Ang moves that plane by
+        ! 0.25 Ang and reassigns a whole layer between the explicit region and
+        ! the bulk extrapolation. The layer count cannot do that, and for an odd
+        ! number of layers the +1 puts the middle layer on the explicit side
+        ! instead of leaving it exactly on the plane to be decided by rounding.
+        num_boxes = (n_layers + 1)/2
+      end if
+      if (num_boxes .gt. 0 .and. on_root .and. iprint .gt. 1) then
+        if (layer_centroid(num_boxes) .le. z_middle) then
+          write (box_msg, '(a1,5x,a,i0,a)') '|', 'Layer ', num_boxes, &
+            ' sits on the explicit/bulk plane; kept explicit'
+          box_msg(78:78) = '|'
+          write (stdout, '(1x,a78)') box_msg
+        end if
+      end if
       if (num_boxes .lt. 1) &
         call io_error('Error: analyse_geometry - the bottom of the explicit region lies above '// &
                       'every layer, so no layer would be treated explicitly.')
@@ -1120,6 +1164,9 @@ contains
 
     allocate (reflect_photo(num_boxes, number_energies), stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of absorp_photo failed')
+    allocate (epsilon_photo(num_boxes, number_energies, 2), stat=ierr)
+    if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of epsilon_photo failed')
+    epsilon_photo = 0.0_dp
 
     ! Advanced and tricky user option to read the optical properties from a previous run
     ! Must be used with caution, since currently no checking of parameters is performed!
@@ -1339,6 +1386,8 @@ contains
           do energy = 1, number_energies
             absorp_photo(box, energy) = absorp(index_energy(energy))
             reflect_photo(box, energy) = reflect(index_energy(energy))
+            epsilon_photo(box, energy, 1) = epsilon(index_energy(energy), 1, 1, 1)
+            epsilon_photo(box, energy, 2) = epsilon(index_energy(energy), 2, 1, 1)
           end do
 
           if (index(devel_flag, 'print_qe_constituents') .gt. 0) then
@@ -1528,9 +1577,20 @@ contains
 
     I_0 = 1.0_dp
 
-    ! Calculate the unreflected portion of incoming light
+    ! Calculate the unreflected portion of incoming light. The reflectivity is
+    ! that of the slab as a stratified medium, not of the surface box on its own
+    ! -- see slab_reflectivity. Layer 1 then receives all of the transmitted
+    ! light: there is no material above it, so nothing can attenuate the beam
+    ! before it reaches the first plane of atoms, and every deeper layer is
+    ! reached from there by the centroid-to-centroid recursion below.
     do i = 1, number_energies
-      I_layer(1, i) = I_0 - reflect_photo(1, i)
+      if (allocated(epsilon_photo)) then
+        I_layer(1, i) = I_0 - slab_reflectivity(i)
+      else
+        ! read_reflect_file supplies R per box and no epsilon, so there is
+        ! nothing to average and the old surface-box value is all there is.
+        I_layer(1, i) = I_0 - reflect_photo(1, i)
+      end if
     end do
     ! If we have more than one box with atoms in it, calculate the incident light intensity for each
     !
@@ -1566,7 +1626,110 @@ contains
       deallocate (reflect_photo, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate reflect_photo')
     end if
+    if (allocated(epsilon_photo)) then
+      deallocate (epsilon_photo, stat=ierr)
+      if (ierr /= 0) call io_error('Error: calc_absorp_layer - failed to deallocate epsilon_photo')
+    end if
   end subroutine calc_absorp_layer
+
+  function slab_reflectivity(energy) result(reflectivity)
+    !*******=======================================================================
+    ! Reflectivity of the slab, seen as a semi-infinite stratified medium.
+    !
+    ! A Fresnel reflectivity samples the material over the absorption depth
+    ! 1/alpha, which for Cu at 6 eV is around 100 Ang against an explicit region
+    ! of 13 Ang. Taking it from the surface box alone therefore sets the reflected
+    ! fraction from the optical response of the layer that accounts for a few per
+    ! cent of the light's interaction, and it is the box whose height is the most
+    ! arbitrary, being fixed by photo_slab_max. Measured: moving photo_slab_max by
+    ! 0.5 Ang changed R by 12 % and the quantum efficiency by 8 %, because
+    ! eps_2 goes as 1/box_volume.
+    !
+    ! So average the dielectric function over depth, weighted by how much of the
+    ! light each box actually sees, and take the Fresnel expression of the
+    ! average. Three things this has to get right:
+    !
+    !   * Average epsilon, not R and not n. Kramers-Kronig is linear in eps_2, so
+    !     averaging eps_2 and transforming gives the average of the eps_1 values;
+    !     n, kappa, alpha and R are all non-linear, so <R>, R(<n>) and R(<eps>)
+    !     are three different numbers and only the last one means anything.
+    !   * Arithmetic, not harmonic. At normal incidence the field lies in the
+    !     layer plane, which is the arithmetic Wiener bound; the harmonic bound is
+    !     for a field along the surface normal.
+    !   * The tail. Everything below the explicit region is the deepest box
+    !     repeated, and for a clean metal it carries most of the weight.
+    !
+    ! The probe depth depends on the average that is being computed with it, so
+    ! iterate. alpha goes as kappa at fixed photon energy, which lets the code's
+    ! own absorption coefficient be rescaled rather than rebuilt from constants.
+    !===============================================================================
+    use od_constants, only: dp
+    implicit none
+    integer, intent(in) :: energy
+    real(kind=dp) :: reflectivity
+    integer       :: box, iter
+    real(kind=dp) :: probe_depth, depth, weight, weight_sum, sum_1, sum_2
+    real(kind=dp) :: eps_1, eps_2, modulus, n_index, kappa, kappa_bulk, alpha
+
+    eps_1 = epsilon_photo(num_boxes, energy, 1)
+    eps_2 = epsilon_photo(num_boxes, energy, 2)
+    kappa_bulk = kappa_of(eps_1, eps_2)
+    alpha = absorp_photo(num_boxes, energy)
+
+    ! Without an absorption coefficient there is no depth to weight over, so
+    ! fall back to the deepest box, which is what the weighting tends to.
+    if (alpha .le. 0.0_dp .or. kappa_bulk .le. 0.0_dp) then
+      reflectivity = fresnel(eps_1, eps_2)
+      return
+    end if
+
+    do iter = 1, 8
+      probe_depth = 1.0E10_dp/alpha        ! 1/alpha in Angstrom
+      depth = 0.0_dp
+      sum_1 = 0.0_dp; sum_2 = 0.0_dp; weight_sum = 0.0_dp
+      do box = 1, num_boxes
+        weight = exp(-depth/probe_depth) - exp(-(depth + box_heights(box))/probe_depth)
+        sum_1 = sum_1 + epsilon_photo(box, energy, 1)*weight
+        sum_2 = sum_2 + epsilon_photo(box, energy, 2)*weight
+        weight_sum = weight_sum + weight
+        depth = depth + box_heights(box)
+      end do
+      weight = exp(-depth/probe_depth)     ! the bulk repeat below the explicit region
+      sum_1 = sum_1 + epsilon_photo(num_boxes, energy, 1)*weight
+      sum_2 = sum_2 + epsilon_photo(num_boxes, energy, 2)*weight
+      weight_sum = weight_sum + weight
+      if (weight_sum .le. 0.0_dp) exit
+      eps_1 = sum_1/weight_sum
+      eps_2 = sum_2/weight_sum
+      kappa = kappa_of(eps_1, eps_2)
+      if (kappa .le. 0.0_dp) exit
+      alpha = absorp_photo(num_boxes, energy)*kappa/kappa_bulk
+    end do
+
+    reflectivity = fresnel(eps_1, eps_2)
+  end function slab_reflectivity
+
+  function kappa_of(eps_1, eps_2) result(kappa)
+    !! Extinction coefficient from the dielectric function.
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), intent(in) :: eps_1, eps_2
+    real(kind=dp) :: kappa, modulus
+    modulus = sqrt(eps_1**2 + eps_2**2)
+    kappa = sqrt(max(0.5_dp*(modulus - eps_1), 0.0_dp))
+  end function kappa_of
+
+  function fresnel(eps_1, eps_2) result(reflectivity)
+    !! Normal-incidence reflectivity of a semi-infinite medium.
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), intent(in) :: eps_1, eps_2
+    real(kind=dp) :: reflectivity, modulus, n_index, kappa
+    modulus = sqrt(eps_1**2 + eps_2**2)
+    n_index = sqrt(max(0.5_dp*(modulus + eps_1), 0.0_dp))
+    kappa = sqrt(max(0.5_dp*(modulus - eps_1), 0.0_dp))
+    reflectivity = (((n_index - 1.0_dp)**2) + kappa**2)/(((n_index + 1.0_dp)**2) + kappa**2)
+  end function fresnel
 
   subroutine effective_wf
     use od_parameters, only: photo_work_function, photo_elec_field
@@ -3068,29 +3231,6 @@ contains
     time0 = io_time()
 
     call setup_energy_scale(E)
-    ! if (index(devel_flag, 'old_delta') .gt. 0) then
-    !   if (fixed) then
-    !     if (calculate_bulk) then
-    !       call calculate_delta('f', delta_temp, .true.)
-    !     else
-    !       call calculate_delta('f', delta_temp, .false.)
-    !     end if
-    !   end if
-    !   if (adaptive) then
-    !     if (calculate_bulk) then
-    !       call calculate_delta('a', delta_temp, .true.)
-    !     else
-    !       call calculate_delta('a', delta_temp, .false.)
-    !     end if
-    !   end if
-    !   if (linear) then
-    !     if (calculate_bulk) then
-    !       call calculate_delta('l', delta_temp, .true.)
-    !     else
-    !       call calculate_delta('l', delta_temp, .false.)
-    !     end if
-    !   end if
-    ! else
     if (fixed) then
       if (calculate_bulk) then
         call calculate_delta('f', delta_temp, .true.)
@@ -3112,7 +3252,6 @@ contains
         call calculate_delta('l', delta_temp, .false.)
       end if
     end if
-    ! end if
 
     if (quad) then
       call io_error("quadratic broadening not implemented")
