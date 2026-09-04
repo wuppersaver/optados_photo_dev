@@ -3460,13 +3460,34 @@ contains
     ! -- of order 1E6 rows for a 13 layer slab at one k-point per direction, more
     ! with a gkgrid -- and that is accepted.
     !
-    ! One file, not one per node. The rows are written in turn: root writes the
-    ! header and its own k-points, then hands a token to each node in order, and
-    ! each appends its own. Passing a token rather than the data keeps this
-    ! flat in memory, which marshalling a million rows to root would not be.
+    ! ONLY ROOT OPENS THE FILE. Every node builds its own rows as numbers into a
+    ! fixed size block and hands the blocks to root, which does all the
+    ! formatting and all the writing. The version this replaces had each node
+    ! append to the file in turn under a token, which is faster but puts an open
+    ! on every rank, and that is a worse thing to have in the module than a few
+    ! seconds of transfer:
+    !
+    !   - seedname is read from the command line on root and never broadcast, so
+    !     a name built from it off root begins with a NUL byte and open() is
+    !     handed an empty path. That killed every non-root rank the first time
+    !     this ran in parallel, and any future routine opening a file off root
+    !     would hit it again.
+    !   - a shared append relies on every node seeing the same file. That is not
+    !     true of a scratch filesystem local to each node.
+    !
+    ! Blocks are rows_per_block rows of n_cols values, so the memory is flat in
+    ! the size of the run rather than proportional to it -- marshalling a million
+    ! formatted rows to root would not be. The integer columns travel as reals
+    ! in the same buffer: they are small enough to be exact, and it keeps the
+    ! block one contiguous array with one send. The reals are copied unaltered,
+    ! so a parallel file is bit-identical to a serial one.
+    !
+    ! Nodes 1 ... N-1 are drained before root writes its own rows, because the
+    ! readers in od_electronic hand out those nodes' k-points first and keep
+    ! root's for last -- so that order is ascending k_global.
     ! Felix Mildner, 2026
     !===============================================================================
-    use od_comms, only: on_root, num_nodes, comms_send, comms_recv, comms_bcast
+    use od_comms, only: on_root, num_nodes, comms_send, comms_recv
     use od_io, only: stdout, io_error, io_file_unit, seedname, io_date
     use od_parameters, only: photo_model, iprint
     implicit none
@@ -3474,7 +3495,10 @@ contains
     real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
     real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
 
-    integer            :: unit_no, inode, token, n_rows
+    integer, parameter :: rows_per_block = 8192
+
+    real(kind=dp), allocatable :: row_buf(:, :)
+    integer            :: unit_no, inode, token, n_rows, n_cols, n_block, ierr
     logical            :: three_step
     character(len=10)  :: char_e
     character(len=9)   :: ctime
@@ -3485,21 +3509,22 @@ contains
     if (three_step .and. .not. present(delta_temp)) &
       call io_error('Error: write_qe_terms - the three step model needs its delta function')
 
-    ! seedname is read from the command line on root and never broadcast, so on
-    ! every other node it is still the zero-filled static it started as. trim()
-    ! strips blanks and not NULs, so len_trim is the full 80 there, and a name
-    ! built from it begins with a NUL byte: open() is handed an empty path and
-    ! the node dies before writing a row, leaving a file holding root's share
-    ! and nothing else. Root builds the name and the rest are told it. This is
-    ! the only open in the module that runs anywhere but root.
-    write (char_e, '(F7.3)') temp_photon_energy
-    if (on_root) filename = trim(seedname)//'_'//trim(photo_model)//'_'// &
-                            trim(adjustl(char_e))//'_qe_terms.dat'
-    call comms_bcast(filename, len(filename))
+    ! 9 integer and 16 real columns for the three step model, 8 and 12 for the
+    ! one step. Both nodes of a send have to agree, and both get it from here.
+    if (three_step) then
+      n_cols = 25
+    else
+      n_cols = 20
+    end if
+    allocate (row_buf(n_cols, rows_per_block), stat=ierr)
+    if (ierr /= 0) call io_error('Error: write_qe_terms - allocation of row_buf failed')
+
     token = -1
     n_rows = 0
 
     if (on_root) then
+      write (char_e, '(F7.3)') temp_photon_energy
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_terms.dat'
       unit_no = io_file_unit()
       open (unit=unit_no, action='write', file=filename)
       call io_date(cdate, ctime)
@@ -3524,55 +3549,103 @@ contains
         write (unit_no, '(a)') '#   I_layer emission_gauss fd pdos_fraction field_emission'
         write (unit_no, '(a)') '#   gkgrid_weight E_transverse'
       end if
-      close (unit=unit_no)
 
-      ! Hand the file to each node in turn, then write root's own rows last.
-      ! Root holds the last block of the global k-point list, not the first, so
-      ! writing its share after everyone else's is what puts the file in
-      ! ascending k_global order rather than starting it two thirds of the way
-      ! through the list.
+      ! Drain each of the other nodes in turn. The token starts them; they stop
+      ! by sending a block of no rows.
       do inode = 1, num_nodes - 1
         call comms_send(token, 1, inode)
-        call comms_recv(token, 1, inode)
+        do
+          call comms_recv(n_block, 1, inode)
+          if (n_block .le. 0) exit
+          call comms_recv(row_buf(1, 1), n_cols*n_block, inode)
+          call write_qe_rows_block(unit_no, three_step, n_block, row_buf)
+          n_rows = n_rows + n_block
+        end do
       end do
 
-      open (unit=unit_no, action='write', position='append', file=filename)
-      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
+      call build_qe_terms_rows(unit_no, three_step, .true., n_rows, row_buf, &
+                               fermi_dirac, emission_gauss, delta_temp)
       close (unit=unit_no)
     else
       call comms_recv(token, 1, 0)
-      unit_no = io_file_unit()
-      open (unit=unit_no, action='write', position='append', file=filename)
-      call write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
-      close (unit=unit_no)
-      call comms_send(token, 1, 0)
+      call build_qe_terms_rows(unit_no, three_step, .false., n_rows, row_buf, &
+                               fermi_dirac, emission_gauss, delta_temp)
+      n_block = 0
+      call comms_send(n_block, 1, 0)
     end if
 
+    deallocate (row_buf, stat=ierr)
+    if (ierr /= 0) call io_error('Error: write_qe_terms - deallocation of row_buf failed')
+
     if (on_root .and. iprint .gt. 1) then
-      ! n_rows counts this node's share only; in parallel the file holds the sum
-      ! over nodes, so say which is being reported rather than print a number
-      ! that means something different depending on the node count.
-      write (stdout, '(1x,a1,5x,a,i0,a,22x,a1)') '|', 'Wrote ', n_rows, ' QE terms from root', '|'
+      ! n_rows on root is the whole file, since root writes every row.
+      write (stdout, '(1x,a1,5x,a,i0,a,22x,a1)') '|', 'Wrote ', n_rows, ' QE terms', '|'
     end if
   end subroutine write_qe_terms
 
-  subroutine write_qe_terms_rows(unit_no, three_step, n_rows, fermi_dirac, emission_gauss, delta_temp)
-    !! One node's share of the QE term dump. Split out from write_qe_terms so
-    !! that the loop appears once and both the root and the non-root branch of
-    !! the token pass write identically formatted rows.
+  subroutine write_qe_rows_block(unit_no, three_step, n_block, row_buf)
+    !! Format and write one block of rows. The only place the row format lives,
+    !! so root's own rows and the ones it received come out identically.
+    implicit none
+    integer, intent(in)       :: unit_no, n_block
+    logical, intent(in)       :: three_step
+    real(kind=dp), intent(in) :: row_buf(:, :)
+    integer :: i
+
+    if (three_step) then
+      do i = 1, n_block
+        write (unit_no, '(9(1x,i6),16(1x,E17.9E3))') nint(row_buf(1:9, i)), row_buf(10:25, i)
+      end do
+    else
+      do i = 1, n_block
+        write (unit_no, '(8(1x,i6),12(1x,E17.9E3))') nint(row_buf(1:8, i)), row_buf(9:20, i)
+      end do
+    end if
+  end subroutine write_qe_rows_block
+
+  subroutine flush_qe_rows(unit_no, three_step, writing, n_buf, row_buf)
+    !! Empty the block: root writes it, anyone else sends it to root. Called
+    !! when the block fills and once more at the end of the sweep.
+    use od_comms, only: comms_send
+    implicit none
+    integer, intent(in)          :: unit_no
+    logical, intent(in)          :: three_step, writing
+    integer, intent(inout)       :: n_buf
+    real(kind=dp), intent(inout) :: row_buf(:, :)
+
+    if (n_buf .le. 0) return
+    if (writing) then
+      call write_qe_rows_block(unit_no, three_step, n_buf, row_buf)
+    else
+      call comms_send(n_buf, 1, 0)
+      call comms_send(row_buf(1, 1), size(row_buf, 1)*n_buf, 0)
+    end if
+    n_buf = 0
+  end subroutine flush_qe_rows
+
+  subroutine build_qe_terms_rows(unit_no, three_step, writing, n_rows, row_buf, &
+                                 fermi_dirac, emission_gauss, delta_temp)
+    !! One node's share of the QE term dump, built into row_buf a block at a
+    !! time. Split out from write_qe_terms so the loop appears once and root's
+    !! rows and every other node's are assembled by the same code.
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, transmit_prob
     use od_comms, only: my_node_id, num_nodes
     implicit none
     integer, intent(in)                 :: unit_no
-    logical, intent(in)                 :: three_step
+    logical, intent(in)                 :: three_step, writing
     integer, intent(inout)              :: n_rows
+    real(kind=dp), intent(inout)        :: row_buf(:, :)
     real(kind=dp), intent(in)           :: fermi_dirac(:, :, :)
     real(kind=dp), intent(in)           :: emission_gauss(:, :, :, :)
     real(kind=dp), intent(in), optional :: delta_temp(:, :, :, :)
 
     integer       :: N_k, N_spin, n_eigen, n_eigen_final, atom, gdx, box, k_offset
+    integer       :: n_buf, block_size
     real(kind=dp) :: pdos_frac
+
+    block_size = size(row_buf, 2)
+    n_buf = 0
 
     ! N_k is the index within this node's share, so on its own it says nothing
     ! about which k-point a row belongs to once there is more than one node --
@@ -3602,24 +3675,28 @@ contains
                 pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                             /pdos_weights_k_band(n_eigen, N_spin, N_k)
                 do gdx = 1, photo_gkmax
-                  write (unit_no, '(9(1x,i6),16(1x,E17.9E3))') &
-                    atom, box, k_offset + N_k, my_node_id, N_k, N_spin, &
-                    n_eigen, n_eigen_final, gdx, &
-                    qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom), &
-                    band_energy(n_eigen, N_spin, N_k), &
-                    band_energy(n_eigen_final, N_spin, N_k), &
-                    photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k), &
-                    delta_temp(n_eigen, n_eigen_final, N_spin, N_k), &
-                    transmit_prob(n_eigen_final, N_k, N_spin), &
-                    electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-                    I_layer(box, current_photo_energy_index), &
-                    emission_gauss(gdx, n_eigen, N_spin, N_k), &
-                    fermi_dirac(n_eigen, N_spin, N_k), &
-                    1.0_dp - fermi_dirac(n_eigen_final, N_spin, N_k), &
-                    pdos_frac, field_emission(n_eigen, N_spin, N_k), &
-                    gkgrid_weight(gdx, n_eigen, N_spin, N_k), &
-                    E_transverse(gdx, n_eigen, N_spin, N_k)
+                  n_buf = n_buf + 1
+                  row_buf(1:9, n_buf) = real((/atom, box, k_offset + N_k, my_node_id, N_k, &
+                                               N_spin, n_eigen, n_eigen_final, gdx/), dp)
+                  row_buf(10, n_buf) = qe_tsm(n_eigen, n_eigen_final, N_spin, N_k, atom)
+                  row_buf(11, n_buf) = band_energy(n_eigen, N_spin, N_k)
+                  row_buf(12, n_buf) = band_energy(n_eigen_final, N_spin, N_k)
+                  row_buf(13, n_buf) = photo_matrix_weights(n_eigen, n_eigen_final, N_spin, N_k)
+                  row_buf(14, n_buf) = delta_temp(n_eigen, n_eigen_final, N_spin, N_k)
+                  row_buf(15, n_buf) = transmit_prob(n_eigen_final, N_k, N_spin)
+                  row_buf(16, n_buf) = electron_esc(gdx, n_eigen, N_spin, N_k, atom)
+                  row_buf(17, n_buf) = kpoint_weight(N_k)
+                  row_buf(18, n_buf) = I_layer(box, current_photo_energy_index)
+                  row_buf(19, n_buf) = emission_gauss(gdx, n_eigen, N_spin, N_k)
+                  row_buf(20, n_buf) = fermi_dirac(n_eigen, N_spin, N_k)
+                  row_buf(21, n_buf) = 1.0_dp - fermi_dirac(n_eigen_final, N_spin, N_k)
+                  row_buf(22, n_buf) = pdos_frac
+                  row_buf(23, n_buf) = field_emission(n_eigen, N_spin, N_k)
+                  row_buf(24, n_buf) = gkgrid_weight(gdx, n_eigen, N_spin, N_k)
+                  row_buf(25, n_buf) = E_transverse(gdx, n_eigen, N_spin, N_k)
                   n_rows = n_rows + 1
+                  if (n_buf .eq. block_size) &
+                    call flush_qe_rows(unit_no, three_step, writing, n_buf, row_buf)
                 end do
               end do
             end do
@@ -3628,26 +3705,33 @@ contains
               pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                           /pdos_weights_k_band(n_eigen, N_spin, N_k)
               do gdx = 1, photo_gkmax
-                write (unit_no, '(8(1x,i6),12(1x,E17.9E3))') &
-                  atom, box, k_offset + N_k, my_node_id, N_k, N_spin, n_eigen, gdx, &
-                  qe_osm(n_eigen, N_spin, N_k, atom), &
-                  band_energy(n_eigen, N_spin, N_k), &
-                  foptical_matrix_weights(n_eigen, N_spin, N_k), &
-                  electron_esc(gdx, n_eigen, N_spin, N_k, atom), kpoint_weight(N_k), &
-                  I_layer(box, current_photo_energy_index), &
-                  emission_gauss(gdx, n_eigen, N_spin, N_k), &
-                  fermi_dirac(n_eigen, N_spin, N_k), pdos_frac, &
-                  field_emission(n_eigen, N_spin, N_k), &
-                  gkgrid_weight(gdx, n_eigen, N_spin, N_k), &
-                  E_transverse(gdx, n_eigen, N_spin, N_k)
+                n_buf = n_buf + 1
+                row_buf(1:8, n_buf) = real((/atom, box, k_offset + N_k, my_node_id, N_k, &
+                                             N_spin, n_eigen, gdx/), dp)
+                row_buf(9, n_buf) = qe_osm(n_eigen, N_spin, N_k, atom)
+                row_buf(10, n_buf) = band_energy(n_eigen, N_spin, N_k)
+                row_buf(11, n_buf) = foptical_matrix_weights(n_eigen, N_spin, N_k)
+                row_buf(12, n_buf) = electron_esc(gdx, n_eigen, N_spin, N_k, atom)
+                row_buf(13, n_buf) = kpoint_weight(N_k)
+                row_buf(14, n_buf) = I_layer(box, current_photo_energy_index)
+                row_buf(15, n_buf) = emission_gauss(gdx, n_eigen, N_spin, N_k)
+                row_buf(16, n_buf) = fermi_dirac(n_eigen, N_spin, N_k)
+                row_buf(17, n_buf) = pdos_frac
+                row_buf(18, n_buf) = field_emission(n_eigen, N_spin, N_k)
+                row_buf(19, n_buf) = gkgrid_weight(gdx, n_eigen, N_spin, N_k)
+                row_buf(20, n_buf) = E_transverse(gdx, n_eigen, N_spin, N_k)
                 n_rows = n_rows + 1
+                if (n_buf .eq. block_size) &
+                  call flush_qe_rows(unit_no, three_step, writing, n_buf, row_buf)
               end do
             end do
           end if
         end do
       end do
     end do
-  end subroutine write_qe_terms_rows
+
+    call flush_qe_rows(unit_no, three_step, writing, n_buf, row_buf)
+  end subroutine build_qe_terms_rows
 
   subroutine calc_one_step_model
     !===============================================================================
