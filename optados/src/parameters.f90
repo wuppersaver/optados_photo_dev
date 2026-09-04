@@ -148,8 +148,8 @@ module od_parameters
   character(len=20), public, save :: photo_imfp_model
   real(kind=dp), public, save :: photo_phi_centre
   real(kind=dp), public, save :: photo_phi_halfwidth
-  real(kind=dp), public, save :: photo_theta_min
-  real(kind=dp), public, save :: photo_theta_max
+  real(kind=dp), public, save :: photo_theta_centre
+  real(kind=dp), public, save :: photo_theta_halfwidth
   real(kind=dp), public, save :: photo_bindenergy_broadening
   real(kind=dp), public, save :: photo_pmat_bin_width
   real(kind=dp), public, save :: photo_const_bindenergy_value
@@ -618,10 +618,28 @@ contains
     photo_output = 'off'
     call param_get_keyword('photo_output', found, c_value=photo_output)
 
-    photo_theta_min = 0.0_dp
-    call param_get_keyword('photo_theta_min', found, r_value=photo_theta_min)
-    photo_theta_max = 90.0_dp
-    call param_get_keyword('photo_theta_max', found, r_value=photo_theta_max)
+    ! The polar acceptance is a direction plus a half width, like the azimuthal
+    ! one. Unlike the azimuth it does not wrap: theta is measured from the surface
+    ! normal and physically lives in 0-90 deg, so the window is clipped to that
+    ! range when it is applied. The clip is what keeps the 91 deg sentinel used
+    ! for states that cannot emit outside every window. The defaults, a centre of
+    ! 45 with a half width of 45, span the whole physical range.
+    photo_theta_centre = 45.0_dp
+    call param_get_keyword('photo_theta_centre', found, r_value=photo_theta_centre)
+    if (photo_theta_centre .lt. 0.0_dp .or. photo_theta_centre .gt. 90.0_dp) &
+      call io_error('Error: photo_theta_centre must lie between 0 and 90 degrees, '// &
+                    'measured from the surface normal')
+    photo_theta_halfwidth = 45.0_dp
+    call param_get_keyword('photo_theta_halfwidth', found, r_value=photo_theta_halfwidth)
+    if (photo_theta_halfwidth .le. 0.0_dp .or. photo_theta_halfwidth .gt. 90.0_dp) &
+      call io_error('Error: photo_theta_halfwidth must be greater than 0 and at most 90 degrees')
+    call param_get_keyword('photo_theta_min', found, r_value=deprecated_r)
+    if (found) call io_error('Error: photo_theta_min has been replaced by photo_theta_centre and '// &
+                             'photo_theta_halfwidth, to match the azimuthal acceptance. The '// &
+                             'defaults, 45 and 45, span the same 0-90 deg the old defaults did.')
+    call param_get_keyword('photo_theta_max', found, r_value=deprecated_r)
+    if (found) call io_error('Error: photo_theta_max has been replaced by photo_theta_centre and '// &
+                             'photo_theta_halfwidth. See the photo_theta_min message.')
     ! The azimuthal acceptance is a direction plus a half width rather than a
     ! min and a max, because an analyser centred on the +x axis spans -30 to +30
     ! and a min/max pair cannot express a window that wraps through 180 deg.
@@ -1123,8 +1141,8 @@ contains
         write (stdout, '(1x,a78)') '|  Identify and remove box states            :     True                      |'
       end if
       if (index(photo_output, 'off') == 0 .or. index(photo_output, 'qe_tensor') == 0) then
-        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - min -           (deg)          :', photo_theta_min, '|'
-        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - max -           (deg)          :', photo_theta_max, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - centre -        (deg)          :', photo_theta_centre, '|'
+        write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Theta    - half width -    (deg)          :', photo_theta_halfwidth, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - centre -        (deg)          :', photo_phi_centre, '|'
         write (stdout, '(1x,a46,1x,1f8.2,22x,a1)') '|  Phi      - half width -    (deg)          :', photo_phi_halfwidth, '|'
       end if
@@ -1927,8 +1945,8 @@ contains
     call comms_bcast(photo_bulk_cutoff, 1)
     call comms_bcast(photo_temperature, 1)
     call comms_bcast(photo_output, len(photo_output))
-    call comms_bcast(photo_theta_min, 1)
-    call comms_bcast(photo_theta_max, 1)
+    call comms_bcast(photo_theta_centre, 1)
+    call comms_bcast(photo_theta_halfwidth, 1)
     call comms_bcast(photo_phi_centre, 1)
     call comms_bcast(photo_phi_halfwidth, 1)
     call comms_bcast(photo_bindenergy_broadening, 1)

@@ -882,21 +882,31 @@ step.
 \label{subsec:angular_acceptance}
 
 All of the outputs above may be restricted to an angular window, standing in for
-the acceptance of an analyser. The polar window is given directly as
-{\tt photo\_theta\_min} and {\tt photo\_theta\_max}, measured from the surface
-normal.
+the acceptance of an analyser. Both angles are given the same way, as a direction
+and a half width in degrees: {\tt photo\_theta\_centre} and
+{\tt photo\_theta\_halfwidth} for the polar angle, measured from the surface
+normal, and {\tt photo\_phi\_centre} and {\tt photo\_phi\_halfwidth} for the
+azimuth, measured from the cartesian $x$ axis.
 
-The azimuth is given as a direction and a half width, {\tt photo\_phi\_centre}
-and {\tt photo\_phi\_halfwidth}, both in degrees and measured from the cartesian
-$x$ axis. A pair of bounds cannot describe an analyser centred on the $x$ axis,
-which spans $-30^\circ$ to $+30^\circ$ and wraps through $180^\circ$; a centre
-and a half width can. The default half width of $180^\circ$ accepts the whole
-circle, which is what the earlier keywords {\tt photo\_phi\_min} and
-{\tt photo\_phi\_max} did in practice. Those keywords are no longer accepted:
-they acted on an azimuth that had been folded into the first quadrant, so a
-narrowed window selected one wedge in each of the four quadrants rather than a
-single wedge, and reinterpreting an old input file against the signed azimuth
-would silently change what it asked for.
+A pair of bounds cannot describe an analyser centred on the $x$ axis, which spans
+$-30^\circ$ to $+30^\circ$ and wraps through $180^\circ$; a centre and a half
+width can. The defaults, $45^\circ \pm 45^\circ$ in $\theta$ and
+$0^\circ \pm 180^\circ$ in $\phi$, accept everything.
+
+The two differ in that the azimuth wraps and the polar angle does not. $\theta$
+is measured from the surface normal and cannot physically exceed $90^\circ$, so
+its window is clipped to $0^\circ$--$90^\circ$ when it is applied rather than
+allowed to run past. That clip matters: states that cannot emit under the chosen
+conditions are marked with a $\theta$ of $91^\circ$, and an unclipped window
+could reach past $90^\circ$ and admit them.
+
+The earlier keywords {\tt photo\_theta\_min}, {\tt photo\_theta\_max},
+{\tt photo\_phi\_min} and {\tt photo\_phi\_max} are no longer accepted. For
+$\theta$ this is only a change of spelling. For $\phi$ it is not: those keywords
+acted on an azimuth that had been folded into the first quadrant, so a narrowed
+window selected one wedge in each of the four quadrants rather than a single
+wedge, and reinterpreting an old input file against the signed azimuth would
+silently change what it asked for.
 
 The two windows are applied at different points, because they behave differently
 under the symmetry of the cell. The polar angle depends only on the magnitude of

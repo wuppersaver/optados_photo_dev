@@ -3913,7 +3913,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_theta_min, photo_theta_max, photo_temperature, scissor_op
+    use od_parameters, only: photo_theta_centre, photo_theta_halfwidth, photo_temperature, scissor_op
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit, io_time, io_date
@@ -3925,6 +3925,7 @@ contains
     real(kind=dp), intent(inout), allocatable, dimension(:, :, :, :) :: emission_gauss
 
     real(kind=dp) :: norm_vac, width, argument, efinal_temp, e_normal, conduction_band
+    real(kind=dp) :: theta_lo, theta_hi
     integer :: N_k, N_spin, n_eigen, gdx, ierr
 
     if (.not. allocated(fermi_dirac)) then
@@ -3947,6 +3948,14 @@ contains
 
     width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
+
+    ! Theta is measured from the surface normal and cannot physically exceed
+    ! 90 deg, so the acceptance window is clipped to 0-90 rather than allowed to
+    ! run past it. That clip is load-bearing: theta_arpes keeps its 91 deg
+    ! sentinel for states that cannot emit, and an unclipped window could reach
+    ! past 90 and admit them.
+    theta_lo = max(photo_theta_centre - photo_theta_halfwidth, 0.0_dp)
+    theta_hi = min(photo_theta_centre + photo_theta_halfwidth, 90.0_dp)
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -3985,8 +3994,8 @@ contains
             ! exact. The azimuth is not, and is handled where the emission
             ! direction is actually known - phi_accepted inside the symmetry
             ! loops, phi_accept_frac everywhere else.
-            if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. photo_theta_min .and. &
-                theta_arpes(gdx, n_eigen, N_spin, N_k) .le. photo_theta_max) then
+            if (theta_arpes(gdx, n_eigen, N_spin, N_k) .ge. theta_lo .and. &
+                theta_arpes(gdx, n_eigen, N_spin, N_k) .le. theta_hi) then
               arpes_mask(gdx, n_eigen, N_spin, N_k) = 1.0_dp
             end if
           end do
@@ -4035,7 +4044,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, kpoint_weight
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, transmit_prob
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -4261,8 +4270,8 @@ contains
       write (binding_unit, '(1x,a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (binding_unit, '(1x,a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (binding_unit, '(1x,a35,f9.5)') '## Binding Energy Broadening [eV]: ', photo_bindenergy_broadening
-      write (binding_unit, '(1x,a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
-        photo_theta_min, photo_theta_max
+      write (binding_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg]: ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (binding_unit, '(1x,a63,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
         photo_phi_centre, photo_phi_halfwidth
       write (binding_unit, '(1x,a34,f9.5)') '## Fermi Energy Ekin offset [eV]: ', (temp_photon_energy - work_function_eff)
@@ -4309,7 +4318,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -4544,8 +4553,8 @@ contains
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a36,f9.5)') '## Binding Energy Broadening [eV] : ', photo_bindenergy_broadening
-      write (matrix_unit, '(a65,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg] : ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg] : ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg] : ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a35,f9.5)') '## Fermi Energy Ekin offset [eV] : ', max_e_kinetic - plot_extra_upper
@@ -4590,7 +4599,7 @@ contains
       kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
       photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -4928,8 +4937,8 @@ contains
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
       write (matrix_unit, '(a36,f9.5)') '## Binding Energy Broadening [eV] : ', photo_bindenergy_broadening
-      write (matrix_unit, '(a65,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg] : ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg] : ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg] : ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a35,f9.5)') '## Fermi Energy Ekin offset [eV] : ', max_e_kinetic - plot_extra_upper
@@ -4973,7 +4982,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
       optics_qdir, photo_momentum
     use od_algorithms, only: gaussian
@@ -5297,8 +5306,8 @@ contains
       write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
-      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg]: ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a14,f9.5)') '## Bin width: ', photo_pmat_bin_width
@@ -5433,7 +5442,7 @@ contains
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
       photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_momentum, photo_phi_centre, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
       optics_qdir
     use od_algorithms, only: gaussian
@@ -5728,8 +5737,8 @@ contains
       write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
-      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg]: ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a14,f9.5)') '## Bin width: ', photo_pmat_bin_width
@@ -5779,7 +5788,7 @@ contains
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_phi_centre, photo_phi_halfwidth, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, &
       devel_flag, optics_geom, optics_qdir, photo_const_bindenergy_value
     use od_algorithms, only: gaussian
@@ -6052,8 +6061,8 @@ contains
       write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
-      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg]: ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a38,f9.5)') '## Band Energy of States shown [eV] : ', ref_level
@@ -6099,7 +6108,7 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_calc_kpoint_r_cart, &
       kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_min, photo_theta_max, photo_temperature, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_temperature, &
       photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir, &
       photo_const_bindenergy_value
@@ -6443,8 +6452,8 @@ contains
       write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
-      write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle theta min, max (w.r.t. surface normal) [deg]: ', &
-        photo_theta_min, photo_theta_max
+      write (matrix_unit, '(a72,2(1x,f7.2))') '## Emission angle theta centre, half width (w.r.t. surface normal) [deg]: ', &
+        photo_theta_centre, photo_theta_halfwidth
       write (matrix_unit, '(a64,2(1x,f7.2))') '## Emission angle phi centre, half width (w.r.t. x-axis) [deg]: ', &
         photo_phi_centre, photo_phi_halfwidth
       write (matrix_unit, '(a44,f9.5)') '## Kinetic Energy of Electrons shown [eV] : ', ref_level
