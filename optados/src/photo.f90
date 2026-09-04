@@ -1217,7 +1217,7 @@ contains
     use od_cell, only: num_kpoints_on_node, num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r
     use od_jdos_utils, only: jdos_utils_calculate, jdos_nbins, setup_energy_scale, jdos_deallocate, E
     use od_comms, only: comms_bcast, on_root, my_node_id
-    use od_parameters, only: optics_intraband, jdos_spacing, devel_flag, iprint, jdos_max_energy, photo_model
+    use od_parameters, only: optics_intraband, jdos_spacing, iprint, jdos_max_energy, photo_model
     use od_dos_utils, only: dos_utils_calculate_at_e
     use od_constants, only: epsilon_0, e_charge
     implicit none
@@ -1246,36 +1246,6 @@ contains
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
-
-    if (index(devel_flag, 'output_ome_itof') .gt. 0 .and. on_root) then
-      is = -1
-      call io_date(cdate, ctime)
-      do N_k = 1, size(kpoint_r, 2)
-        if (all(abs(kpoint_r(:, N_k)) .lt. 1.0E-10_dp)) then
-          is = N_k
-          exit
-        end if
-      end do
-      if (is .lt. 0) call io_error('Error: this devel_flag should be run in serial. No gamma point found on root.')
-      write (stdout, *) 'The gamma point was determined to be - ', is
-      i = index(devel_flag, 'output_ome_itof')
-      read (devel_flag(i + 16:i + 20), *) initial
-      write (initial_s, '(I4)') initial
-      write (stdout, '(1x,a27,I4,a32)') 'Outputting OMEs for band # ', initial, ' to the bands above it at Gamma.'
-      ome_unit = io_file_unit()
-      open (unit=ome_unit, action='write', file=trim(seedname)//'_OMEs_from_band_'//trim(adjustl(initial_s))//'.dat')
-      write (ome_unit, '(1x,a28)') '############################'
-      write (ome_unit, *) '# OptaDOS Photoemission: Printing PDOS-Atoms-Weights on ', cdate, ' at ', ctime
-      write (ome_unit, '(1x,a16,1x,a99)') '# OM weights for', seedname
-      write (ome_unit, '(1x,a23,1x,I4)') '# Initial Band Choice :', initial
-      write (ome_unit, '(1x,a23,1x,F15.7)') '# Band Energy        : ', (band_energy(initial, 1, is) - efermi)
-      write (ome_unit, '(1x,a28)') '############################'
-      do n_eigen = initial + 1, nbands
-        write (ome_unit, '(1x,a6,I4,1x,E20.12E3,1x,F15.7)') 'Band #', n_eigen, matrix_weights(initial, n_eigen, is, 1, 1),&
-        & (band_energy(n_eigen, 1, is) - efermi)
-      end do
-      close (unit=ome_unit)
-    end if
 
     if (index(photo_model, 'dosds') .eq. 0) then
       allocate (projected_matrix_weights(nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom), stat=ierr)
@@ -1411,9 +1381,6 @@ contains
       call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
     end if
 145 format(1x, a45, I3, a4, I3, a23)
-124 format(3(1x, I4))
-125 format(4(1x, I4))
-126 format(5(1x, I4))
 
     ! Deallocating this out of the loop to reduce memory operations - could lead to higher memory consumption
     deallocate (projected_matrix_weights, stat=ierr)
@@ -1958,7 +1925,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, &
       photo_gkgrid, elec_read_gk_grid
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_momentum, devel_flag, iprint, &
+    use od_parameters, only: photo_momentum, iprint, &
       photo_inner_potential, photo_inner_potential_set
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -5569,7 +5536,7 @@ contains
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, &
       photo_gkgrid, elec_read_gk_grid
     use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
-      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
+      photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, &
       optics_qdir
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
@@ -6625,7 +6592,7 @@ contains
     use od_electronic, only: nbands, nspins
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
-    use od_parameters, only: photo_model, photo_momentum, iprint, devel_flag, optics_geom, optics_qdir
+    use od_parameters, only: photo_model, photo_momentum, iprint, optics_geom, optics_qdir
     implicit none
 
     integer :: atom, matrix_unit
@@ -6709,7 +6676,7 @@ contains
     use od_electronic, only: nspins, nbands
     use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
-    use od_parameters, only: photo_model, photo_momentum, devel_flag
+    use od_parameters, only: photo_model, photo_momentum
 
     implicit none
     real(kind=dp), dimension(:, :, :), allocatable :: qe_mat_temp
