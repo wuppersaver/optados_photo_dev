@@ -298,6 +298,7 @@ contains
     integer, allocatable, dimension(:, :)    :: layer_species_count
     character(len=10), allocatable, dimension(:) :: species_seen
     logical                                  :: same_species_set, same_species_counts
+    logical                                  :: symmetric_stack
     character(len=80)                        :: comp_str, temp_str
     real(kind=dp)                            :: h_min, h_max, h_mean
     real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
@@ -748,7 +749,45 @@ contains
         end do
       end do
 
-      if (.not. same_species_set) then
+      ! A symmetric sandwich is describable even though its layers are not all
+      ! the same material. If the composition sequence reads the same from either
+      ! face -- film, substrate, film -- then the middle layer of the stack is
+      ! the middle of the substrate, and num_boxes = (n_layers + 1)/2 puts the
+      ! deepest explicit box exactly there. bulk_emission then replicates the
+      ! centre of the sandwich downwards, which is the same approximation the
+      ! code already makes for a homogeneous symmetric slab.
+      !
+      ! That is the whole content of the test: symmetry is precisely the
+      ! condition under which halving the stack lands on the right material. A
+      ! film grown on one face only fails it, and there the deepest explicit box
+      ! is film whenever the film is half the stack or more, so the bulk term
+      ! stands in for a substrate it has never seen.
+      !
+      ! The test is on composition, not position, so relaxation of the two faces
+      ! does not break it -- only a genuine asymmetry does, such as an adsorbate
+      ! or a vacancy on one side.
+      symmetric_stack = .false.
+      if (.not. same_species_set .and. n_layers .gt. 2) then
+        symmetric_stack = .true.
+        do i = 1, n_layers/2
+          do isp = 1, n_species_seen
+            if (layer_species_count(isp, i) .ne. layer_species_count(isp, n_layers + 1 - i)) &
+              symmetric_stack = .false.
+          end do
+        end do
+      end if
+
+      if (symmetric_stack .and. on_root .and. iprint .gt. 1) then
+        write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+        write (stdout, '(1x,a78)') '| The layers are not all one material, but the stack reads the same from     |'
+        write (stdout, '(1x,a78)') '| either face, so it is treated as a symmetric sandwich. The explicit        |'
+        write (stdout, '(1x,a78)') '| region is the top half and the bulk term stands for the middle layer,      |'
+        write (stdout, '(1x,a78)') '| which is the centre of the slab. Set photo_layers_tops and                 |'
+        write (stdout, '(1x,a78)') '| photo_slab_middle instead if that is not what is wanted.                   |'
+        write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      end if
+
+      if (.not. same_species_set .and. .not. symmetric_stack) then
         if (on_root) then
           write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
           write (stdout, '(1x,a78)') '| The inferred layers do not all contain the same species, so this           |'
