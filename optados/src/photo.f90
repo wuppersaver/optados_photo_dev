@@ -53,6 +53,11 @@ module od_photo
   integer, dimension(:), allocatable       :: atoms_per_box
   integer                                  :: num_boxes
   real(kind=dp)                            :: slab_middle_ref
+  !! Confinement length of the slab along z: the top of the slab down to its
+  !! middle. Stands in for the k_z sub-cell length, which a slab does not have.
+  !! Set once in analyse_geometry and used by both calculate_delta and the
+  !! photoemission JDOS, so the two cannot drift apart.
+  real(kind=dp)                            :: slab_half_height
   real(kind=dp)                            :: cell_area
   real(kind=dp), dimension(:), allocatable :: atom_imfp
   real(kind=dp), dimension(:, :, :), allocatable :: band_imfp
@@ -553,6 +558,19 @@ contains
     ! since we later use this to access I_layer in the QE calculation
     box_atom(max_atoms + 1) = num_boxes + 1
 
+    ! The confinement length that replaces the k_z sub-cell length everywhere in
+    ! the photoemission path. It is a thickness, so it does not move when the
+    ! slab is translated in the cell.
+    if (layers_from_input) then
+      slab_half_height = photo_slab_max - photo_slab_middle
+    else
+      slab_half_height = photo_slab_max - slab_middle_ref
+    end if
+    if (slab_half_height .le. 0.0_dp) then
+      call io_error('Error: analyse_geometry - the inferred slab half height is not positive. '// &
+                    'Check photo_slab_max against photo_slab_min/photo_slab_middle.')
+    end if
+
     if (on_root) then
       ! Only the upper and lower surface have been given (SLAB_MODE_BOUNDS)
       ! so with debug printing on, the user gets the inferred box height, number of
@@ -590,6 +608,7 @@ contains
       else
         write (stdout, 227) '|  Volume of box for layer selection (Ang^3) :           ', box_volumes(1), '      |'
       end if
+      write (stdout, 229) '|  Slab confinement length        (Ang)   :         ', slab_half_height, '|'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 226 format(1x, a23, I12, 1x, a25, 1x, I12, a4)
@@ -1038,7 +1057,8 @@ contains
         end if
 
         ! Send matrix element to jDOS routine and get weighted jDOS back
-        call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos)
+        call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos, &
+                                  slab_half_height=slab_half_height)
 
         if (on_root .and. iprint .gt. 2) then
           write (atom_s, '(I3)') box + 100
@@ -2917,7 +2937,7 @@ contains
     logical, intent(in)                               :: calculate_bulk
 
     logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: half_slab_height, norm_width, conduction_band, final_energy
+    real(kind=dp) :: norm_width, conduction_band, final_energy
 
     linear = .false.
     fixed = .false.
@@ -2936,11 +2956,6 @@ contains
 
     width = 0.0_dp
     delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
-    if (photo_slab_mode .eq. SLAB_MODE_LAYERS) then
-      half_slab_height = photo_slab_max - photo_slab_middle
-    else
-      half_slab_height = photo_slab_max - slab_middle_ref
-    end if
 
     if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
     if (adaptive .or. hybrid_linear) then
@@ -2950,7 +2965,7 @@ contains
       if (calculate_bulk) then
         sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/box_heights(num_boxes))**2)*step(3)
       else
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/half_slab_height)**2)*step(3)
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/slab_half_height)**2)*step(3)
       end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if

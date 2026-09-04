@@ -59,7 +59,7 @@ module od_jdos_utils
 contains
 
   !===============================================================================
-  subroutine jdos_utils_calculate(matrix_weights, weighted_jdos)
+  subroutine jdos_utils_calculate(matrix_weights, weighted_jdos, slab_half_height)
     !===============================================================================
     ! Main routine in dos module, drives the calculation of Density of states for
     ! both task : dos and also if it is required elsewhere.
@@ -78,6 +78,9 @@ contains
 
     real(kind=dp), intent(out), allocatable, optional    :: weighted_jdos(:, :, :)  !I've added this
     real(kind=dp), intent(in), optional  :: matrix_weights(:, :, :, :, :)               !I've added this
+    ! The slab's confinement length along z, supplied by the photoemission code.
+    ! It replaces the k_z sub-cell length, which a slab calculation does not have.
+    real(kind=dp), intent(in), optional  :: slab_half_height
 
     calc_weighted_jdos = .false.
     if (present(matrix_weights)) calc_weighted_jdos = .true.
@@ -108,29 +111,32 @@ contains
     call setup_energy_scale(E)
     if (fixed) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos=weighted_jdos)
+        call calculate_jdos('f', jdos_fixed, matrix_weights, weighted_jdos=weighted_jdos, &
+                            slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_fixed, weighted_jdos)
       else
-        call calculate_jdos('f', jdos_fixed)
+        call calculate_jdos('f', jdos_fixed, slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_fixed)
       end if
 
     end if
     if (adaptive) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos=weighted_jdos)
+        call calculate_jdos('a', jdos_adaptive, matrix_weights, weighted_jdos=weighted_jdos, &
+                            slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_adaptive, weighted_jdos)
       else
-        call calculate_jdos('a', jdos_adaptive)
+        call calculate_jdos('a', jdos_adaptive, slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_adaptive)
       end if
     end if
     if (linear) then
       if (calc_weighted_jdos) then
-        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos=weighted_jdos)
+        call calculate_jdos('l', jdos_linear, matrix_weights, weighted_jdos=weighted_jdos, &
+                            slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_linear, weighted_jdos)
       else
-        call calculate_jdos('l', jdos_linear)
+        call calculate_jdos('l', jdos_linear, slab_half_height=slab_half_height)
         call jdos_utils_merge(jdos_linear)
       end if
     end if
@@ -290,7 +296,7 @@ contains
   end subroutine jdos_deallocate
 
   !===============================================================================
-  subroutine calculate_jdos(jdos_type, jdos, matrix_weights, weighted_jdos)
+  subroutine calculate_jdos(jdos_type, jdos, matrix_weights, weighted_jdos, slab_half_height)
     !===============================================================================
 
     !===============================================================================
@@ -300,7 +306,7 @@ contains
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, &
       finite_bin_correction, scissor_op, hybrid_linear_grad_tol, &
       hybrid_linear, exclude_bands, num_exclude_bands, &
-      photo, photo_slab_max, photo_slab_min
+      photo
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins, electrons_per_state, &
          & efermi
@@ -311,12 +317,13 @@ contains
 
     integer :: ik, is, ib, idos, jb, i
     integer :: N2, N_geom, ierr
-    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp, mean_height
+    real(kind=dp) :: dos_temp, cuml, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
 
     character(len=1), intent(in)                      :: jdos_type
     real(kind=dp), intent(inout), allocatable, optional :: weighted_jdos(:, :, :)
     real(kind=dp), intent(in), optional                :: matrix_weights(:, :, :, :, :)
+    real(kind=dp), intent(in), optional                :: slab_half_height
 
     real(kind=dp), intent(out), allocatable :: jdos(:, :)
 
@@ -344,9 +351,17 @@ contains
       do i = 1, 3
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
+      ! A slab has no k_z dispersion to sample, so the third sub-cell length is
+      ! replaced by the confinement length of the slab itself. That length is a
+      ! thickness, and it is computed by the photoemission code and passed in --
+      ! it used to be rebuilt here from (photo_slab_min + photo_slab_max)/4,
+      ! which is the *sum* of two absolute z coordinates and therefore moved
+      ! when the slab was translated in the cell.
       if (photo) then
-        mean_height = (photo_slab_min + photo_slab_max)/(2*2)
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/mean_height)**2)*step(3)
+        if (.not. present(slab_half_height)) &
+          call io_error('Error: calculate_jdos - a photoemission run needs slab_half_height')
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 &
+                                  + (pi/slab_half_height)**2)*step(3)
       end if
       adaptive_smearing_temp = adaptive_smearing*sum(sub_cell_length)/3.0_dp
     end if
