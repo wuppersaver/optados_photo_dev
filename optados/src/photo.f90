@@ -1349,11 +1349,26 @@ contains
       I_layer(1, i) = I_0 - reflect_photo(1, i)
     end do
     ! If we have more than one box with atoms in it, calculate the incident light intensity for each
+    !
+    ! The step from the atoms of layer box-1 to those of layer box crosses the
+    ! material lying between them, which is not the box the light arrives in. The
+    ! boundary between two boxes is the midpoint of their centroids
+    ! (boxes_top_z_coord above), and box_heights(i) is the centroid spacing from
+    ! layer i to layer i+1, so the step covers half of box-1 and half of box, each
+    ! of length box_heights(box-1)/2. Hence the mean of the two absorption
+    ! coefficients over that one spacing.
+    !
+    ! This is not a no-op for a geometrically uniform slab: the boxes carry
+    ! different projected optical responses, so the surface layer absorbs
+    ! differently from the interior even when the spacings are identical.
+    ! bulk_emission keeps a single coefficient below the explicit region, which is
+    ! right there - every step it takes is through repeats of the same deepest box.
     if (num_boxes .gt. 1) then
       do box = 2, num_boxes
         do i = 1, number_energies
           I_layer(box, i) = I_layer(box - 1, i)* &
-                            exp(-(absorp_photo(box, i)*box_heights(box)*1E-10))
+                            exp(-(0.5_dp*(absorp_photo(box - 1, i) + absorp_photo(box, i)) &
+                                  *box_heights(box - 1)*1E-10))
           if (I_layer(box, i) .lt. 0.0_dp) I_layer(box, i) = 0.0_dp
         end do
       end do
