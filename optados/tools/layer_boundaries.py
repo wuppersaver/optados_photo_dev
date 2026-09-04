@@ -13,10 +13,17 @@ rules for the same kind of quantity, and the second one leaks: the box volumes
 set the dielectric functions, so a half-angstrom change in ``photo_slab_max``
 moved the reflectivity by 12 percent and the quantum efficiency by 8.
 
-Boundaries at the minima of the planar-averaged rho(z), with the surface where
-rho(z) falls below a fraction of its maximum, is one criterion for both.  It
-tiles by construction, it handles rumpling, molecules and interfaces the same
-way, and it gives volumes that mean something.
+Boundaries at the minima of the planar-averaged rho(z), with the surface placed
+where **0.5 percent of one layer's charge remains above it**, is one criterion for
+both.  It tiles by construction, it handles rumpling, molecules and interfaces
+the same way, and it gives volumes that mean something.
+
+The 0.5 percent is a convention, not a derivation -- the vacuum tail is an
+exponential, so any level-set criterion moves the plane by about 0.9 Ang per
+decade of the fraction.  It is the right convention because it reproduces the
+rule of thumb it replaces, to within 0.07 Ang on every Cu slab tested, while
+being stated in a form that transfers to a material whose density maximum sits
+somewhere else.
 
 This is deliberately a standalone script with no dependency beyond numpy, so it
 works for anyone with a single CASTEP run.  Wrap it in an AiiDA calcfunction if
@@ -125,9 +132,11 @@ def minimum_between(z, rho, lower, upper):
 def surface_plane(z, rho, top_atom, fraction):
     """First plane above the outermost atoms where rho falls below the threshold.
 
-    Same criterion people already apply by hand to choose photo_slab_max, which
-    is the point: the surface and the interior boundaries stop being defined by
-    two unrelated rules.
+    Kept as an alternative to the charge criterion, not as the default: a
+    fraction of ``rho.max()`` is not transferable, because the maximum sits
+    wherever the densest species in the cell happens to be. On a heterostructure
+    the same fraction therefore means different things in different parts of the
+    same slab.
     """
     threshold = fraction * rho.max()
     above = np.where(z > top_atom)[0]
@@ -139,7 +148,61 @@ def surface_plane(z, rho, top_atom, fraction):
                      % fraction)
 
 
-def analyse(seed, fraction=0.01, root='.'):
+def charge_per_layer(z, rho, centroids):
+    """Charge in one interior layer, as a partition rather than an attribution.
+
+    Taken between the two density minima bracketing a layer near the middle of
+    the slab. Two reasons for the choice. It has to be an *interior* layer,
+    because a surface layer genuinely holds different charge -- the spill-out is
+    the very thing being measured at the other end. And it has to be a partition:
+    charge cannot be attributed uniquely to a layer, since neighbouring layers
+    overlap, but every electron does belong to exactly one box, and this is the
+    same partition the boxes themselves use.
+    """
+    if len(centroids) < 3:
+        raise ValueError('need at least three layers to take an interior one')
+    i = len(centroids) // 2
+    upper = minimum_between(z, rho, centroids[i], centroids[i - 1])
+    lower = minimum_between(z, rho, centroids[i + 1], centroids[i])
+    window = (z > lower) & (z < upper)
+    return float(rho[window].sum() * (z[1] - z[0]))
+
+
+def surface_plane_charge(z, rho, top_atom, fraction, q_layer):
+    """Plane above which a given fraction of one layer's charge remains.
+
+    The default criterion. It does **not** pin the surface down any harder than
+    a density threshold does -- the vacuum tail is an exponential, so
+    ``Q(z) = integral of rho from z ~ lambda*rho(z)`` carries the same
+    z-dependence, and either criterion moves the plane by lambda*ln(10), about
+    0.9 Ang, per decade of the fraction. What it buys is *meaning*: "half a
+    percent of a layer's electrons lie outside the box" is a statement that can
+    be defended and compared between materials, and it is local, so it survives
+    a heterostructure where a fraction of the global rho.max() does not.
+
+    0.5 % is the default because it reproduces the convention it replaces. The
+    charge lying above "outermost atom plus one bulk repeat" measures 0.32 to
+    0.41 % of a layer on the Cu slabs, and conversely 0.5 % lands 1.73 to 1.78 Ang
+    above the outermost atoms against a 1.782 Ang repeat. The old rule of thumb
+    was a good one; this states it in a form that transfers.
+
+    Contamination from deeper layers is negligible here: layer 2 contributes
+    exp(-repeat/lambda), about 1 %, of layer 1's tail, and layer 3 a hundredth of
+    that, so a 1 % correction to a quantity set at 0.5 % moves the plane by a few
+    thousandths of an Angstrom.
+    """
+    target = fraction * q_layer
+    dz = z[1] - z[0]
+    above = np.cumsum(rho[::-1])[::-1] * dz
+    candidates = np.where((z > top_atom) & (above < target))[0]
+    if not len(candidates):
+        raise ValueError('the charge above the topmost atom never falls below '
+                         '%g of a layer -- too little vacuum, or raise the '
+                         'fraction' % fraction)
+    return float(z[candidates[0]])
+
+
+def analyse(seed, fraction=0.005, root='.', criterion='charge'):
     den = os.path.join(root, seed + '.den_fmt')
     cell = os.path.join(root, seed + '-out.cell')
     z, rho, c = read_den_fmt(den)
@@ -147,23 +210,35 @@ def analyse(seed, fraction=0.01, root='.'):
     layers = group_layers(atom_z)
     centroids = [float(l.mean()) for l in layers]
 
-    z_top = surface_plane(z, rho, atom_z.max(), fraction)
+    if criterion == 'charge':
+        q_layer = charge_per_layer(z, rho, centroids)
+        z_top = surface_plane_charge(z, rho, atom_z.max(), fraction, q_layer)
+    else:
+        q_layer = None
+        z_top = surface_plane(z, rho, atom_z.max(), fraction)
 
     interior = [minimum_between(z, rho, centroids[i + 1], centroids[i])
                 for i in range(len(centroids) - 1)]
 
     n_boxes = (len(centroids) + 1) // 2
     return dict(seed=seed, z=z, rho=rho, c=c, atom_z=atom_z,
-                centroids=centroids, z_top=z_top,
+                centroids=centroids, z_top=z_top, q_layer=q_layer,
+                criterion=criterion, fraction=fraction,
                 interior=interior, n_boxes=n_boxes,
                 z_middle=interior[n_boxes - 1])
 
 
 def keyword_block(result):
     tops = [result['z_top']] + result['interior'][:result['n_boxes'] - 1]
+    if result['criterion'] == 'charge':
+        how = ('! surface where %.3f %% of one layer\'s charge remains above it.'
+               % (100 * result['fraction']))
+    else:
+        how = ('! surface where rho falls below %.3f %% of its maximum.'
+               % (100 * result['fraction']))
     lines = ['! generated by layer_boundaries.py from %s.den_fmt' % result['seed'],
              '! boundaries at the minima of the planar-averaged charge density,',
-             '! surface where it falls below the chosen fraction of its maximum.',
+             how,
              '! photo_slab_max is the first entry and must not be set separately.',
              '%BLOCK photo_layers_tops']
     lines += ['  %12.5f' % t for t in tops]
@@ -176,15 +251,19 @@ def keyword_block(result):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('seed')
-    ap.add_argument('--surface', type=float, default=0.01,
-                    help='vacuum threshold as a fraction of max rho (default 0.01)')
+    ap.add_argument('--surface', type=float, default=0.005,
+                    help='fraction of one layer\'s charge left above the surface '
+                         'plane (default 0.005); with --criterion density it is '
+                         'instead a fraction of max rho')
+    ap.add_argument('--criterion', choices=('charge', 'density'), default='charge',
+                    help='how the surface plane is placed (default charge)')
     ap.add_argument('--root', default='.', help='directory holding the files')
     ap.add_argument('--plot', help='write an overlay of rho(z) and the boundaries')
     ap.add_argument('--compare', action='store_true',
                     help='also show the centroid midpoints OptaDOS would use')
     args = ap.parse_args(argv)
 
-    r = analyse(args.seed, args.surface, args.root)
+    r = analyse(args.seed, args.surface, args.root, args.criterion)
     print(keyword_block(r))
 
     if args.compare:
