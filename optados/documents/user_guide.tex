@@ -615,13 +615,15 @@ The angle $\theta(i,j,\bf{k})$ indicates that electrons that travels with a high
 
 \begin{equation}
 \begin{split}
-\theta_{int}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)+W}\\
-\theta_{ext}{(i,j, {\bf{k}},s)} &= acos \frac{E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}
+\theta_{int}{(i,j, {\bf{k}},s)} &= \arccos \sqrt{\frac{E_K(j,{\bf{k}},s)+W-E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)+W}}\\
+\theta_{ext}{(i,j, {\bf{k}},s)} &= \arccos \sqrt{\frac{E_K(j,{\bf{k}},s)-E_\parallel(i,{\bf{k}},s)}{E_K(j,{\bf{k}},s)}}
 \end{split}
 \label{theta}
 \end{equation}
 
 where $E_\parallel(i,\bf{k})$ is the transverse energy, $E_K(j,\bf{k})$ is the final state kinetic energy and $W$ is the work function. The angle $\theta_{ext}$ is used to determine if emission is possible under the chosen conditions, while $\theta_{int}$ is used to model the electron's propagation distance.
+
+The numerator is the energy along the surface normal, $E_K - E_\parallel$, and the square root is not optional. $\theta$ is defined by a ratio of momenta, $\cos\theta = k_z/|k|$, and converting each momentum into an energy squares it, so the bare energy ratio is $\cos^2\theta$ rather than $\cos\theta$. Both limits agree either way -- normal emission gives a ratio of one and grazing emission a ratio of zero -- so the difference is invisible at the ends of the range and largest in the middle, reaching $15.8^\circ$ at $E_\parallel/E_K = 2/3$.
 
 \subsection{Transverse momentum conservation}
 
@@ -875,6 +877,40 @@ Note that these outputs are written as formatted text and become large: the
 tensor is one number per grid point, which for a typical slab is a few hundred
 megabytes per photon energy. A {\tt photo\_energy\_sweep} writes one file per
 step.
+
+\subsection{Angular acceptance}
+\label{subsec:angular_acceptance}
+
+All of the outputs above may be restricted to an angular window, standing in for
+the acceptance of an analyser. The polar window is given directly as
+{\tt photo\_theta\_min} and {\tt photo\_theta\_max}, measured from the surface
+normal.
+
+The azimuth is given as a direction and a half width, {\tt photo\_phi\_centre}
+and {\tt photo\_phi\_halfwidth}, both in degrees and measured from the cartesian
+$x$ axis. A pair of bounds cannot describe an analyser centred on the $x$ axis,
+which spans $-30^\circ$ to $+30^\circ$ and wraps through $180^\circ$; a centre
+and a half width can. The default half width of $180^\circ$ accepts the whole
+circle, which is what the earlier keywords {\tt photo\_phi\_min} and
+{\tt photo\_phi\_max} did in practice. Those keywords are no longer accepted:
+they acted on an azimuth that had been folded into the first quadrant, so a
+narrowed window selected one wedge in each of the four quadrants rather than a
+single wedge, and reinterpreting an old input file against the signed azimuth
+would silently change what it asked for.
+
+The two windows are applied at different points, because they behave differently
+under the symmetry of the cell. The polar angle depends only on the magnitude of
+the transverse momentum, which the in-plane symmetry operations leave unchanged,
+so testing it once per irreducible $\mathbf{k}$ point is exact. The azimuth is
+not invariant: an irreducible point stands for its whole symmetry star, and that
+star spans as many azimuths as the point group has in-plane operations -- eight,
+for a $C_{4v}$ surface. The azimuthal window is therefore tested against each
+symmetry image separately, at the point where that image's transverse momentum is
+known. For the outputs that carry no azimuth axis and so expand no star of their
+own -- the binding energy curve, and the maps whose momentum axis is
+$|\mathbf{k}_\perp|$ -- the contribution is instead weighted by the fraction of
+the star that falls inside the window. For a structure with no symmetry the two
+treatments coincide.
 
 \chapter{Getting Started}\label{chap:getting_started}
 \section{Installation}
