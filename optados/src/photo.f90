@@ -302,7 +302,7 @@ contains
     real(kind=dp)                            :: h_min, h_max, h_mean
     real(kind=dp)                            :: diff_temp, current_top, diff_top = 10000.0_dp, diff_bottom = 10000.0_dp
     real(kind=dp)                            :: max_gap, typical_gap, layer_tol
-    real(kind=dp)                            :: z_middle_tol
+    real(kind=dp)                            :: z_middle_tol, wrap_gap
     character(len=78)                        :: box_msg
     real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid
     integer, allocatable, dimension(:)       :: atoms_in_layer
@@ -407,6 +407,51 @@ contains
 
     max_gap = 0.0_dp
     if (num_atoms .gt. 1) max_gap = maxval(z_gaps(1:num_atoms - 1))
+
+    ! Does the slab straddle the cell boundary?
+    !
+    ! Under 3D periodic boundaries a slab is a connected set of atoms separated
+    ! from its own image by vacuum, and the machinery below assumes that vacuum
+    ! is the gap that wraps round the cell -- in other words that the slab sits
+    ! in one piece somewhere inside it. Shift it so that half sits at the bottom
+    ! and half at the top and the vacuum becomes an *interior* gap in the sorted
+    ! list, at which point it is taken for an interlayer spacing: on a 5-layer
+    ! Cu(100) slab that gave one box instead of three, two atoms assigned to no
+    ! box at all, a box volume five times too large, and a bulk repeat of
+    ! 25.5 Ang for a crystal whose spacing is 1.78 -- with no error and a
+    ! plausible looking quantum efficiency.
+    !
+    ! The test is exact: compare the largest interior gap against the one that
+    ! wraps round. Whichever is bigger is the vacuum. Verified over 24 rigid
+    ! shifts of an 8-layer slab through a cell, where it flags precisely the
+    ! positions at which the layer clustering breaks and no others.
+    !
+    ! Refusing is the conservative half of the fix. The general remedy is to
+    ! re-origin the atoms just above the larger gap, which restores a contiguous
+    ! slab for any position; that also has to carry photo_slab_min, _max,
+    ! _middle and photo_layers_tops through the same shift, which is a decision
+    ! about what frame those keywords are written in, so it is left for now.
+    if (num_atoms .gt. 1) then
+      wrap_gap = (atoms_pos_cart_photo(3, atom_order(num_atoms)) + real_lattice(3, 3)) &
+                 - atoms_pos_cart_photo(3, atom_order(1))
+      if (max_gap .gt. wrap_gap) then
+        if (on_root) then
+          write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+          write (stdout, '(1x,a78)') '! Error: the structure is split across the cell boundary in z. The largest   !'
+          write (stdout, '(1x,a78)') '! gap between atoms lies inside the sorted list rather than wrapping round   !'
+          write (stdout, '(1x,a78)') '! the cell, so part of the slab sits at the bottom and part at the top.      !'
+          write (stdout, '(1x,a78)') '! The vacuum would then be read as an interlayer spacing, giving too few     !'
+          write (stdout, '(1x,a78)') '! layers, atoms belonging to no box, and a bulk repeat the size of the       !'
+          write (stdout, '(1x,a78)') '! vacuum -- silently, with a plausible number at the end of it.              !'
+          write (stdout, '(1x,a78)') '! Translate the structure so the slab sits in one piece inside the cell.     !'
+          write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+          write (stdout, '(1x,a46,1x,f10.4,20x,a1)') '|  Largest gap between atoms  (Ang)          :', max_gap, '|'
+          write (stdout, '(1x,a46,1x,f10.4,20x,a1)') '|  Gap wrapping round the cell (Ang)         :', wrap_gap, '|'
+        end if
+        call io_error('Error: analyse_geometry - the slab is split across the cell boundary in z. '// &
+                      'Translate it so it sits in one piece.')
+      end if
+    end if
 
     if (num_atoms .eq. 1 .or. max_gap .lt. min_layer_gap) then
       ! All atoms at essentially the same height, so the thickness cannot be
