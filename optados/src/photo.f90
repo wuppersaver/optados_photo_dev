@@ -1243,52 +1243,6 @@ contains
     if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of epsilon_photo failed')
     epsilon_photo = 0.0_dp
 
-    ! Advanced and tricky user option to read the optical properties from a previous run
-    ! Must be used with caution, since currently no checking of parameters is performed!
-    if (index(devel_flag, 'optics_restart') .gt. 0) then
-      call setup_energy_scale(E)
-      if (on_root) then
-        if (.not. allocated(absorp)) then
-          allocate (absorp(jdos_nbins), stat=ierr)
-          if (ierr /= 0) call io_error("Error: calc_photo_optics cannot allocate absorp")
-        end if
-        if (.not. allocated(reflect)) then
-          allocate (reflect(jdos_nbins), stat=ierr)
-          if (ierr /= 0) call io_error("Error: calc_photo_optics cannot allocate reflect")
-        end if
-        call read_absorp_file
-        call read_reflect_file
-      end if
-      call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
-      call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
-
-      time1 = io_time()
-      if (on_root .and. iprint .gt. 1) then
-        write (stdout, '(1x,a47,12x,f11.3,a8)') '+ Time to read Photoemission Optical Properties', time1 - time0, ' (sec) +'
-      end if
-
-      call make_weights(matrix_weights)
-      call elec_dealloc_optical
-
-      if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'dosds') .gt. 0) then
-        ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
-        allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
-        if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
-
-        do N_spin = 1, nspins
-          do N_k = 1, num_kpoints_on_node(my_node_id)
-            photo_matrix_weights(:, :, N_spin, N_k) = matrix_weights(:, :, N_k, N_spin, 1)
-          end do
-        end do
-      end if
-      ! get rid of the old, now unnecessary array - either because we have the 1step model,
-      ! or we have transferred the relevant data to photo_matrix_weights
-      deallocate (matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
-      N_geom = 1
-      return
-    end if
-
     call make_weights(matrix_weights)
     N_geom = size(matrix_weights, 5)
     call elec_dealloc_optical
@@ -1487,96 +1441,6 @@ contains
 
   end subroutine calc_photo_optics
 
-  subroutine read_absorp_file
-    !*******=======================================================================
-    ! ***Experimental subroutine not intended for use by the normal user.***
-    ! The absorption files are read without any checks, so inherently
-    ! unsafe for now!
-    ! This subroutine reads in a series of absorption coefficient curves
-    ! from a number of appropriately named files. This way the relevant
-    ! optical data for photoemission can be read as a checkpoint. This can
-    ! be used to for example calculate the photoemission for a set of
-    ! k-points along a bandstructure path with the optical properties of
-    ! a MP grid like k-point distribution, as that is expected to have better
-    ! convergence.
-    ! Written by F Mildner, Mar 2025
-    !===============================================================================
-    use od_optics, only: absorp
-    use od_jdos_utils, only: jdos_nbins
-    use od_io, only: seedname, io_file_unit, io_error
-
-    integer :: absorp_unit, box, i, N, ierr, energy
-    character(len=3) :: box_char
-    character(len=100) :: dummya
-    absorp_unit = io_file_unit()
-
-    do box = 1, num_boxes
-
-      write (box_char, '(I0.3)') box
-      open (unit=absorp_unit, file=trim(seedname)//'_absorption_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
-      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
-      ! skip header
-      do i = 1, 50
-        read (absorp_unit, *) dummya
-        if (index(dummya, '#') .eq. 0) exit
-      end do
-      do N = 2, jdos_nbins
-        read (absorp_unit, '(1x,a37,1x,es37.30)') dummya, absorp(N)
-      end do
-      close (unit=absorp_unit)
-
-      do energy = 1, number_energies
-        absorp_photo(box, energy) = absorp(index_energy(energy))
-      end do
-
-    end do
-  end subroutine read_absorp_file
-
-  subroutine read_reflect_file
-    !*******=======================================================================
-    ! ***Experimental subroutine not intended for use by the normal user.***
-    ! The reflectivity files are read without any checks, so inherently
-    ! unsafe for now!
-    ! This subroutine reads in a series of reflection coefficient curves
-    ! from a number of appropriately named files. This way the relevant
-    ! optical data for photoemission can be read as a checkpoint. This can
-    ! be used to for example calculate the photoemission for a set of
-    ! k-points along a bandstructure path with the optical properties of
-    ! a MP grid like k-point distribution, as that is expected to have better
-    ! convergence.
-    ! Written by F Mildner, Mar 2025
-    !===============================================================================
-    use od_optics, only: reflect
-    use od_jdos_utils, only: jdos_nbins
-    use od_io, only: seedname, io_file_unit, io_error
-
-    integer :: reflect_unit, box, i, N, ierr, energy
-    character(len=3) :: box_char
-    character(len=100) :: dummya
-
-    reflect_unit = io_file_unit()
-
-    do box = 1, num_boxes
-      write (box_char, '(I0.3)') box
-      open (unit=reflect_unit, file=trim(seedname)//'_reflection_photo_box_'//trim(adjustl(box_char))//'.dat', iostat=ierr)
-      if (ierr /= 0) call io_error('Error: Could not open absorption curve .dat file for box #'//trim(adjustl(box_char)))
-      ! skip header
-      do i = 1, 50
-        read (reflect_unit, *) dummya
-        if (index(dummya, '#') .eq. 0) exit
-      end do
-      do N = 2, jdos_nbins
-        read (reflect_unit, '(1x,a37,1x,es37.30)') dummya, reflect(N)
-      end do
-      close (unit=reflect_unit)
-
-      do energy = 1, number_energies
-        reflect_photo(box, energy) = reflect(index_energy(energy))
-      end do
-
-    end do
-  end subroutine read_reflect_file
-
   subroutine calc_absorp_layer
     !*******=======================================================================
     ! This subroutine calculates the absorption coefficient for all defined/
@@ -1600,13 +1464,7 @@ contains
     ! before it reaches the first plane of atoms, and every deeper layer is
     ! reached from there by the centroid-to-centroid recursion below.
     do i = 1, number_energies
-      if (allocated(epsilon_photo)) then
-        I_layer(1, i) = I_0 - slab_reflectivity(i)
-      else
-        ! read_reflect_file supplies R per box and no epsilon, so there is
-        ! nothing to average and the old surface-box value is all there is.
-        I_layer(1, i) = I_0 - reflect_photo(1, i)
-      end if
+      I_layer(1, i) = I_0 - slab_reflectivity(i)
     end do
     ! If we have more than one box with atoms in it, calculate the incident light intensity for each
     !
@@ -3858,8 +3716,6 @@ contains
       if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of te_osm failed')
     end if
     te_osm = 0.0_dp
-
-    ! TODO: Create extra printing function for both photo models
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
@@ -6773,7 +6629,7 @@ contains
     implicit none
 
     integer :: atom, matrix_unit
-    integer :: N_k, N_spin, n_eigen, kpt_total, band_num
+    integer :: N_k, N_spin, n_eigen, kpt_total
     character(len=99)                           :: filename
     character(len=100)                          :: out_string
     character(len=10)                           :: char_e
@@ -6790,11 +6646,7 @@ contains
     else
       matrix_unit = io_file_unit()
       write (char_e, '(F7.3)') temp_photon_energy
-      if (index(devel_flag, 'final') .gt. 0 .and. index(photo_model, '3step') .gt. 0) then
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor_final.dat'
-      else
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
-      end if
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
       write (matrix_unit, '(a53,a11,a4,a9)') '## OptaDOS Photoemission: Printing Full QE tensor on ',&
@@ -6805,58 +6657,24 @@ contains
       write (matrix_unit, '(a23,f7.3)') '## Photon Energy [eV]: ', temp_photon_energy
       write (matrix_unit, '(a21,a15)') '## Optics Geometry : ', trim(adjustl(optics_geom))
       write (matrix_unit, '(a39,3(1x,f10.5))') '## Optics q-dir vector [unnormalised] :', optics_qdir(1:3)
-      if (index(devel_flag, 'final') .gt. 0 .and. index(photo_model, '3step') .gt. 0) then
-        write (matrix_unit, '(a69)') '## Writing the contributions of excitations into the !!FINAL!! states'
-      end if
       write (matrix_unit, '(a61,a,a6)') '## Find band energies and fractional k-point coordinates in: ', trim(seedname), '.bands'
       ! Printing out the info on root_node
       write (out_string, '(I0,"(1x,",a,")")') nbands, 'ES16.8E3'
 
       if (index(photo_model, '3step') .gt. 0) then
-        if (index(devel_flag, 'single') .gt. 0) then
-          n_eigen = len_trim(devel_flag)
-          read (devel_flag(n_eigen - 2:n_eigen), *) band_num
-          write (matrix_unit, '(a42,1x,I3)') '## Writing contributions into final band #', band_num
-          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                       & ')'
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
-            do N_k = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '('//trim(out_string)//')') &
-                  (qe_tsm(n_eigen, band_num, N_spin, N_k, atom), n_eigen=1, nbands)
-              end do
+        write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
+        write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
+        write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
+                                                     & ')'
+        do atom = 1, max_atoms + 1
+          if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            do N_spin = 1, nspins
+              write (matrix_unit, '('//trim(out_string)//')') &
+                (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
             end do
           end do
-        else if (index(devel_flag, 'final') .gt. 0) then
-          write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
-          write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
-          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                       & ')'
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
-            do N_k = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '('//trim(out_string)//')') &
-                  (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
-              end do
-            end do
-          end do
-        else
-          write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
-          write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
-          write (matrix_unit, '(a31,4(1x,I5),1x,1a)') '## (Reduced) QE Matrix Shape: (', nbands, nspins, kpt_total, max_atoms,&
-                                                       & ')'
-          do atom = 1, max_atoms + 1
-            if (atom .eq. max_atoms + 1) write (matrix_unit, '(a21)') '## Bulk Contribution:'
-            do N_k = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '('//trim(out_string)//')') &
-                  (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
-              end do
-            end do
-          end do
-        end if
+        end do
       elseif (index(photo_model, '1step') .gt. 0) then
         write (matrix_unit, '(a79)') '## (Reduced) QE Matrix where each row contains the contributions from each band'
         write (matrix_unit, '(a39)') '## at a certain k-point, spin, and atom'
@@ -6908,11 +6726,7 @@ contains
     if (on_root) then
       ! Writing header to output file
       write (char_e, '(F7.3)') temp_photon_energy
-      if (index(devel_flag, 'final') .gt. 0 .and. index(photo_model, '3step') .gt. 0) then
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor_final.dat'
-      else
-        filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
-      end if
+      filename = trim(seedname)//'_'//trim(photo_model)//'_'//trim(adjustl(char_e))//'_qe_tensor.dat'
       matrix_unit = io_file_unit()
       open (unit=matrix_unit, action='write', file=filename)
       call io_date(cdate, ctime)
@@ -6937,11 +6751,7 @@ contains
       if (index(photo_model, '3step') .gt. 0) then
         allocate (tsm_reduced(nbands, nspins, num_kpoints_on_node(0), max_atoms + 1), stat=ierr)
         if (ierr /= 0) call io_error('Error: write_distributed_qe_data - failed to allocate tsm_reduced')
-        if (index(devel_flag, 'final') .gt. 0) then
-          tsm_reduced = sum(qe_tsm, dim=1)
-        else
-          tsm_reduced = sum(qe_tsm, dim=2)
-        end if
+        tsm_reduced = sum(qe_tsm, dim=2)
       end if
     end if
     ! For each atom until max_atoms+1
@@ -6976,21 +6786,12 @@ contains
         end do
         ! - write root qe_matrix elements
         if (index(photo_model, '3step') .gt. 0) then
-          if (index(devel_flag, 'final') .gt. 0) then
-            do N_k = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '('//trim(out_string)//')') &
-                  (sum(qe_tsm(1:nbands, n_eigen, N_spin, N_k, atom)), n_eigen=1, nbands)
-              end do
+          do N_k = 1, num_kpoints_on_node(my_node_id)
+            do N_spin = 1, nspins
+              write (matrix_unit, '('//trim(out_string)//')') &
+                (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
             end do
-          else
-            do N_k = 1, num_kpoints_on_node(my_node_id)
-              do N_spin = 1, nspins
-                write (matrix_unit, '('//trim(out_string)//')') &
-                  (sum(qe_tsm(n_eigen, 1:nbands, N_spin, N_k, atom)), n_eigen=1, nbands)
-              end do
-            end do
-          end if
+          end do
         elseif (index(photo_model, '1step') .gt. 0) then
           do N_k = 1, num_kpoints_on_node(my_node_id)
             do N_spin = 1, nspins
