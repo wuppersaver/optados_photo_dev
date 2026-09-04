@@ -702,7 +702,10 @@ contains
     ! The confinement length that replaces the k_z sub-cell length everywhere in
     ! the photoemission path. It is a thickness, so it does not move when the
     ! slab is translated in the cell.
-    if (layers_from_input) then
+    ! photo_slab_middle means the same thing in both modes -- the bottom of the
+    ! explicitly treated region -- so it defines this length in both when it is
+    ! given. Only when it is absent does the structural fallback apply.
+    if (layers_from_input .or. photo_slab_middle_set) then
       slab_half_height = photo_slab_max - photo_slab_middle
     else
       slab_half_height = photo_slab_max - slab_middle_ref
