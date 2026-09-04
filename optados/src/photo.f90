@@ -706,6 +706,7 @@ contains
     character(len=9) :: ctime             ! Temp. time string
     character(len=11):: cdate             ! Temp. date string
     integer :: N_k, N_spin, n_eigen, np, ierr, atom, box, i, i_max, pdos_unit = 32
+    integer, allocatable, dimension(:) :: orbital_atom
 
     allocate (pdos_weights_atoms(pdos_mwab%nbands, nspins, num_kpoints_on_node(my_node_id), num_atoms), stat=ierr)
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
@@ -720,24 +721,52 @@ contains
     if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of pdos_weights_atoms failed')
     pdos_weights_boxes = 0.0_dp
 
+    ! The orbital -> atom map depends only on the orbital table, so build it once
+    ! here rather than re-deriving it inside the k-point, spin and band loops. A
+    ! new atom starts wherever either the ion number or the species changes:
+    ! testing the rank alone is not enough, because the rank restarts at 1 for
+    ! every species, so a species holding exactly one ion leaves the rank
+    ! unchanged across the boundary and its successor would be folded into it,
+    ! shifting every atom index after that against atoms_pos_cart_photo. The
+    ! (species, rank) pair is what projection_utils and core already key on.
+    allocate (orbital_atom(pdos_mwab%norbitals), stat=ierr)
+    if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - allocation of orbital_atom failed')
+    i = 1
+    orbital_atom(1) = 1
+    do np = 2, pdos_mwab%norbitals
+      if ((pdos_orbital%rank_in_species(np) .ne. pdos_orbital%rank_in_species(np - 1)) .or. &
+          (pdos_orbital%species_no(np) .ne. pdos_orbital%species_no(np - 1))) i = i + 1
+      orbital_atom(np) = i
+    end do
+    i_max = i
+
+    ! Walking the orbitals has to recover exactly the atoms in the cell. Anything
+    ! else means the .pdos_bin orbital ordering and the -out.cell atom ordering
+    ! have parted company, so every atom-resolved quantity below would be
+    ! attributed to the wrong site. Checked before the accumulation rather than
+    ! after it, because i_max > num_atoms would otherwise be written past the end
+    ! of pdos_weights_atoms first.
+    if (i_max .ne. num_atoms) then
+      if (on_root) write (stdout, '(1x,a,i0,a,i0,a)') &
+        'Error: the pdos orbitals map onto ', i_max, ' atoms but the cell has ', num_atoms, '.'
+      call io_error('Error: make_pdos_weights_atoms - the .pdos_bin orbital ordering does not '// &
+                    'match the -out.cell atom ordering.')
+    end if
+
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, pdos_mwab%nbands
-          i = 1
           do np = 1, pdos_mwab%norbitals
-            if (np .gt. 1) then
-              if (pdos_orbital%rank_in_species(np) .ne. pdos_orbital%rank_in_species(np - 1)) then
-                i = i + 1
-              end if
-            end if
-            pdos_weights_atoms(n_eigen, N_spin, N_k, i) = &
-              pdos_weights_atoms(n_eigen, N_spin, N_k, i) + &
+            pdos_weights_atoms(n_eigen, N_spin, N_k, orbital_atom(np)) = &
+              pdos_weights_atoms(n_eigen, N_spin, N_k, orbital_atom(np)) + &
               pdos_weights(np, n_eigen, N_k, N_spin)
           end do
         end do
       end do
     end do
-    i_max = i
+
+    deallocate (orbital_atom, stat=ierr)
+    if (ierr /= 0) call io_error('Error: make_pdos_weights_atoms - failed to deallocate orbital_atom')
     do atom = 1, num_atoms
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
