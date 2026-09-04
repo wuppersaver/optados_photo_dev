@@ -3484,7 +3484,11 @@ contains
     !
     ! Nodes 1 ... N-1 are drained before root writes its own rows, because the
     ! readers in od_electronic hand out those nodes' k-points first and keep
-    ! root's for last -- so that order is ascending k_global.
+    ! root's for last, so that sequence is the global one: the file starts at
+    ! k_global = 1 rather than two thirds of the way down the list. It is not
+    ! sorted on k_global though, in parallel or in serial -- the atom loop is
+    ! outermost, so every atom walks the k-points again. Sort on the column if
+    ! you want a strict comparison, which is what the header says to do.
     ! Felix Mildner, 2026
     !===============================================================================
     use od_comms, only: on_root, num_nodes, comms_send, comms_recv
