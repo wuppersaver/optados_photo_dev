@@ -1375,6 +1375,16 @@ contains
       end do                                        ! Loop over boxes
       call comms_bcast(absorp_photo(1, 1), num_boxes*number_energies)
       call comms_bcast(reflect_photo(1, 1), num_boxes*number_energies)
+      ! epsilon_photo has to travel with the other two. calc_absorp_layer runs
+      ! on every node and takes I_layer(1) from slab_reflectivity, which reads
+      ! epsilon_photo; left at zero off root that gives n = 0 and kappa = 0, so
+      ! the Fresnel expression returns exactly 1, I_layer is identically zero on
+      ! every non-root rank, and every QE contribution from the k-points those
+      ! ranks hold is silently multiplied away. Serial cannot show it, and a
+      ! parallel run only shows it when a k-point that actually contributes
+      ! lands off root -- in the 21 k-point test case only k = 11 and 12 do, and
+      ! both sit on root, so the total still agreed while half the run was dead.
+      call comms_bcast(epsilon_photo(1, 1, 1), num_boxes*number_energies*2)
     end if
 145 format(1x, a45, I3, a4, I3, a23)
 
