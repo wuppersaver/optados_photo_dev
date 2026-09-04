@@ -1205,22 +1205,6 @@ contains
       close (unit=pdos_unit)
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root) then
-      write (stdout, '(1x,a78)') '+------------------------ Printing pDOS_weights_atoms -----------------------+'
-      write (stdout, 125) shape(pdos_weights_atoms)
-      write (stdout, 125) i_max, pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
-125   format(4(1x, I4))
-      write (stdout, '(9999(es15.8))') ((((pdos_weights_atoms(n_eigen, N_spin, N_k, i), N_spin=1, nspins) &
-                                          , n_eigen=1, pdos_mwab%nbands), N_k=1, num_kpoints_on_node(my_node_id)), i=1, i_max)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      write (stdout, '(1x,a78)') '+----------------------- Printing pDOS_weights_k_band -----------------------+'
-      write (stdout, 124) shape(pdos_weights_k_band)
-      write (stdout, 124) pdos_mwab%nbands, num_kpoints_on_node(my_node_id), nspins
-124   format(3(1x, I4))
-      write (stdout, '(9999(es15.8))') (((pdos_weights_k_band(n_eigen, N_spin, N_k), &
-                                          N_k=1, num_kpoints_on_node(my_node_id)), N_spin=1, nspins), n_eigen=1, pdos_mwab%nbands)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
   end subroutine make_pdos_weights_atoms
 
   subroutine calc_photo_optics
@@ -1369,18 +1353,6 @@ contains
           end do
         end do
 
-        if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root) then
-          write (stdout, '(1x,a37,I3,a38)') '+-------------------------------Atom-', box, &
-            '-------------------------------------+'
-          write (stdout, '(1x,a78)') '+--------------------- Printing Projected Matrix Weights --------------------+'
-          write (stdout, 126) shape(projected_matrix_weights)
-          write (stdout, 126) nbands, nbands, num_kpoints_on_node(my_node_id), nspins, N_geom
-          write (stdout, '(9999(es15.8))') (((((projected_matrix_weights(n_eigen, n_eigen_final, N_k, N_spin, N2), &
-                                                N2=1, N_geom), N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), &
-                                             n_eigen_final=1, nbands), n_eigen=1, nbands)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-        end if
-
         ! Send matrix element to jDOS routine and get weighted jDOS back
         call jdos_utils_calculate(projected_matrix_weights, weighted_jdos=weighted_jdos, &
                                   slab_half_height=slab_half_height)
@@ -1401,15 +1373,6 @@ contains
             end do
           end do
           close (unit=wjdos_unit)
-        end if
-
-        if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root) then
-          write (stdout, '(1x,a78)') '+------------------------ Printing Weighted Joint-DOS -----------------------+'
-          write (stdout, 124) shape(weighted_jdos)
-          write (stdout, 124) jdos_nbins, nspins, N_geom
-          write (stdout, '(9999(es15.8))') (((weighted_jdos(jdos_bin, N_spin, N2), N2=1, N_geom), N_spin=1, nspins) &
-                                            , jdos_bin=1, jdos_nbins)
-          write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
         end if
 
         if (optics_intraband) then
@@ -1438,23 +1401,6 @@ contains
         end if
 
         if (on_root) then
-          if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. optics_intraband) then
-            write (stdout, '(1x,a36,f8.4,a34)') '+------------------------ E_Fermi = ', efermi, &
-              '---------------------------------+'
-            write (stdout, '(1x,a78)') '+------------------------ Printing DOS Matrix Weights -----------------------+'
-            write (stdout, 125) shape(dos_matrix_weights)
-            write (stdout, 125) size(matrix_weights, 5), nbands, num_kpoints_on_node(my_node_id), nspins
-            write (stdout, '(9999(es15.8))') ((((dos_matrix_weights(n_eigen, n_eigen_final, N_k, s), s=1, nspins), N_k=1, &
-                                                num_kpoints_on_node(my_node_id)), n_eigen_final=1, nbands), n_eigen=1, &
-                                              size(matrix_weights, 5))
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-            write (stdout, '(1x,a78)') '+--------------------------- Printing DOS @ Energy --------------------------+'
-            write (stdout, '(9(es15.8))') ((dos_at_e(i, s), i=1, 3), s=1, nspins)
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-            write (stdout, '(1x,a78)') '+----------------------- Printing Weighted DOS @ Energy ---------------------+'
-            write (stdout, '(9999(es15.8))') ((weighted_dos_at_e(s, n_eigen), s=1, nspins), n_eigen=1, size(matrix_weights, 5))
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          end if
 
           ! Calculate epsilon_2
           call calc_epsilon_2(weighted_jdos, weighted_dos_at_e, box_volumes(box))
@@ -1481,27 +1427,6 @@ contains
             epsilon_photo(box, energy, 2) = epsilon(index_energy(energy), 2, 1, 1)
           end do
 
-          if (index(devel_flag, 'print_qe_constituents') .gt. 0) then
-            write (stdout, '(1x,a78)') '+-------------------- Printing Material Optical Properties ------------------+'
-            write (stdout, '(1x,a78)') '+--------------------------- Printing Epsilon Array -------------------------+'
-            write (stdout, 125) shape(epsilon)
-            if (.not. optics_intraband) then
-              write (stdout, '(9999(E17.8E3))') (((epsilon(jdos_bin, N_k, N2, 1), jdos_bin=1, jdos_nbins), N_k=1, 2), &
-                                                 N2=1, N_geom)
-            else
-              write (stdout, '(9999(E17.8E3))') ((((epsilon(jdos_bin, N_k, N2, i), jdos_bin=1, jdos_nbins), N_k=1, 2), &
-                                                  N2=1, N_geom), i=1, 3)
-            end if
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-            write (stdout, '(1x,a78)') '+----------------------------- Printing Absorption --------------------------+'
-            write (stdout, '(99(E17.8E3))') (absorp_photo(box, energy), energy=1, number_energies)
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-
-            write (stdout, '(1x,a78)') '+----------------------------- Printing Reflection --------------------------+'
-            write (stdout, '(99(E17.8E3))') (reflect_photo(box, energy), energy=1, number_energies)
-            write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-          end if
           ! Deallocate extra arrays produced in the case of using optics_intraband
           deallocate (epsilon, stat=ierr)
           if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate epsilon')
@@ -2349,15 +2274,6 @@ contains
       end do ! spins
     end do ! k-points
 
-    if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root) then
-      write (stdout, '(1x,a78)') '+------------------------ Printing Transverse Energy ------------------------+'
-      write (stdout, '(3(1x,I4))') shape(E_transverse)
-      write (stdout, '(3(1x,I4))') nbands, num_kpoints_on_node(my_node_id), nspins
-      write (stdout, '(9999(es15.8))') ((((E_transverse(gdx, n_eigen, N_spin, N_k), gdx=1, photo_gkmax), &
-                                          N_spin=1, nspins), N_k=1, num_kpoints_on_node(my_node_id)), n_eigen=1, nbands)
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
     deallocate (E_y, stat=ierr)
     if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate E_y')
 
@@ -2984,19 +2900,6 @@ contains
         if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of transmit_prob failed')
       end if
       transmit_prob = 1.0_dp
-    end if
-
-    if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root .and. .not. photo_energy_sweep) then
-      write (stdout, '(1x,a78)') '+----------------- Printing Matrix Weights in 3Step Function ----------------+'
-      write (stdout, '(5(1x,I4))') shape(photo_matrix_weights)
-      write (stdout, '(5(1x,I4))') nbands, nbands, nspins, num_kpoints_on_node(my_node_id), N_geom
-      do N_k = 1, num_kpoints_on_node(my_node_id)
-        do N_spin = 1, nspins
-          write (stdout, '(99999(es15.8))') ((photo_matrix_weights(n_eigen_init, n_eigen_final, N_spin, N_k), &
-                                              n_eigen_final=1, nbands), n_eigen_init=1, nbands)
-        end do
-      end do
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
     end if
 
     if (iprint .gt. 1 .and. on_root) then
@@ -3626,18 +3529,6 @@ contains
       call io_error('Error: photon energy takes states above the stored final-state window')
     end if
 
-    if (index(devel_flag, 'print_qe_constituents') .gt. 0 .and. on_root .and. .not. photo_energy_sweep) then
-      write (stdout, '(1x,a78)') '+------------------------- Printing Free OM Weights -------------------------+'
-      write (stdout, 126) shape(foptical_matrix_weights)
-126   format(5(1x, I4))
-      do N_spin = 1, nspins
-        do N_k = 1, num_kpoints_on_node(my_node_id)
-          write (stdout, '(99999(es15.8))') (foptical_matrix_weights(n_eigen, N_spin, N_k), n_eigen=1, nbands)
-        end do
-      end do
-      write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-    end if
-
   end subroutine make_foptical_weights
 
   !===============================================================================
@@ -3895,20 +3786,13 @@ contains
     use od_jdos_utils, only: jdos_utils_calculate
     use od_constants, only: pi, kB, inv_sqrt_two_pi
     implicit none
-    integer :: N_k, N_spin, n_eigen, atom, ierr, gdx, kpt_total
+    integer :: N_k, N_spin, n_eigen, atom, ierr, gdx
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
     real(kind=dp) :: temp_contribution, efinal_temp, e_normal
     real(kind=dp) :: gk_factor, te_gk_factor
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
-    ! per-band breakdown of the QE integrand, for devel_flag 'print_1step_terms'
-    real(kind=dp), allocatable, dimension(:) :: dbg_m, dbg_fd, dbg_pdos, dbg_gk, dbg_qe
-
-    if (index(devel_flag, 'write_fem_matrix') .gt. 0) then
-      kpt_total = sum(num_kpoints_on_node(0:num_nodes - 1))
-      call write_distributed_fem_data(kpt_total)
-    end if
 
     qe_factor = 1.0_dp/(cell_area)
     width = (1.0_dp/11604.45_dp)*photo_temperature
@@ -3987,11 +3871,6 @@ contains
 
     ! Optional per-band breakdown of the surface layer's QE integrand: one row
     ! per band, so it stays small, unlike a dump of every term at every gk/k.
-    if (index(devel_flag, 'print_1step_terms') .gt. 0) then
-      allocate (dbg_m(nbands), dbg_fd(nbands), dbg_pdos(nbands), dbg_gk(nbands), dbg_qe(nbands), stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - allocation of the 1step term breakdown failed')
-      dbg_m = 0.0_dp; dbg_fd = 0.0_dp; dbg_pdos = 0.0_dp; dbg_gk = 0.0_dp; dbg_qe = 0.0_dp
-    end if
 
     do atom = 1, max_atoms
       if (iprint .gt. 2 .and. on_root .and. (atom .le. max_atoms)) then
@@ -4008,22 +3887,11 @@ contains
                                  *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
                                    /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
-            if (allocated(dbg_m) .and. atom .eq. 1) then
-              dbg_m(n_eigen) = dbg_m(n_eigen) + kpoint_weight(N_k)*foptical_matrix_weights(n_eigen, N_spin, N_k)
-              dbg_fd(n_eigen) = dbg_fd(n_eigen) + kpoint_weight(N_k)*fermi_dirac(n_eigen, N_spin, N_k)
-              dbg_pdos(n_eigen) = dbg_pdos(n_eigen) + kpoint_weight(N_k) &
-                                  *pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                  /pdos_weights_k_band(n_eigen, N_spin, N_k)
-            end if
             do gdx = 1, photo_gkmax
               gk_factor = gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
                           *electron_esc(gdx, n_eigen, N_spin, N_k, atom) &
                           *emission_gauss(gdx, n_eigen, N_spin, N_k)
               te_gk_factor = gk_factor*E_transverse(gdx, n_eigen, N_spin, N_k)
-              if (allocated(dbg_gk) .and. atom .eq. 1) then
-                dbg_gk(n_eigen) = dbg_gk(n_eigen) + kpoint_weight(N_k)*gk_factor
-                dbg_qe(n_eigen) = dbg_qe(n_eigen) + temp_contribution*gk_factor
-              end if
               qe_osm(n_eigen, N_spin, N_k, atom) = qe_osm(n_eigen, N_spin, N_k, atom) &
                                                    + temp_contribution*gk_factor
               te_osm(n_eigen, N_spin, N_k, atom) = te_osm(n_eigen, N_spin, N_k, atom) &
@@ -4059,25 +3927,6 @@ contains
           end do
         end do
       end do
-    end if
-
-    if (allocated(dbg_m)) then
-      call comms_reduce(dbg_m(1), nbands, 'SUM')
-      call comms_reduce(dbg_fd(1), nbands, 'SUM')
-      call comms_reduce(dbg_pdos(1), nbands, 'SUM')
-      call comms_reduce(dbg_gk(1), nbands, 'SUM')
-      call comms_reduce(dbg_qe(1), nbands, 'SUM')
-      if (on_root) then
-        write (stdout, '(1x,a78)') '+------------- 1step QE integrand, surface layer, per band ------------------+'
-        write (stdout, '(1x,a6,5(1x,a17))') 'band', 'foptical', 'fermi_dirac', 'pdos_ratio', 'sum_gk', 'contribution'
-        do n_eigen = 1, nbands
-          write (stdout, '(1x,i6,5(1x,E17.9E3))') n_eigen, dbg_m(n_eigen), dbg_fd(n_eigen), &
-            dbg_pdos(n_eigen), dbg_gk(n_eigen), dbg_qe(n_eigen)
-        end do
-        write (stdout, '(1x,a78)') '+----------------------------- Finished Printing ----------------------------+'
-      end if
-      deallocate (dbg_m, dbg_fd, dbg_pdos, dbg_gk, dbg_qe, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_one_step_model - failed to deallocate the 1step term breakdown')
     end if
 
     ! One test per photon energy, outside every loop.
