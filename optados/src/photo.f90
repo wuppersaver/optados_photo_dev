@@ -1572,10 +1572,40 @@ contains
     use od_parameters, only: photo_work_function, photo_elec_field
     use od_electronic, only: efermi
     use od_constants, only: pi, epsilon_0, e_charge, j_to_ev, ev_to_j
+    use od_io, only: stdout, io_error
+    use od_comms, only: on_root
     implicit none
+    real(kind=dp) :: schottky_lowering
 
     !photo_elec_field given in V/m
-    work_function_eff = photo_work_function - sqrt((e_charge**3*photo_elec_field)/(4*pi*epsilon_0*ev_to_j**2))
+    schottky_lowering = sqrt((e_charge**3*photo_elec_field)/(4*pi*epsilon_0*ev_to_j**2))
+    work_function_eff = photo_work_function - schottky_lowering
+    ! Nothing downstream survives a barrier that is not positive. evacuum_eff
+    ! would drop below the Fermi level, which breaks the assumption that a state
+    ! too deep to emit is also too deep to have an escape angle, and in the
+    ! fallback branch of the surface barrier it makes theta_internal evaluate
+    ! acos(sqrt(negative)). The NaN that follows compares false against every
+    ! guard, so the states are dropped silently and the run still prints a
+    ! number. Stop here instead.
+    if (work_function_eff .le. 0.0_dp) then
+      if (on_root) then
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        write (stdout, '(1x,a78)') '! Error: the Schottky lowering from photo_elec_field is at least as large as !'
+        write (stdout, '(1x,a78)') '! the work function, so the effective barrier is zero or negative.  That is  !'
+        write (stdout, '(1x,a78)') '! the field emission regime, which the three step model does not describe,   !'
+        write (stdout, '(1x,a78)') '! and it makes the surface refraction take the square root of a negative     !'
+        write (stdout, '(1x,a78)') '! barrier.  Lower photo_elec_field, or set the barrier explicitly with       !'
+        write (stdout, '(1x,a78)') '! photo_inner_potential and treat the emission with a field emission model.  !'
+        write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
+        write (stdout, '(1x,a46,1x,f10.4,20x,a1)') '|  Work function (eV)                        :', &
+          photo_work_function, '|'
+        write (stdout, '(1x,a46,1x,f10.4,20x,a1)') '|  Schottky lowering (eV)                    :', &
+          schottky_lowering, '|'
+        write (stdout, '(1x,a46,1x,f10.4,20x,a1)') '|  Effective work function (eV)              :', &
+          work_function_eff, '|'
+      end if
+      call io_error('Error: effective_wf - photo_elec_field lowers the work function to zero or below')
+    end if
     evacuum_eff = work_function_eff + efermi
   end subroutine effective_wf
 
@@ -2118,12 +2148,13 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp, num_atoms
     use od_io, only: io_error, stdout, io_time
-    use od_comms, only: my_node_id, on_root
+    use od_comms, only: my_node_id, on_root, comms_reduce
     use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint, scissor_op
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
     real(kind=dp) :: tolerance, conduction_band, total_depth
     real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
+    real(kind=dp) :: band_imfp_min, band_imfp_max
 
     tolerance = 1.0E-12_dp
     time0 = io_time()
@@ -2208,8 +2239,19 @@ contains
           end do
         end do
       end do
-      write (stdout, '(1x,a78)') '+------------------ IMFP Values from Energy Dependent Curve -----------------+'
-      write (stdout, *) 'min', minval(band_imfp), 'max', maxval(band_imfp)
+      ! Report the range over the states that actually have an IMFP. The zeros
+      ! left behind by the cycle above are structural, not a short mean free
+      ! path, and taking them into the minimum only ever printed 0.
+      band_imfp_min = minval(band_imfp, mask=band_imfp .gt. 0.0_dp)
+      band_imfp_max = maxval(band_imfp)
+      call comms_reduce(band_imfp_min, 1, 'MIN')
+      call comms_reduce(band_imfp_max, 1, 'MAX')
+      if (on_root) then
+        write (stdout, '(1x,a78)') '+------------------ IMFP Values from Energy Dependent Curve -----------------+'
+        write (stdout, '(1x,a1,5x,a24,1x,a1,1x,E14.6E3,30x,a1)') '|', 'Min. IMFP over emitting ', '=', band_imfp_min, '|'
+        write (stdout, '(1x,a1,5x,a24,1x,a1,1x,E14.6E3,30x,a1)') '|', 'Max. IMFP over emitting ', '=', band_imfp_max, '|'
+        write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
+      end if
       ! set atom imfp to curve minimum (~2.5 Angstrom) to get
       ! "estimate value" during bulk slab printing
       atom_imfp = 2.50_dp
@@ -2244,6 +2286,14 @@ contains
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
             do n_eigen = 1, nbands
+              ! The curve leaves band_imfp at zero for every state whose final
+              ! energy is below E_F, because those states have no phase space to
+              ! propagate through and cannot emit. Their theta_internal is also
+              ! left at the 91 degree sentinel, so the cosine test below already
+              ! rejects them, but that couples this loop to calc_angle several
+              ! hundred lines away and leaves the division relying on the sign
+              ! of an infinity. Skip them here instead.
+              if (band_imfp(n_eigen, N_spin, N_k) .le. 0.0_dp) cycle
               do gdx = 1, photo_gkmax
                 ! is the emission possible?
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. tolerance) then
@@ -2355,6 +2405,8 @@ contains
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
             do n_eigen = 1, nbands
+              ! As in calc_electron_esc: no IMFP means the state cannot emit.
+              if (band_imfp(n_eigen, N_spin, N_k) .le. 0.0_dp) cycle
               do gdx = 1, photo_gkmax
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
                   exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*bulk_repeat)/ &
