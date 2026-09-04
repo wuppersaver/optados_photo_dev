@@ -1921,7 +1921,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, band_gradient, elec_read_band_gradient, &
       photo_gkgrid, elec_read_gk_grid
     use od_comms, only: my_node_id, on_root
-    use od_parameters, only: photo_momentum, devel_flag, iprint, scissor_op, &
+    use od_parameters, only: photo_momentum, devel_flag, iprint, &
       photo_inner_potential, photo_inner_potential_set
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -1933,7 +1933,7 @@ contains
 
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_x
     real(kind=dp), allocatable, dimension(:, :, :, :):: E_y
-    real(kind=dp) :: tol = 1.0E-10_dp, conduction_band
+    real(kind=dp) :: tol = 1.0E-10_dp
     real(kind=dp) :: time0, time1
 
     time0 = io_time()
@@ -2042,8 +2042,6 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          conduction_band = 0.0_dp
-          if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
           do gdx = 1, photo_gkmax
             if (index(photo_momentum, 'crystal') .gt. 0) then
               E_x(gdx, n_eigen, N_spin, N_k) = (((hbar**2)/(2*e_mass))*((kpoint_r_cart(1, N_k)*1E+10)**2))*j_to_ev
@@ -2077,7 +2075,7 @@ contains
             ! electron vector and the surface normal.
             ! total kinetic energy after emission and passing through work
             ! function potential step
-            E_kinetic(gdx, n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) &
+            E_kinetic(gdx, n_eigen, N_spin, N_k) = (band_energy(n_eigen, N_spin, N_k) &
                                                   & + temp_photon_energy - evacuum_eff)
             if (E_kinetic(gdx, n_eigen, N_spin, N_k) .lt. E_transverse(gdx, n_eigen, N_spin, N_k)) cycle
             ! Angle of electron outside material, after passing the surface and loosing E(work_function)
@@ -2149,10 +2147,10 @@ contains
     use od_cell, only: num_kpoints_on_node, atoms_pos_cart_photo, atoms_label_tmp, num_atoms
     use od_io, only: io_error, stdout, io_time
     use od_comms, only: my_node_id, on_root, comms_reduce
-    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint, scissor_op
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_model, iprint
     implicit none
     integer :: atom, N_k, N_spin, n_eigen, ierr, i, gdx
-    real(kind=dp) :: tolerance, conduction_band, total_depth
+    real(kind=dp) :: tolerance, total_depth
     real(kind=dp) :: exponent, time0, time1, scale_factor, scaled_x, g1, g2
     real(kind=dp) :: band_imfp_min, band_imfp_max
 
@@ -2218,9 +2216,7 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
-            conduction_band = 0.0_dp
-            if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
-            scaled_x = ((band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) + temp_photon_energy - efermi) &
+            scaled_x = ((band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - efermi) &
                         /scale_factor) + 1
             if ((1.0_dp - scaled_x) .gt. 1E-10_dp) cycle
             g1 = LOG(scaled_x - 1.0_dp) + ((8.0_dp/3.0_dp) - 2.0_dp*LOG(2.0_dp))
@@ -2716,7 +2712,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient, &
       elec_read_band_curvature, transmit_prob, elec_read_transmit_prob
     use od_comms, only: my_node_id, on_root, comms_send, comms_recv, comms_bcast
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, photo_energy_sweep, iprint, &
+    use od_parameters, only: photo_temperature, devel_flag, photo_energy_sweep, iprint, &
       photo_output, photo_use_tmprob
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
@@ -2727,7 +2723,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
-    real(kind=dp) :: width, norm_vac, qe_factor, argument, efinal_temp, e_normal, conduction_band, &
+    real(kind=dp) :: width, norm_vac, qe_factor, argument, efinal_temp, e_normal, &
                      time0, time1, final_fd, temp_contribution, gk_factor, te_gk_factor
     integer :: N_k, N_spin, n_eigen, n_eigen_init, n_eigen_final, atom, ierr, gdx
 
@@ -2816,9 +2812,7 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          conduction_band = 0.0_dp
-          if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
-          argument = (band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
           ! so this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible under/over-flow.
@@ -2831,7 +2825,7 @@ contains
           end if
 
           ! Calculate the final state energy
-          efinal_temp = band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) + temp_photon_energy
+          efinal_temp = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy
           do gdx = 1, photo_gkmax
             ! is the energy along the normal .gt. 0?
             ! Include now the vacuum level and transverse energy to get the final energy along normal
@@ -3285,7 +3279,7 @@ contains
     use od_comms, only: my_node_id, on_root
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
-      scissor_op, hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
+      hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
       num_exclude_bands, jdos_max_energy, photo_slab_max, photo_slab_middle, &
       photo_slab_mode, SLAB_MODE_LAYERS
     use od_io, only: io_error, stdout
@@ -3306,7 +3300,7 @@ contains
     logical, intent(in)                               :: calculate_bulk
 
     logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: norm_width, conduction_band, final_energy
+    real(kind=dp) :: norm_width
 
     linear = .false.
     fixed = .false.
@@ -3350,12 +3344,9 @@ contains
     do ik = 1, num_kpoints_on_node(my_node_id)
       do is = 1, nspins
         do jb = 2, nbands
-          conduction_band = 0.0_dp
-          if (jb .ge. min_index_unocc(is, ik)) conduction_band = 1.0_dp
           if (num_exclude_bands .gt. 0) then
             if (any(exclude_bands == jb)) cycle
           end if
-          final_energy = band_energy(jb, is, ik) + conduction_band*scissor_op
           do ib = 1, jb - 1
             if (linear .or. adaptive) grad(:) = band_gradient(jb, :, ik, is) - band_gradient(ib, :, ik, is)
 
@@ -3364,7 +3355,7 @@ contains
             force_adaptive = .false.
             if (.not. fixed) then
               if (hybrid_linear .and. (hybrid_linear_grad_tol .gt. sqrt(dot_product(grad, grad)))) force_adaptive = .true.
-              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, final_energy - &
+              if (linear .and. .not. force_adaptive) call doslin_sub_cell_corners(grad, step, band_energy(jb, is, ik) - &
                                                                                   band_energy(ib, is, ik), EV)
               if (adaptive .or. force_adaptive) width = sqrt(dot_product(grad, grad))*adaptive_smearing_temp
             end if
@@ -3378,7 +3369,8 @@ contains
             if (linear .and. .not. force_adaptive) then
               delta_temp(ib, jb, is, ik) = doslin(EV(0), EV(1), EV(2), EV(3), EV(4), E(current_energy_index), cuml)
             else
-              delta_temp(ib, jb, is, ik) = gaussian(final_energy - band_energy(ib, is, ik), width, E(current_energy_index))
+              delta_temp(ib, jb, is, ik) = gaussian(band_energy(jb, is, ik) - band_energy(ib, is, ik), width, &
+                                                    E(current_energy_index))
             end if
           end do
         end do
@@ -3672,7 +3664,7 @@ contains
     use od_electronic, only: nbands, nspins, band_energy, efermi, electrons_per_state, elec_read_band_gradient,&
     & elec_read_band_curvature
     use od_comms, only: my_node_id, num_nodes
-    use od_parameters, only: scissor_op, photo_temperature, devel_flag, iprint
+    use od_parameters, only: photo_temperature, devel_flag, iprint
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
     use od_comms, only: on_root, comms_recv, comms_send, comms_reduce
@@ -3684,7 +3676,7 @@ contains
 
     real(kind=dp) :: width, norm_vac, qe_factor, argument, time0, time1
     real(kind=dp) :: temp_contribution, efinal_temp, e_normal
-    real(kind=dp) :: gk_factor, te_gk_factor, conduction_band
+    real(kind=dp) :: gk_factor, te_gk_factor
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
     ! per-band breakdown of the QE integrand, for devel_flag 'print_1step_terms'
@@ -3750,9 +3742,7 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          conduction_band = 0.0_dp
-          if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
-          argument = (band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
           ! so this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible under/over-flow.
@@ -3765,7 +3755,7 @@ contains
           end if
 
           ! the final total energy of the electron (E_initial + hw) - e_vacuum
-          efinal_temp = band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) + temp_photon_energy - evacuum_eff
+          efinal_temp = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff
 
           ! is the photon energy large enough to allow an emission at this kpoint/k+G
           do gdx = 1, photo_gkmax
@@ -4190,7 +4180,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node
     use od_electronic, only: nbands, nspins, band_energy, efermi
-    use od_parameters, only: photo_theta_centre, photo_theta_halfwidth, photo_temperature, scissor_op
+    use od_parameters, only: photo_theta_centre, photo_theta_halfwidth, photo_temperature
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit, io_time, io_date
@@ -4201,7 +4191,7 @@ contains
     real(kind=dp), intent(inout), allocatable, dimension(:, :, :, :) :: arpes_mask
     real(kind=dp), intent(inout), allocatable, dimension(:, :, :, :) :: emission_gauss
 
-    real(kind=dp) :: norm_vac, width, argument, efinal_temp, e_normal, conduction_band
+    real(kind=dp) :: norm_vac, width, argument, efinal_temp, e_normal
     real(kind=dp) :: theta_lo, theta_hi
     integer :: N_k, N_spin, n_eigen, gdx, ierr
 
@@ -4237,9 +4227,7 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands
-          conduction_band = 0.0_dp
-          if (n_eigen .ge. min_index_unocc(N_spin, N_k)) conduction_band = 1.0_dp
-          argument = (band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) - efermi)/(kB*photo_temperature)
+          argument = (band_energy(n_eigen, N_spin, N_k) - efermi)/(kB*photo_temperature)
           ! This is a bit of an arbitrary condition, but exp(+-230) ~ 1E(+-100)
           ! so this cutoff condition saves us from running into arithmetic
           ! issues when computing fermi_dirac due to possible under/over-flow.
@@ -4252,7 +4240,7 @@ contains
           end if
 
           ! Calculate the final state energy - e_vacuum
-          efinal_temp = band_energy(n_eigen, N_spin, N_k) + (scissor_op*conduction_band) + temp_photon_energy - evacuum_eff
+          efinal_temp = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff
           ! Is there enough total energy for this kpt/band for E_normal .gt. 0 after passing through surface potential step
           do gdx = 1, photo_gkmax
             ! Unified condition of emission: is the energy along the normal .gt. 0?
