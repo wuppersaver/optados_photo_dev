@@ -272,7 +272,7 @@ contains
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, photo_slab_middle, photo_layers_tops, iprint, &
-      photo_slab_mode, SLAB_MODE_LAYERS
+      photo_slab_mode, SLAB_MODE_LAYERS, photo_slab_middle_set
     implicit none
     integer :: ierr, atom, counter, i, j, ic, atom_index, first, temp, atom_1, atom_2
     integer :: n_layers, n_species_seen, isp
@@ -466,11 +466,29 @@ contains
         layer_centroid(i) = layer_centroid(i)/real(atoms_in_layer(i), dp)
       end do
 
-      ! photo_slab_min/max bracket the whole slab, so the explicitly treated
-      ! region is its top half and everything below is covered by the bulk
-      ! extrapolation. An odd number of layers keeps the central one.
+      ! Where does the explicitly treated region end and the bulk extrapolation
+      ! begin? photo_slab_middle says so directly: every layer whose centroid
+      ! lies above it is treated explicitly. Without it the code falls back to
+      ! keeping the top half of the layers, which is thickness-dependent -- a
+      ! 5-layer slab treats 3 and an 11-layer slab 6, so the boundary between two
+      ! different approximations moves with the slab -- and composition-blind,
+      ! which at an interface can leave the deepest explicit box made of the film
+      ! and have bulk_emission repeat the film downwards as the substrate.
       if (single_layer) then
         num_boxes = 1
+      else if (photo_slab_middle_set) then
+        num_boxes = 0
+        do i = 1, n_layers
+          if (layer_centroid(i) .gt. photo_slab_middle) num_boxes = num_boxes + 1
+        end do
+        if (num_boxes .lt. 1) &
+          call io_error('Error: analyse_geometry - photo_slab_middle lies above every layer, '// &
+                        'so no layer would be treated explicitly. It marks where the explicit '// &
+                        'region ends, not where the slab begins.')
+        if (num_boxes .ge. n_layers) &
+          call io_error('Error: analyse_geometry - photo_slab_middle lies below every layer, '// &
+                        'so nothing is left for the bulk extrapolation to stand for. It must '// &
+                        'leave at least one layer beneath it.')
       else
         num_boxes = (n_layers + 1)/2
       end if
@@ -698,6 +716,14 @@ contains
       ! Only the upper and lower surface have been given (SLAB_MODE_BOUNDS)
       ! so with debug printing on, the user gets the inferred box height, number of
       ! boxes/layers and the # of atoms in each layer/box
+      if (.not. layers_from_input) then
+        if (photo_slab_middle_set) then
+          write (stdout, 229) '|  Explicit region ends at        (Ang)   :         ', photo_slab_middle, '|'
+        else
+          write (stdout, '(1x,a78)') &
+            '|  Explicit region: top half of the inferred layers (no photo_slab_middle)   |'
+        end if
+      end if
       if (iprint .gt. 2 .and. .not. layers_from_input) then
         write (stdout, 420) '+', 'box height (Ang) = ', box_heights(1), ',', '# of boxes = ', num_boxes, '+'
 420     format(1x, a1, 5x, a19, F13.9, a1, 12x, a13, I4, 9x, a1)

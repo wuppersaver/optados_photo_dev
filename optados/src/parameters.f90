@@ -130,6 +130,10 @@ module od_parameters
   real(kind=dp), public, save :: photo_slab_min
   real(kind=dp), public, save :: photo_slab_max
   real(kind=dp), public, save :: photo_slab_middle
+  !! Did the user give photo_slab_middle? In SLAB_MODE_BOUNDS it is optional and
+  !! decides where the explicitly treated region ends; without it the code falls
+  !! back to keeping the top half of the inferred layers.
+  logical, public, save       :: photo_slab_middle_set
   ! How the user described the slab. Set once, in param_read, by looking at
   ! which keywords are present; everything downstream branches on this
   ! instead of re-deriving the intent from the values themselves.
@@ -521,6 +525,7 @@ contains
     call param_get_keyword('photo_slab_max', has_slab_max, r_value=photo_slab_max)
     photo_slab_middle = -0.5_dp
     call param_get_keyword('photo_slab_middle', has_slab_middle, r_value=photo_slab_middle)
+    photo_slab_middle_set = has_slab_middle
     i_temp = 0
     call param_get_vector_length('photo_layers_tops', has_layers_tops, i_temp)
     photo_len_layers_value = i_temp
@@ -533,16 +538,21 @@ contains
     ! 2. classify - on presence only, no numeric comparisons yet
     if (.not. photo) then
       photo_slab_mode = SLAB_MODE_UNUSED
-    else if (has_slab_middle .or. has_layers_tops) then
+    else if (has_layers_tops) then
       if (.not. has_slab_middle) call io_error('Error: photo_layers_tops was given without '// &
                                                'photo_slab_middle - the two must be set together')
-      if (.not. has_layers_tops) call io_error('Error: photo_slab_middle was given without '// &
-                                               'photo_layers_tops - the two must be set together')
       if (has_slab_min) call io_error('Error: photo_slab_min cannot be combined with '// &
                                       'photo_layers_tops - use either the slab bounds or the layer tops')
       photo_slab_mode = SLAB_MODE_LAYERS
     else if (has_slab_min .and. has_slab_max) then
+      ! photo_slab_middle is optional here: with slab bounds it says where the
+      ! explicitly treated region ends, and without it the code keeps the top
+      ! half of the inferred layers.
       photo_slab_mode = SLAB_MODE_BOUNDS
+    else if (has_slab_middle) then
+      call io_error('Error: photo_slab_middle was given without photo_layers_tops or '// &
+                    'photo_slab_min and photo_slab_max - it says where the explicit region '// &
+                    'ends, so it needs a slab to end inside')
     else if (has_slab_min .or. has_slab_max) then
       call io_error('Error: photo_slab_min and photo_slab_max must be set together')
     else
@@ -558,6 +568,11 @@ contains
     case (SLAB_MODE_BOUNDS)
       if (photo_slab_max .le. photo_slab_min) &
         call io_error('Error: photo_slab_max must be greater than photo_slab_min')
+      if (photo_slab_middle_set) then
+        if (photo_slab_middle .le. photo_slab_min .or. photo_slab_middle .ge. photo_slab_max) &
+          call io_error('Error: photo_slab_middle must lie between photo_slab_min and '// &
+                        'photo_slab_max - it is where the explicitly treated region ends')
+      end if
     case (SLAB_MODE_LAYERS)
       if (photo_slab_middle .lt. 0.0_dp) &
         call io_error('Error: photo_slab_middle must be a positive value!')
@@ -1922,6 +1937,7 @@ contains
     call comms_bcast(photo_slab_max, 1)
     call comms_bcast(photo_slab_min, 1)
     call comms_bcast(photo_slab_middle, 1)
+    call comms_bcast(photo_slab_middle_set, 1)
     call comms_bcast(photo_slab_mode, 1)
     call comms_bcast(photo_len_layers_value, 1)
     if (photo_len_layers_value .gt. 0) then
