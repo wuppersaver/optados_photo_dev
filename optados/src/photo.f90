@@ -53,6 +53,12 @@ module od_photo
   integer, dimension(:), allocatable       :: atoms_per_box
   integer                                  :: num_boxes
   real(kind=dp)                            :: slab_middle_ref
+  !! Centroid spacing from one explicit layer to the next: the optical path the
+  !! light travels between them, which is not a box height.
+  real(kind=dp), dimension(:), allocatable :: layer_gap
+  !! Repeat spacing of the substrate, which bulk_emission steps by. Taken from
+  !! the layers at and below the explicit region, not from the deepest box.
+  real(kind=dp)                            :: bulk_repeat
   !! Confinement length of the slab along z: the top of the slab down to its
   !! middle. Stands in for the k_z sub-cell length, which a slab does not have.
   !! Set once in analyse_geometry and used by both calculate_delta and the
@@ -282,6 +288,9 @@ contains
     implicit none
     integer :: ierr, atom, counter, i, j, ic, atom_index, first, temp, atom_1, atom_2
     integer :: n_layers, n_species_seen, isp
+    integer, allocatable, dimension(:)       :: layer_index
+    real(kind=dp)                            :: z_top, z_middle
+    real(kind=dp), allocatable, dimension(:) :: box_boundaries
     integer, allocatable, dimension(:, :)    :: layer_species_count
     character(len=10), allocatable, dimension(:) :: species_seen
     logical                                  :: same_species_set, same_species_counts
@@ -352,189 +361,250 @@ contains
     ! the layers. We infer that the upper surface of the slab is the
     ! surface layer's top coordinate (in parameter.f90).
     layers_from_input = (photo_slab_mode .eq. SLAB_MODE_LAYERS)
-    if (layers_from_input) then
-      if (photo_layers_tops(1) .lt. atoms_pos_cart_photo(3, 1)) then
-        call io_error('Error: the inferred top surface is below one or more atoms, something went wrong!')
-      end if
-      ! Explicit layer tops always describe a multi-layer stack. Without this
-      ! single_layer keeps whatever the module variable happened to hold and
-      ! the atom-to-box assignment below branches on an undefined value.
-      single_layer = .false.
-      num_boxes = size(photo_layers_tops, 1)
 
-      if (.not. allocated(box_heights)) then
-        allocate (box_heights(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_heights failed')
-      end if
-      ! Inferred top of slab from first layer_top
-      ! Calculate box heights as distances between tops
-      do i = 1, num_boxes - 1
-        box_heights(i) = photo_layers_tops(i) - photo_layers_tops(i + 1)
-      end do
-      ! Extra definition for the last layer above the slab middle
-      box_heights(num_boxes) = photo_layers_tops(num_boxes) - photo_slab_middle
+    ! ------------------------------------------------------------------------
+    ! One geometry, however it was supplied.
+    !
+    ! The slab runs from z_top down to z_middle and is cut by num_boxes+1 planes
+    !
+    !     z_top = b(0) > b(1) > ... > b(num_boxes) = z_middle
+    !
+    ! so box i spans [b(i), b(i-1)], the boxes tile the slab exactly and their
+    ! volumes add up to it. Everything below z_middle is covered by the bulk
+    ! extrapolation. photo_layers_tops, when given, supplies the interior planes;
+    ! otherwise they are the midpoints between neighbouring layer centroids,
+    ! which tiles for any spacing and reduces to the old boxes when the spacings
+    ! are equal.
+    !
+    ! The atoms are clustered into layers either way, because three different
+    ! lengths are needed and only one of them is a box height:
+    !
+    !   box_heights  the extent of a box, which normalises its epsilon
+    !   layer_gap    the centroid spacing, the optical path from the atoms of
+    !                one layer to those of the next
+    !   bulk_repeat  the substrate interlayer spacing, which bulk_emission steps
+    !                by below the explicit region
+    !
+    ! Conflating those three is what let a relaxed surface, an unequal spacing or
+    ! a user-chosen slab middle leak into quantities that have nothing to do with
+    ! them.
+    ! ------------------------------------------------------------------------
 
-      if (.not. allocated(box_volumes)) then
-        allocate (box_volumes(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_volumes failed')
-      end if
-      box_volumes = box_heights*cell_area
+    ! ---- cluster the atoms into layers -------------------------------------
+    allocate (z_gaps(max(num_atoms - 1, 1)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of z_gaps failed')
+    z_gaps = 0.0_dp
+    do atom = 1, num_atoms - 1
+      z_gaps(atom) = atoms_pos_cart_photo(3, atom_order(atom)) - &
+                     atoms_pos_cart_photo(3, atom_order(atom + 1))
+    end do
 
-      if (.not. allocated(boxes_top_z_coord)) then
-        allocate (boxes_top_z_coord(num_boxes))
-      end if
-      ! We assumed the top of the surface layer to be photo_slab_max
-      boxes_top_z_coord = photo_layers_tops
+    max_gap = 0.0_dp
+    if (num_atoms .gt. 1) max_gap = maxval(z_gaps(1:num_atoms - 1))
 
-      if (.not. allocated(atoms_per_box)) then
-        allocate (atoms_per_box(num_boxes))
-      end if
-      atoms_per_box = 0
+    if (num_atoms .eq. 1 .or. max_gap .lt. min_layer_gap) then
+      ! All atoms at essentially the same height, so the thickness cannot be
+      ! inferred and has to come from the user's slab bounds.
+      single_layer = .true.
+      layer_tol = huge(1.0_dp)
     else
-      ! ---------------------------------------------------------------------
-      ! Infer the layers by clustering the atoms in z.
-      !
-      ! Walk down the z-sorted atom list and start a new layer whenever the
-      ! gap to the previous atom exceeds a tolerance taken from the structure
-      ! itself. Because it is the gap that separates layers, rather than an
-      ! absolute grid of cut planes, rumpling inside a layer is absorbed,
-      ! every atom belongs to exactly one layer by construction, and no atom
-      ! can land on a box boundary and be silently dropped.
-      ! ---------------------------------------------------------------------
-      allocate (z_gaps(max(num_atoms - 1, 1)), stat=ierr)
-      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of z_gaps failed')
-      z_gaps = 0.0_dp
+      single_layer = .false.
+      ! Typical interlayer spacing = median of the "large" gaps. Gaps below 10%
+      ! of the largest are intra-layer rumpling and are excluded, so a layer
+      ! holding many atoms cannot drag the median towards zero.
+      allocate (large_gaps(num_atoms - 1), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of large_gaps failed')
+      counter = 0
       do atom = 1, num_atoms - 1
-        z_gaps(atom) = atoms_pos_cart_photo(3, atom_order(atom)) - &
-                       atoms_pos_cart_photo(3, atom_order(atom + 1))
+        if (z_gaps(atom) .gt. 0.1_dp*max_gap) then
+          counter = counter + 1
+          large_gaps(counter) = z_gaps(atom)
+        end if
       end do
-
-      max_gap = 0.0_dp
-      if (num_atoms .gt. 1) max_gap = maxval(z_gaps(1:num_atoms - 1))
-
-      if (num_atoms .eq. 1 .or. max_gap .lt. min_layer_gap) then
-        ! All atoms at essentially the same height, so the thickness cannot be
-        ! inferred and has to come from the user's slab bounds.
-        single_layer = .true.
-        layer_tol = huge(1.0_dp)
-      else
-        single_layer = .false.
-        ! Typical interlayer spacing = median of the "large" gaps. Gaps below
-        ! 10% of the largest are intra-layer rumpling and are excluded, so a
-        ! layer holding many atoms (a lateral supercell, where most gaps are
-        ! ~0) cannot drag the median down towards zero.
-        allocate (large_gaps(num_atoms - 1), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of large_gaps failed')
-        counter = 0
-        do atom = 1, num_atoms - 1
-          if (z_gaps(atom) .gt. 0.1_dp*max_gap) then
-            counter = counter + 1
-            large_gaps(counter) = z_gaps(atom)
-          end if
+      do i = 2, counter
+        diff_temp = large_gaps(i)
+        j = i - 1
+        do while (j .ge. 1)
+          if (large_gaps(j) .le. diff_temp) exit
+          large_gaps(j + 1) = large_gaps(j)
+          j = j - 1
         end do
-        ! insertion sort; counter is at most the number of layers, so small
-        do i = 2, counter
-          diff_temp = large_gaps(i)
-          j = i - 1
-          do while (j .ge. 1)
-            if (large_gaps(j) .le. diff_temp) exit
-            large_gaps(j + 1) = large_gaps(j)
-            j = j - 1
-          end do
-          large_gaps(j + 1) = diff_temp
-        end do
-        typical_gap = large_gaps((counter + 1)/2)
-        layer_tol = 0.5_dp*typical_gap
-        deallocate (large_gaps, stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of large_gaps failed')
-      end if
-
-      ! assign every atom to a layer
-      n_layers = 1
-      box_atom(1) = 1
-      do atom = 2, num_atoms
-        if (z_gaps(atom - 1) .gt. layer_tol) n_layers = n_layers + 1
-        box_atom(atom) = n_layers
+        large_gaps(j + 1) = diff_temp
       end do
+      typical_gap = large_gaps((counter + 1)/2)
+      layer_tol = 0.5_dp*typical_gap
+      deallocate (large_gaps, stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of large_gaps failed')
+    end if
 
-      ! mean z of each layer - this, not a global spacing, is what sets the
-      ! box heights, so a relaxed surface layer is handled correctly
-      allocate (layer_centroid(n_layers), atoms_in_layer(n_layers), stat=ierr)
-      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_centroid failed')
-      layer_centroid = 0.0_dp
-      atoms_in_layer = 0
-      do atom = 1, num_atoms
-        i = box_atom(atom)
-        layer_centroid(i) = layer_centroid(i) + atoms_pos_cart_photo(3, atom_order(atom))
-        atoms_in_layer(i) = atoms_in_layer(i) + 1
-      end do
+    allocate (layer_index(num_atoms), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_index failed')
+    n_layers = 1
+    layer_index(1) = 1
+    do atom = 2, num_atoms
+      if (z_gaps(atom - 1) .gt. layer_tol) n_layers = n_layers + 1
+      layer_index(atom) = n_layers
+    end do
+
+    allocate (layer_centroid(n_layers), atoms_in_layer(n_layers), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_centroid failed')
+    layer_centroid = 0.0_dp
+    atoms_in_layer = 0
+    do atom = 1, num_atoms
+      i = layer_index(atom)
+      layer_centroid(i) = layer_centroid(i) + atoms_pos_cart_photo(3, atom_order(atom))
+      atoms_in_layer(i) = atoms_in_layer(i) + 1
+    end do
+    do i = 1, n_layers
+      layer_centroid(i) = layer_centroid(i)/real(atoms_in_layer(i), dp)
+    end do
+
+    ! ---- the three planes that define the slab ------------------------------
+    z_top = photo_slab_max
+    if (single_layer) then
+      ! Nothing beneath a single layer to extrapolate, so the whole slab is the
+      ! one box and bulk_emission returns immediately.
+      z_middle = photo_slab_min
+    else if (layers_from_input .or. photo_slab_middle_set) then
+      z_middle = photo_slab_middle
+    else
+      ! Half the slab, stated geometrically rather than as a layer count. Close
+      ! to the old (n_layers+1)/2 for an evenly spaced slab, and no longer
+      ! dependent on how many layers happen to be present.
+      z_middle = 0.5_dp*(photo_slab_max + photo_slab_min)
+    end if
+    if (z_middle .ge. z_top) &
+      call io_error('Error: analyse_geometry - the bottom of the explicit region is not below '// &
+                    'its top. Check photo_slab_middle against photo_slab_max.')
+    if (z_top .lt. layer_centroid(1)) &
+      call io_error('Error: analyse_geometry - the slab surface lies below the topmost layer. '// &
+                    'Check photo_slab_max, or photo_layers_tops(1), against the structure.')
+
+    ! ---- the box boundaries -------------------------------------------------
+    if (layers_from_input) then
+      num_boxes = size(photo_layers_tops, 1)
+    else if (single_layer) then
+      num_boxes = 1
+    else
+      num_boxes = 0
       do i = 1, n_layers
-        layer_centroid(i) = layer_centroid(i)/real(atoms_in_layer(i), dp)
+        if (layer_centroid(i) .gt. z_middle) num_boxes = num_boxes + 1
       end do
+      if (num_boxes .lt. 1) &
+        call io_error('Error: analyse_geometry - the bottom of the explicit region lies above '// &
+                      'every layer, so no layer would be treated explicitly.')
+      if (num_boxes .ge. n_layers) &
+        call io_error('Error: analyse_geometry - the bottom of the explicit region lies below '// &
+                      'every layer, so nothing is left for the bulk extrapolation to stand '// &
+                      'for. It must leave at least one layer beneath it.')
+      ! Snap the last boundary to the same midpoint rule as the others. Without
+      ! this the deepest box is truncated wherever photo_slab_middle happens to
+      ! fall, so its height -- and therefore its volume, its epsilon and its
+      ! optical constants -- depends on the exact value rather than on the
+      ! material. photo_slab_middle then does what it says: it selects which
+      ! layer is the last explicit one.
+      z_middle = 0.5_dp*(layer_centroid(num_boxes) + layer_centroid(num_boxes + 1))
+    end if
 
-      ! Where does the explicitly treated region end and the bulk extrapolation
-      ! begin? photo_slab_middle says so directly: every layer whose centroid
-      ! lies above it is treated explicitly. Without it the code falls back to
-      ! keeping the top half of the layers, which is thickness-dependent -- a
-      ! 5-layer slab treats 3 and an 11-layer slab 6, so the boundary between two
-      ! different approximations moves with the slab -- and composition-blind,
-      ! which at an interface can leave the deepest explicit box made of the film
-      ! and have bulk_emission repeat the film downwards as the substrate.
-      if (single_layer) then
-        num_boxes = 1
-      else if (photo_slab_middle_set) then
-        num_boxes = 0
-        do i = 1, n_layers
-          if (layer_centroid(i) .gt. photo_slab_middle) num_boxes = num_boxes + 1
+    allocate (box_boundaries(0:num_boxes), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_boundaries failed')
+    box_boundaries(0) = z_top
+    box_boundaries(num_boxes) = z_middle
+    if (layers_from_input) then
+      do i = 1, num_boxes - 1
+        box_boundaries(i) = photo_layers_tops(i + 1)
+      end do
+    else
+      do i = 1, num_boxes - 1
+        box_boundaries(i) = 0.5_dp*(layer_centroid(i) + layer_centroid(i + 1))
+      end do
+    end if
+
+    if (.not. allocated(box_heights)) then
+      allocate (box_heights(num_boxes), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_heights failed')
+    end if
+    if (.not. allocated(box_volumes)) then
+      allocate (box_volumes(num_boxes), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_volumes failed')
+    end if
+    if (.not. allocated(boxes_top_z_coord)) then
+      allocate (boxes_top_z_coord(num_boxes), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of boxes_top_z_coord failed')
+    end if
+    if (.not. allocated(atoms_per_box)) then
+      allocate (atoms_per_box(num_boxes), stat=ierr)
+      if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atoms_per_box failed')
+    end if
+
+    do i = 1, num_boxes
+      box_heights(i) = box_boundaries(i - 1) - box_boundaries(i)
+      boxes_top_z_coord(i) = box_boundaries(i - 1)
+      if (box_heights(i) .le. 0.0_dp) &
+        call io_error('Error: analyse_geometry - the box boundaries do not decrease. Check '// &
+                      'photo_layers_tops, and that photo_slab_middle lies below the last of them.')
+    end do
+    box_volumes = box_heights*cell_area
+    slab_middle_ref = z_middle
+    slab_half_height = z_top - z_middle
+
+    ! ---- the two lengths that are not box heights ---------------------------
+    allocate (layer_gap(max(num_boxes - 1, 1)), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_gap failed')
+    layer_gap = 0.0_dp
+    do i = 1, min(num_boxes - 1, n_layers - 1)
+      layer_gap(i) = layer_centroid(i) - layer_centroid(i + 1)
+    end do
+
+    if (single_layer .or. n_layers .le. num_boxes) then
+      bulk_repeat = box_heights(num_boxes)
+    else
+      ! Median of the spacings at and below the explicit region: that is the
+      ! substrate's repeat, and it is what the bulk extrapolation walks in.
+      ! z_gaps is reused as scratch here, its clustering job being done.
+      counter = 0
+      do i = max(num_boxes, 1), n_layers - 1
+        counter = counter + 1
+        z_gaps(counter) = layer_centroid(i) - layer_centroid(i + 1)
+      end do
+      do i = 2, counter
+        diff_temp = z_gaps(i)
+        j = i - 1
+        do while (j .ge. 1)
+          if (z_gaps(j) .le. diff_temp) exit
+          z_gaps(j + 1) = z_gaps(j)
+          j = j - 1
         end do
-        if (num_boxes .lt. 1) &
-          call io_error('Error: analyse_geometry - photo_slab_middle lies above every layer, '// &
-                        'so no layer would be treated explicitly. It marks where the explicit '// &
-                        'region ends, not where the slab begins.')
-        if (num_boxes .ge. n_layers) &
-          call io_error('Error: analyse_geometry - photo_slab_middle lies below every layer, '// &
-                        'so nothing is left for the bulk extrapolation to stand for. It must '// &
-                        'leave at least one layer beneath it.')
-      else
-        num_boxes = (n_layers + 1)/2
-      end if
+        z_gaps(j + 1) = diff_temp
+      end do
+      bulk_repeat = z_gaps((counter + 1)/2)
+    end if
 
-      if (.not. allocated(box_heights)) then
-        allocate (box_heights(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_heights failed')
+    ! ---- put the atoms in their boxes ---------------------------------------
+    ! Scanning from the top means an atom sitting exactly on a shared plane goes
+    ! to the upper box rather than being claimed twice or dropped. Anything below
+    ! z_middle keeps num_boxes+1 and belongs to the bulk.
+    box_atom = num_boxes + 1
+    atoms_per_box = 0
+    do atom = 1, num_atoms
+      current_top = atoms_pos_cart_photo(3, atom_order(atom))
+      if (current_top .gt. z_top) then
+        if (on_root) write (stdout, '(1x,a,i0,a,f12.7,a,f12.7)') &
+          'Error: atom ', atom_order(atom), ' at z = ', current_top, &
+          ' lies above the slab surface at z = ', z_top
+        call io_error('Error: analyse_geometry - an atom lies above the slab surface. Check '// &
+                      'photo_slab_max, or photo_layers_tops(1), against the structure.')
       end if
-      if (.not. allocated(box_volumes)) then
-        allocate (box_volumes(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_volumes failed')
-      end if
-      if (.not. allocated(boxes_top_z_coord)) then
-        allocate (boxes_top_z_coord(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of boxes_top_z_coord failed')
-      end if
-      if (.not. allocated(atoms_per_box)) then
-        allocate (atoms_per_box(num_boxes), stat=ierr)
-        if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of atoms_per_box failed')
-      end if
+      do i = 1, num_boxes
+        if (current_top .le. box_boundaries(i - 1) .and. current_top .ge. box_boundaries(i)) then
+          box_atom(atom) = i
+          atoms_per_box(i) = atoms_per_box(i) + 1
+          exit
+        end if
+      end do
+    end do
 
-      if (single_layer) then
-        box_heights = photo_slab_max - photo_slab_min
-        boxes_top_z_coord(1) = photo_slab_max
-      else
-        ! height of a box = centroid spacing to the layer below it
-        do i = 1, num_boxes
-          box_heights(i) = layer_centroid(i) - layer_centroid(i + 1)
-        end do
-        ! top of a box = midway between its centroid and the layer above
-        boxes_top_z_coord(1) = layer_centroid(1) + 0.5_dp*box_heights(1)
-        do i = 2, num_boxes
-          boxes_top_z_coord(i) = 0.5_dp*(layer_centroid(i - 1) + layer_centroid(i))
-        end do
-      end if
-      box_volumes = box_heights*cell_area
-
-      ! bottom of the deepest explicit box - where the bulk extrapolation starts
-      slab_middle_ref = boxes_top_z_coord(num_boxes) - box_heights(num_boxes)
-
+    if (.not. layers_from_input) then
       ! ----------------------------------------------------------------------
       ! Can the inferred-layer model describe this structure at all?
       !
@@ -571,7 +641,7 @@ contains
       do atom = 1, num_atoms
         do i = 1, n_species_seen
           if (trim(species_seen(i)) .eq. trim(atoms_label_tmp(atom_order(atom)))) then
-            layer_species_count(i, box_atom(atom)) = layer_species_count(i, box_atom(atom)) + 1
+            layer_species_count(i, layer_index(atom)) = layer_species_count(i, layer_index(atom)) + 1
           end if
         end do
       end do
@@ -648,42 +718,16 @@ contains
 
       deallocate (layer_species_count, species_seen, stat=ierr)
       if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of the composition check arrays failed')
-
-      atoms_per_box = 0
-      do i = 1, num_boxes
-        atoms_per_box(i) = atoms_in_layer(i)
-      end do
-
-      deallocate (z_gaps, layer_centroid, atoms_in_layer, stat=ierr)
-      if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of clustering arrays failed')
     end if
 
-    ! Put each of the atoms into a box. The inferred-layer path above has
-    ! already done this as part of the clustering; only the user-supplied
-    ! layer tops still need atoms sorted into the given boundaries.
-    if (layers_from_input) then
-      do i = 1, num_boxes
-        counter = 0
-        diff_top = boxes_top_z_coord(i)
-        diff_bottom = boxes_top_z_coord(i) - box_heights(i)
-        do atom = 1, num_atoms
-          if (atoms_pos_cart_photo(3, atom_order(atom)) .gt. diff_bottom .and. &
-              atoms_pos_cart_photo(3, atom_order(atom)) .lt. diff_top) then
-            counter = counter + 1
-            box_atom(atom) = i
-          end if
-        end do
-        atoms_per_box(i) = counter
-      end do
-    end if
+    deallocate (box_boundaries, layer_index, z_gaps, layer_centroid, atoms_in_layer, stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of the geometry work arrays failed')
 
     max_atoms = sum(atoms_per_box)
 
     ! An empty box divides by zero in the optics and leaves a hole in the
-    ! layer-by-layer light attenuation; an atom that was assigned to no box at
-    ! all keeps box_atom = 1000 and would index I_layer out of bounds. Both
-    ! mean the supplied boundaries do not match the structure, so stop with a
-    ! message rather than silently produce nonsense.
+    ! layer-by-layer light attenuation, and it means the supplied boundaries do
+    ! not match the structure. Stop rather than silently produce nonsense.
     do i = 1, num_boxes
       if (atoms_per_box(i) .eq. 0) then
         if (on_root) write (stdout, '(1x,a,i0,a,i0,a)') &
@@ -692,34 +736,10 @@ contains
                       'or photo_slab_min/photo_slab_max against the structure.')
       end if
     end do
-    do atom = 1, max_atoms
-      if (box_atom(atom) .gt. num_boxes) then
-        if (on_root) write (stdout, '(1x,a,i0,a,f12.7)') &
-          'Error: atom ', atom_order(atom), ' was not assigned to any layer/box, z = ', &
-          atoms_pos_cart_photo(3, atom_order(atom))
-        call io_error('Error: analyse_geometry - atom outside every layer/box. Check the slab bounds.')
-      end if
-    end do
 
-    ! We want to artifically set the box of the bulk slab to num_boxes + 1
-    ! since we later use this to access I_layer in the QE calculation
+    ! The bulk slab is given the artificial box index num_boxes + 1, which the QE
+    ! calculation uses to index I_layer.
     box_atom(max_atoms + 1) = num_boxes + 1
-
-    ! The confinement length that replaces the k_z sub-cell length everywhere in
-    ! the photoemission path. It is a thickness, so it does not move when the
-    ! slab is translated in the cell.
-    ! photo_slab_middle means the same thing in both modes -- the bottom of the
-    ! explicitly treated region -- so it defines this length in both when it is
-    ! given. Only when it is absent does the structural fallback apply.
-    if (layers_from_input .or. photo_slab_middle_set) then
-      slab_half_height = photo_slab_max - photo_slab_middle
-    else
-      slab_half_height = photo_slab_max - slab_middle_ref
-    end if
-    if (slab_half_height .le. 0.0_dp) then
-      call io_error('Error: analyse_geometry - the inferred slab half height is not positive. '// &
-                    'Check photo_slab_max against photo_slab_min/photo_slab_middle.')
-    end if
 
     if (on_root) then
       ! Only the upper and lower surface have been given (SLAB_MODE_BOUNDS)
@@ -767,6 +787,7 @@ contains
         write (stdout, 227) '|  Volume of box for layer selection (Ang^3) :           ', box_volumes(1), '      |'
       end if
       write (stdout, 229) '|  Slab confinement length        (Ang)   :         ', slab_half_height, '|'
+      write (stdout, 229) '|  Bulk repeat spacing            (Ang)   :         ', bulk_repeat, '|'
       write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
     end if
 226 format(1x, a23, I12, 1x, a25, 1x, I12, a4)
@@ -1506,11 +1527,10 @@ contains
     !
     ! The step from the atoms of layer box-1 to those of layer box crosses the
     ! material lying between them, which is not the box the light arrives in. The
-    ! boundary between two boxes is the midpoint of their centroids
-    ! (boxes_top_z_coord above), and box_heights(i) is the centroid spacing from
-    ! layer i to layer i+1, so the step covers half of box-1 and half of box, each
-    ! of length box_heights(box-1)/2. Hence the mean of the two absorption
-    ! coefficients over that one spacing.
+    ! step is layer_gap(box-1), the spacing between the two layers' centroids,
+    ! and the boundary between the boxes lies inside it, so the light crosses part
+    ! of box-1 and part of box. Hence the mean of the two absorption coefficients
+    ! over that one spacing.
     !
     ! This is not a no-op for a geometrically uniform slab: the boxes carry
     ! different projected optical responses, so the surface layer absorbs
@@ -1522,7 +1542,7 @@ contains
         do i = 1, number_energies
           I_layer(box, i) = I_layer(box - 1, i)* &
                             exp(-(0.5_dp*(absorp_photo(box - 1, i) + absorp_photo(box, i)) &
-                                  *box_heights(box - 1)*1E-10))
+                                  *layer_gap(box - 1)*1E-10))
           if (I_layer(box, i) .lt. 0.0_dp) I_layer(box, i) = 0.0_dp
         end do
       end do
@@ -2272,9 +2292,9 @@ contains
 
     time0 = io_time()
     if (index(photo_imfp_model, 'layers') .gt. 0) then
-      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/box_heights(num_boxes))
+      num_layers = int((atom_imfp(max_atoms)*photo_bulk_cutoff)/bulk_repeat)
     else if (index(photo_imfp_model, 'const') .gt. 0) then
-      num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/box_heights(num_boxes))
+      num_layers = int((photo_imfp_value(1)*photo_bulk_cutoff)/bulk_repeat)
     else if (index(photo_imfp_model, 'cu_curve') .gt. 0) then
       ! Calculate the emission probability for at most 1000 layers,
       ! since the propagation IMFPs for low energy electrons can be
@@ -2282,18 +2302,22 @@ contains
       band_imfp_max = maxval(band_imfp)
       call comms_reduce(band_imfp_max, 1, 'MAX')
       call comms_bcast(band_imfp_max, 1)
-      num_layers = min(1000, int((band_imfp_max*photo_bulk_cutoff)/box_heights(num_boxes)))
+      num_layers = min(1000, int((band_imfp_max*photo_bulk_cutoff)/bulk_repeat))
     end if
 
     allocate (bulk_light_tmp(num_layers), stat=ierr)
     if (ierr /= 0) call io_error('Error: bulk_emission - allocation of bulk_light_tmp failed')
     bulk_light_tmp = 0.0_dp
 
+    ! Every step below the explicit region is through another repeat of the same
+    ! substrate, so one coefficient and one spacing -- bulk_repeat, not the height
+    ! of the deepest box, which is only the distance left between the last
+    ! boundary and the middle of the slab.
     bulk_light_tmp(1) = I_layer(box_atom(max_atoms), current_photo_energy_index)* &
-                        exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_heights(num_boxes)*1E-10))
+                        exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*bulk_repeat*1E-10))
     do i = 2, num_layers
       bulk_light_tmp(i) = bulk_light_tmp(i - 1)* &
-                          exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*box_heights(num_boxes)*1E-10))
+                          exp(-(absorp_photo(box_atom(max_atoms), current_photo_energy_index)*bulk_repeat*1E-10))
     end do
 
     if ((index(photo_imfp_model, 'layers') .gt. 0) .or. (index(photo_imfp_model, 'const') .gt. 0)) then
@@ -2303,7 +2327,7 @@ contains
             do n_eigen = 1, nbands
               do gdx = 1, photo_gkmax
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/ &
+                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*bulk_repeat)/ &
                               cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/atom_imfp(max_atoms)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-230) is ~1E-100, this should be more than enough precision.
@@ -2324,7 +2348,7 @@ contains
             do n_eigen = 1, nbands
               do gdx = 1, photo_gkmax
                 if (cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad) .gt. 0.0_dp) then
-                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/ &
+                  exponent = ((new_atom_coordinates(3, atom_order(max_atoms)) - i*bulk_repeat)/ &
                               cos(theta_internal(gdx, n_eigen, N_spin, N_k)*deg_to_rad))/band_imfp(n_eigen, N_spin, N_k)
                   ! This makes sure, that exp(exponent) does not underflow the dp fp value.
                   ! As exp(-230) is ~1E-100, this should be more than enough precision.
@@ -2352,7 +2376,7 @@ contains
       ! write out bulk_light_tmp
       if (num_layers .lt. 6) then
         do i = 1, num_layers
-          exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/atom_imfp(max_atoms)
+          exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*bulk_repeat)/atom_imfp(max_atoms)
           ! This makes sure, that exp(exponent) does not underflow the dp fp value.
           ! As exp(-230) is ~1E-100, this should be more than enough precision.
           if (exponent .gt. -575.0_dp) then
@@ -2364,7 +2388,7 @@ contains
         end do
       else
         do i = 1, num_layers
-          exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*box_heights(num_boxes))/atom_imfp(max_atoms)
+          exponent = (new_atom_coordinates(3, atom_order(max_atoms)) - i*bulk_repeat)/atom_imfp(max_atoms)
           ! This makes sure, that exp(exponent) does not underflow the dp fp value.
           ! As exp(-230) is ~1E-100, this should be more than enough precision.
           if (exponent .gt. -230.0_dp) then
@@ -3247,7 +3271,7 @@ contains
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
       if (calculate_bulk) then
-        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/box_heights(num_boxes))**2)*step(3)
+        sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/bulk_repeat)**2)*step(3)
       else
         sub_cell_length(3) = sqrt(recip_lattice(3, 1)**2 + recip_lattice(3, 2)**2 + (pi/slab_half_height)**2)*step(3)
       end if
@@ -7089,6 +7113,11 @@ contains
     if (allocated(absorp_photo)) then
       deallocate (absorp_photo, stat=ierr)
       if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate absorp_photo')
+    end if
+
+    if (allocated(layer_gap)) then
+      deallocate (layer_gap, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate layer_gap')
     end if
 
     if (allocated(atom_order)) then
