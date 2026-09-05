@@ -710,7 +710,7 @@ contains
 
     integer :: tmprob_unit, i, ib, jb, is, ik, inodes, ierr
     real(kind=dp) :: time0, time1, file_version
-    real(kind=dp), parameter :: file_ver = 1.0_dp
+    real(kind=dp), parameter :: file_ver = 2.0_dp
     character(filename_len) :: tmcoeff_filename
 
     time0 = io_time()
@@ -725,6 +725,18 @@ contains
       read (tmprob_unit) file_version
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of tmprob_bin file. Update optados!')
+      ! Version 1 held the UNNORMALISED surface transmission probability. The
+      ! values are not on the same scale -- measured on a 5-layer Cu(100) slab
+      ! with the ground state held fixed, so that the code was the only
+      ! variable, they differ by up to a factor of 4.03 (median 1.15). Reading
+      ! one would give a quietly wrong quantum efficiency, so refuse it. The old
+      ! check only rejected files NEWER than expected, which is the direction
+      ! that cannot silently corrupt an answer.
+      if (file_version .lt. file_ver - 0.001_dp) then
+        write (stdout, *) 'tmprob_bin file version:', file_version, ' expected:', file_ver
+        write (stdout, *) 'Version 1 holds an unnormalised transmission probability.'
+        call io_error('Error: .tmprob_bin is version 1; regenerate with a current CASTEP')
+      end if
       read (tmprob_unit) tmprob_file_header
       if (iprint > 1) write (stdout, '(1x,a)') trim(tmprob_file_header)
     end if
@@ -799,7 +811,7 @@ contains
 
     integer :: photo_gkgrid_unit, i, gdx, ib, is, ik, inodes, ierr, max_gkgrid
     real(kind=dp) :: time0, time1, file_version
-    real(kind=dp), parameter :: file_ver = 1.0_dp
+    real(kind=dp), parameter :: file_ver = 2.0_dp
     character(filename_len) :: gkgrid_filename
 
     time0 = io_time()
@@ -815,6 +827,14 @@ contains
       read (photo_gkgrid_unit) max_gkgrid
       if ((file_version - file_ver) > 0.001_dp) &
         call io_error('Error: Trying to read newer version of gkgrid_bin file. Update optados!')
+      ! Version 1 held G+k weights that were not normalised by the plane-wave
+      ! norm. Same reasoning as tmprob_bin above: the values are on a different
+      ! scale, and nothing else in the file says so.
+      if (file_version .lt. file_ver - 0.001_dp) then
+        write (stdout, *) 'gkgrid_bin file version:', file_version, ' expected:', file_ver
+        write (stdout, *) 'Version 1 holds unnormalised G+k weights.'
+        call io_error('Error: .gkgrid_bin is version 1; regenerate with a current CASTEP')
+      end if
       read (photo_gkgrid_unit) photo_gkgrid_file_header
       if (iprint > 1) write (stdout, '(1x,a)') trim(photo_gkgrid_file_header)
     end if
