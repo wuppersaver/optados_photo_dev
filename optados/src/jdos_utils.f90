@@ -206,15 +206,16 @@ contains
       end if
     end if
 
-    jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing))
-    jdos_max_energy = jdos_nbins*jdos_spacing
+    ! One bin per jdos_spacing, plus the bin at zero.
+    jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing)) + 1
+    jdos_max_energy = real(jdos_nbins - 1, dp)*jdos_spacing
 
     allocate (E(1:jdos_nbins), stat=ierr)
     if (ierr /= 0) call io_error("Error: jdos_utils, setup_energy_scale: cannot allocate E")
 
-    delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
+    delta_bins = jdos_spacing
     do idos = 1, jdos_nbins
-      E(idos) = real(idos - 1, dp)*delta_bins
+      E(idos) = real(idos - 1, dp)*jdos_spacing
     end do
 
     if (on_root .and. (iprint > 2)) then
