@@ -22,7 +22,40 @@ kpoint_mp_grid :   9 9 1
 #spectral_kpoint_mp_grid : 9 9 1
 
 %BLOCK spectral_kpoints_list
--0.33333333 -0.33333333  0.00000000  0.44444444
-0.00000000 -0.33333333  0.00000000  0.44444444
-0.00000000  0.00000000  0.00000000  0.11111112
+! The five k-points of the 9x9x1 irreducible wedge that actually emit at
+! hv = 6 eV. Emission needs hbar^2 k_par^2/2m < hv - work_function, which at
+! hv = 6 eV and phi = 4.2202 eV is |k_par| < 0.683 1/Ang. The ten wedge points
+! outside that cone contribute EXACTLY zero, so dropping them costs nothing and
+! saves two thirds of the fixture. Measured shares of the QE on the full wedge:
+!
+!     (-1/9,   0  )  |k| = 0.270 1/Ang    2.3 %
+!     (-1/9,  1/9 )  |k| = 0.382 1/Ang   77.0 %
+!     (-1/9,  2/9 )  |k| = 0.605 1/Ang   13.1 %
+!     ( 0  , -2/9 )  |k| = 0.541 1/Ang    7.5 %
+!     ( 0  ,   0  )  |k| = 0.000 1/Ang    0.2 %   <- Gamma, and the ONLY point
+!                                                    the previous 3x3x1 list
+!                                                    sampled, which is why that
+!                                                    fixture exercised neither
+!                                                    the transverse momentum nor
+!                                                    the symmetry star
+!
+! WEIGHTS. In the 9x9x1 wedge these five carry 4/81, 4/81, 8/81, 4/81, 1/81,
+! summing to 7/27. CASTEP requires spectral weights to sum to one
+! (cell_read_spectral_data aborts otherwise), so they are renormalised to
+! 4/21, 4/21, 8/21, 4/21, 1/21. That preserves the relative weight of the five
+! points exactly and rescales the whole sum by 27/7 = 3.857.
+!
+! The QE this produces is therefore DETERMINISTIC BUT NOT PHYSICAL, by
+! construction and on purpose. It is not the converged value and is not meant to
+! be: the optics is sampled on these five points too, so it does not reproduce
+! the full-wedge number either. What a regression test needs is that the k-point
+! loop, the weights, the transverse momentum, the escape cone, the angular
+! acceptance and the symmetry star all do real work -- none of which happens at
+! Gamma alone. Do not "fix" these weights, and do not compare the QE with a
+! converged calculation.
+-0.11111111 +0.00000000 +0.00000000  0.19047619
+-0.11111111 +0.11111111 +0.00000000  0.19047619
+-0.11111111 +0.22222222 +0.00000000  0.38095238
++0.00000000 -0.22222222 +0.00000000  0.19047619
++0.00000000 +0.00000000 +0.00000000  0.04761905
 %ENDBLOCK spectral_kpoints_list

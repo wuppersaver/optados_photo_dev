@@ -12,7 +12,7 @@ SMEARING_WIDTH: 300.0 K
 
 geom_force_tol : 0.005
 
-SPECTRAL_TASK: All
+SPECTRAL_TASK: PHOTOOPTICS
 MIXING_SCHEME: Pulay
 
 WRITE_FORMATTED_POTENTIAL: TRUE
@@ -23,6 +23,15 @@ write_cell_structure : T
 write_cif_structure  : T
 
 IPRINT : 1
+
+! The one-step model looks the coherency tensor up at the FREE ELECTRON final
+! state energy. For the topmost occupied band at hv = 6 eV that is 2.04 eV, and
+! the window is shifted down by the Fermi energy because
+! fem_energy_info(2) = SPECTRAL_FEM_EF_MIN + E_F. A nominal EF_MAX of 3 would
+! therefore only reach 1.94 eV and make_foptical_weights aborts. 15 gives
+! ef_top = 13.94 eV -- headroom to hv ~ 18 eV -- and 80 energy bins rather than
+! the default 120, which is what pays for going from three k-points to five.
+SPECTRAL_FEM_EF_MAX : 15.0 eV
 
 #%BLOCK devel_code
 #fem_spec: energy_min: 5.9 energy_max: 6 energy_step: 0.01 energy_fermi: **** energy_workfct: 4.2202 new_approach :endfem_spec
