@@ -1,4 +1,4 @@
- OptaDOS: Execution started on 25 Mar 2026 at 22:07:44 
+ OptaDOS: Execution started on  6 Sep 2026 at 12:01:31 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -50,7 +50,7 @@
  |  Adaptive Smearing ratio                   :    0.40000                    |
  |  Finite Bin Correction                     :  True                         |
  |  Shift energy scale so fermi_energy=0      :  False                        |
- |  Fermi energy                              :   -0.98750                    |
+ |  Fermi energy                              :   -1.06150                    |
  |  Compute the band energy                   :  True                         |
  |  Compute the band gap                      :  True                         |
  |  JDOS bin spacing                          :  0.0100   eV                  |
@@ -72,13 +72,13 @@
  |  Layer by Layer IMFP Constants     (Ang)   : Layer values provided by user |
  |                                              will be printed later         |
  |  Bulk cutoff dist. (int. multiple of IMFP) :    10.0                       |
- |  Electric Field Strength    (V/m)          :     0.0000E+00                |
+ |  Electric Field Strength    (V/m)          :     0.0000                    |
  |  Smearing Temperature       (K)            :   300.00                      |
  |  Transverse Momentum Scheme                :     crystal                   |
- |  Theta    - min -           (deg)          :     0.00                      |
- |  Theta    - max -           (deg)          :    90.00                      |
- |  Phi      - min -           (deg)          :     0.00                      |
- |  Phi      - max -           (deg)          :    90.00                      |
+ |  Theta    - centre -        (deg)          :    45.00                      |
+ |  Theta    - half width -    (deg)          :    45.00                      |
+ |  Phi      - centre -        (deg)          :    45.00                      |
+ |  Phi      - half width -    (deg)          :    45.00                      |
  +----------------------------------------------------------------------------+
                  Time to read parameters       0.001 (sec)
              Time to read band energies        0.000 (sec)
@@ -90,22 +90,22 @@
  +----------------------------------------------------------------------------+
   
                               Lattice Vectors (Ang)
-                    a_1     2.519427   0.000000   0.000000
-                    a_2     0.000000   2.519427   0.000000
+                    a_1     2.582173   0.000000   0.000000
+                    a_2     0.000000   2.582173   0.000000
                     a_3     0.000000   0.000000  23.907520
 
                         Reciprocal-Space Vectors (Ang^-1)
-                    b_1     2.493895   0.000000   0.000000
-                    b_2     0.000000   2.493895   0.000000
+                    b_1     2.433294   0.000000   0.000000
+                    b_2     0.000000   2.433294   0.000000
                     b_3     0.000000   0.000000   0.262812
 
-                   Unit Cell Volume:     151.75328  (Ang^3)
+                   Unit Cell Volume:     159.40621  (Ang^3)
 
 
  +----------------------- Electronic Data ------------------------------------+
  |  Number of Bands                           :            65                 |
  |  Grid size                                 :        9 x  9 x  1            |
- |  Number of K-points                        :             4                 |
+ |  Number of K-points                        :             5                 |
  |  Spin-Polarised Calculation                :           False               |
  |  Number of electrons                       :            55.00              |
  +----------------------------------------------------------------------------+
@@ -114,75 +114,92 @@
  +============================================================================+
  |                                                                            |
  +--------------------------- Setting Fermi Energy  --------------------------+
- |                     Fermi energy from user :  -0.9875 eV              <- EfU
+ |                     Fermi energy from user :  -1.0615 eV              <- EfU
  +----------------------------------------------------------------------------+
 
+ |     Layer 3 sits on the explicit/bulk plane; kept explicit                 |
+ !----------------------------------------------------------------------------!
+ ! Warning: the inferred layer spacings vary, from  1.7506 to  1.8008 Ang.    !
+ ! Consecutive boxes then overlap or leave a gap by half that difference,     !
+ ! and their volumes no longer add up to the slab. Give photo_layers_tops     !
+ ! instead if that matters for this structure.                                !
+ !----------------------------------------------------------------------------!
+ |  Explicit region: top half of the inferred layers (no photo_slab_middle)   |
  +------------------------------- Atomic Order  ------------------------------+
  | Atom |  Atom Order  | Box/Layer |         Atom Z-Coordinate (Ang)          |
- |  Cu          1             1                    16.4075200                 |
- |  Cu          2             2                    14.6260160                 |
+ |  Cu          1             1                    16.3959015                 |
+ |  Cu          2             2                    14.6453145                 |
  |  Cu          3             3                    12.8445120                 |
- |  Cu          4                                  11.0630080                 |
- |  Cu          5                                   9.2815040                 |
+ |  Cu          4                                  11.0437095                 |
+ |  Cu          5                                   9.2931224                 |
  +----------------------------------------------------------------------------+
  |  Max number of atoms:           3    Total number of boxes:            3   |
- |  Volume of box for layer selection (Ang^3) :                 11.30812      |
+ |  Volume of box for layer selection (Ang^3) :                 18.41191      |
+ |  Slab confinement length        (Ang)   :                6.33789           |
+ |  Bulk repeat spacing            (Ang)   :                1.75059           |
  +----------------------------------------------------------------------------+
  + Time to calculate Band Energy Info                             0.000 (sec) +
  Reading optical matrix elements from file: Cu100_5L.ome_bin
- Generated by CASTEP23.100 on '19:25:38 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  + Time to read Optical Matrix Elements                           0.001 (sec) +
  Reading pdos weights from file: Cu100_5L.pdos_bin
- Generated by CASTEP23.100 on '22:24:50 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  +--------------------- Starting BOX/Layer  #   1 of   3 ---------------------+
   
   Reading band gradients from file: Cu100_5L.dome_bin
- Generated by CASTEP23.100 on '19:27:02 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  + Time to read band gradients                                    0.000 (sec) +
  +------------------------------ Calculate JDOS ------------------------------+
  +----------------------------------------------------------------------------+
- + Time to calculate Joint Density of States                      0.175 (sec) +
+ + Time to calculate Joint Density of States                      0.113 (sec) +
  +--------------------- Starting BOX/Layer  #   2 of   3 ---------------------+
  +------------------------------ Calculate JDOS ------------------------------+
  +----------------------------------------------------------------------------+
- + Time to calculate Joint Density of States                      0.180 (sec) +
+ + Time to calculate Joint Density of States                      0.112 (sec) +
  +--------------------- Starting BOX/Layer  #   3 of   3 ---------------------+
  +------------------------------ Calculate JDOS ------------------------------+
  +----------------------------------------------------------------------------+
- + Time to calculate Joint Density of States                      0.150 (sec) +
- + Time to calculate Photoemission Optical Properties             0.538 (sec) +
+ + Time to calculate Joint Density of States                      0.110 (sec) +
+ + Time to calculate Photoemission Optical Properties             0.354 (sec) +
  +------------------ Starting Photoemission with  6.0000 eV ------------------+
+ !----------------------------------------------------------------------------!
+ ! Warning: photo_inner_potential is not set, so the refraction at the surface 
+ ! falls back to the work function. That is the barrier measured from the      
+ ! Fermi level rather than from the bottom of the final state band, so it is   
+ ! far too small - roughly 4.3 against 13.5 eV for Cu - and escape depths come 
+ ! out too short. workfct.py prints an estimate to feed the keyword.           
+ !----------------------------------------------------------------------------!
  + Time to calculate Photoemission Angle                          0.000 (sec) +
  +--------------- User Supplied and Calculated IMFP Constants ----------------+
  | Atom | Atom Order | Layer | Layer Thickness | User Input IMFP | Calc. IMFP |
- |  Cu        1          1       0.178150E+001       19.0000       19.0000    |
- |  Cu        2          2       0.178150E+001        6.9000       12.9500    |
- |  Cu        3          3       0.178150E+001        5.3000       10.4000    |
+ |  Cu        1          1       0.276139E+001       19.0000       19.0000    |
+ |  Cu        2          2       0.177569E+001        6.9000       14.2644    |
+ |  Cu        3          3       0.180080E+001        5.3000       11.7173    |
  +----------------------------------------------------------------------------+
  + Time to calculate Photoemission Escape                         0.000 (sec) +
  +---------------------- Bulk Approximation Slab Info ------------------------+
- |     Number Bulk layers =    58                                             |
- |     Vol. per layer     =    11.3081                                        |
- |     Total Volume       =   655.8709                                        |
+ |     Number Bulk layers =    67                                             |
+ |     Vol. per layer     =    12.0071                                        |
+ |     Total Volume       =   804.4732                                        |
  +---- P_esc values for an electron with E = E_fermi and E_transverse = 0 ----+
- |     Layer #   1     I_light =  0.283094E+00  P_esc =  0.598161E+00         |
- |     Layer #   2     I_light =  0.280761E+00  P_esc =  0.503993E+00         |
- |     Layer #   3     I_light =  0.277298E+00  P_esc =  0.424649E+00         |
+ |     Layer #   1     I_light =  0.727687E+00  P_esc =  0.636042E+00         |
+ |     Layer #   2     I_light =  0.720547E+00  P_esc =  0.547774E+00         |
+ |     Layer #   3     I_light =  0.713478E+00  P_esc =  0.471755E+00         |
  |                                   ......                                   |
- |     Layer #  56     I_light =  0.385419E-03  P_esc =  0.484339E-04         |
- |     Layer #  57     I_light =  0.304448E-03  P_esc =  0.408089E-04         |
- |     Layer #  58     I_light =  0.239494E-03  P_esc =  0.343844E-04         |
+ |     Layer #  65     I_light =  0.387172E+00  P_esc =  0.447595E-04         |
+ |     Layer #  66     I_light =  0.383374E+00  P_esc =  0.385479E-04         |
+ |     Layer #  67     I_light =  0.379612E+00  P_esc =  0.331983E-04         |
  +----------------------------------------------------------------------------+
  + Time to calculate Bulk Photoemission                           0.000 (sec) +
  +----------------------------------------------------------------------------+
  Reading transmission probabilities from file: Cu100_5L.tmprob_bin
- Generated by CASTEP23.100 on '19:27:02 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  + Time to read Free electron Matrix Elements                     0.000 (sec) +
  +--------------------------- Calculating 3Step QE ---------------------------+
  +---------------------- Calculate JDOS DELTA FUNCTION -----------------------+
   
   Reading band gradients from file: Cu100_5L.dome_bin
- Generated by CASTEP23.100 on '19:27:02 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  + Time to read band gradients                                    0.000 (sec) +
  +----------------------------------------------------------------------------+
  +----------------------------------------------------------------------------+
@@ -191,7 +208,7 @@
  +---------------------- Calculate JDOS DELTA FUNCTION -----------------------+
   
   Reading band gradients from file: Cu100_5L.dome_bin
- Generated by CASTEP23.100 on '19:27:02 (GMT-0.0) 22nd March 2026'
+ Generated by CASTEP27.100 on '10:14:32 (GMT+1.0) 6th September 2026'
  + Time to read band gradients                                    0.000 (sec) +
  +----------------------------------------------------------------------------+
  +----------------------------------------------------------------------------+
@@ -204,23 +221,23 @@
  +------------------------------ Photoemission -------------------------------+
  +----------------------------------------------------------------------------+
  | Work Function              4.2202 eV      Photon Energy        6.0000 eV   |
- | Effective Work Function    4.2202 eV      Electric Field   0.0000E+00 V/m  |
+ | Effective Work Function    4.2202 eV      Electric Field       0.0000 V/m  |
  | Final State : Bloch State                                                  |
  +----------------------------------------------------------------------------+
  | Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |
- |  Cu          1            1                      0.4636E-004               |
- |  Cu          2            2                      0.2147E-004               |
- |  Cu          3            3                      0.2156E-004               |
- | Bulk                                             0.1153E-003               |
- | Total Quantum Efficiency (electrons/photon):         0.2047E-003           |
- | Weighted Mean Transverse Energy (eV):                0.5165E+000           |
+ |  Cu          1            1                      0.1068E-003               |
+ |  Cu          2            2                      0.4367E-004               |
+ |  Cu          3            3                      0.5142E-004               |
+ | Bulk                                             0.3496E-003               |
+ | Total Quantum Efficiency (electrons/photon):         0.5515E-003           |
+ | Weighted Mean Transverse Energy (eV):                0.7267E+000           |
  +----------------------------------------------------------------------------+
- + Time to calculate Photoemission (step)                         0.002 (sec) +
+ + Time to calculate Photoemission (step)                         0.001 (sec) +
  | End of Photoemission Calculation                                           |
  |                                                                            |
- + Time to calculate Photoemission                                0.541 (sec) +
+ + Time to calculate Photoemission                                0.356 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 25 Mar 2026 at 22:07:44 
+ OptaDOS: Execution complete on  6 Sep 2026 at 12:01:31 
