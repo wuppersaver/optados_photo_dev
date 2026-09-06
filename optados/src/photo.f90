@@ -289,12 +289,12 @@ contains
     ! that represent layers, with a height = interlayer distance
     ! at the middle of the slab. All atoms are then sorted into
     ! these boxes for later use.
-    use od_constants, only: dp, periodic_table_name, deg_to_rad
+    use od_constants, only: dp
     use od_cell, only: num_atoms, atoms_pos_cart_photo, atoms_label_tmp, cell_volume, real_lattice
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
-    use od_parameters, only: photo_imfp_value, photo_slab_max, photo_slab_min, photo_slab_middle, photo_layers_tops, iprint, &
-      photo_slab_mode, SLAB_MODE_LAYERS, photo_slab_middle_set
+    use od_parameters, only: photo_imfp_value, photo_imfp_model, photo_slab_max, photo_slab_min, photo_slab_middle, &
+      photo_layers_tops, iprint, photo_slab_mode, SLAB_MODE_LAYERS, photo_slab_middle_set
     implicit none
     integer :: ierr, atom, counter, i, j, ic, atom_index, first, temp, atom_1, atom_2
     integer :: n_layers, n_species_seen, isp
@@ -311,7 +311,7 @@ contains
     real(kind=dp)                            :: max_gap, typical_gap, layer_tol
     real(kind=dp)                            :: z_middle_tol, wrap_gap
     character(len=78)                        :: box_msg
-    real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid
+    real(kind=dp), allocatable, dimension(:) :: z_gaps, large_gaps, layer_centroid, box_centroid
     integer, allocatable, dimension(:)       :: atoms_in_layer
     logical                                  :: layers_from_input
     ! Below this the atoms are all at the same height and no interlayer
@@ -648,9 +648,7 @@ contains
     allocate (layer_gap(max(num_boxes - 1, 1)), stat=ierr)
     if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of layer_gap failed')
     layer_gap = 0.0_dp
-    do i = 1, min(num_boxes - 1, n_layers - 1)
-      layer_gap(i) = layer_centroid(i) - layer_centroid(i + 1)
-    end do
+    ! Filled once the atoms are in their boxes, from the boxes' own centroids.
 
     if (single_layer .or. n_layers .le. num_boxes) then
       bulk_repeat = box_heights(num_boxes)
@@ -871,6 +869,37 @@ contains
       end if
     end do
 
+    ! ---- the optical path from one layer of atoms to the next ---------------
+    ! The centroid of the atoms actually in each box, not the centroid of the
+    ! inferred layer that happens to carry the same index.
+    !
+    ! The two agree whenever the boxes were inferred, because each box is then
+    ! bounded by the midpoints either side of one layer and so holds exactly that
+    ! layer. They part company as soon as photo_layers_tops groups several planes
+    ! into one box -- which is what that keyword is for, and what the composition
+    ! check above tells the user to do for an interface or a compound. Indexing
+    ! layer_centroid by the box number then took the spacing between two atomic
+    ! planes as the path between two layers: on a stack grouped two planes to a
+    ! box the light was attenuated over half the distance it travels. And where
+    ! the user gave more boxes than the clustering found layers, the old loop
+    ! bound left the tail of layer_gap at zero, so those steps did not attenuate
+    ! at all. atoms_per_box is guaranteed non-zero by the check just above.
+    allocate (box_centroid(num_boxes), stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - allocation of box_centroid failed')
+    box_centroid = 0.0_dp
+    do atom = 1, num_atoms
+      i = box_atom(atom)
+      if (i .le. num_boxes) box_centroid(i) = box_centroid(i) + atoms_pos_cart_photo(3, atom_order(atom))
+    end do
+    do i = 1, num_boxes
+      box_centroid(i) = box_centroid(i)/real(atoms_per_box(i), dp)
+    end do
+    do i = 1, num_boxes - 1
+      layer_gap(i) = box_centroid(i) - box_centroid(i + 1)
+    end do
+    deallocate (box_centroid, stat=ierr)
+    if (ierr /= 0) call io_error('Error: analyse_geometry - deallocation of box_centroid failed')
+
     ! The bulk slab is given the artificial box index num_boxes + 1, which the QE
     ! calculation uses to index I_layer.
     box_atom(max_atoms + 1) = num_boxes + 1
@@ -931,7 +960,17 @@ contains
 
     ! Test if the supplied IMFP list has same length as # of layers
     ! Otherwise, we run out of imfp values for layers
-    if ((size(photo_imfp_value, 1) .gt. 1) .and. &
+    !
+    ! The .gt. 1 clause this used to carry exempted a single value, which is the
+    ! one length that cannot work: calc_electron_esc walks photo_imfp_value(i)
+    ! for i = 1 .. box_atom(atom), up to num_boxes, so on a three layer slab
+    ! 'photo_imfp_value : 19.0' read elements 2 and 3 off the end. A missing
+    ! keyword is worse -- param_read allocates the length it found, so the array
+    ! is size zero and even element 1 is out of bounds. Both were confirmed under
+    ! -fcheck=all; at -O3 they read whatever follows and give a plausible IMFP.
+    ! One value per layer is what the keyword means and what the error already
+    ! says, and photo_imfp_model : const exists for a single value everywhere.
+    if (index(photo_imfp_model, 'layers') .gt. 0 .and. &
         (size(photo_imfp_value, 1) .ne. num_boxes)) then
       call io_error('Error : the # supplied IMFP values does not match the # layers. Check input!')
     end if
@@ -996,40 +1035,65 @@ contains
 
   subroutine calc_photon_energies
     use od_constants, only: dp
-    use od_parameters, only: photo_energy_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy
+    use od_parameters, only: photo_energy_sweep, photo_photon_min, photo_photon_max, jdos_spacing, photo_photon_energy, &
+      jdos_max_energy
     use od_io, only: io_error
     implicit none
-    real(kind=dp)        ::   num_energies, temp
-    integer              ::   ierr, i
+    real(kind=dp)        ::   num_energies, temp, top_energy
+    integer              ::   ierr, i, n_steps
 
     if (photo_energy_sweep) then
-      num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
       if (photo_photon_max - photo_photon_min .lt. 1.0e-12_dp) then
         number_energies = 1
-      else if (mod(num_energies, 1.0_dp) .gt. 1.0E-10_dp) then
-        ! The bounds must span a whole number of jdos_spacing steps, because
-        ! each photon energy is mapped onto a JDOS bin index below.  A spacing
-        ! such as 0.05 has no exact binary representation, so the ratio may sit
-        ! just below an integer rather than on it; only that case is accepted.
-        if (abs(mod(num_energies, 1.0_dp) - 1) .gt. 1.0E-10_dp) &
+      else
+        ! The bounds must span a whole number of jdos_spacing steps, because each
+        ! photon energy is mapped onto a JDOS bin index below.
+        !
+        ! Round to the nearest whole number of steps and then check how far the
+        ! ratio actually is from it. The old form tested mod(ratio, 1) against an
+        ! absolute 1E-10 and truncated with int(), which gets both halves wrong:
+        ! a spacing such as 0.05 or 0.1 has no exact binary representation, so a
+        ! ratio meant to be N comes out as N - 1E-15 -- the test accepted that
+        ! through its second branch, and then int() returned N - 1 and the sweep
+        ! silently dropped photo_photon_max. 0.0 to 2.9 in steps of 0.1 ran 29
+        ! energies ending at 2.8 instead of 30 ending at 2.9. The tolerance is
+        ! relative as well, since the rounding error in the ratio grows with it.
+        num_energies = (photo_photon_max - photo_photon_min)/jdos_spacing
+        n_steps = nint(num_energies)
+        if (abs(num_energies - real(n_steps, dp)) .gt. 1.0E-8_dp*max(1.0_dp, num_energies)) &
           call io_error('Error: calc_photon_energies - given photon sweep min/max values do not give integer # of photon steps')
+        if (n_steps .lt. 1) &
+          call io_error('Error: calc_photon_energies - the photon sweep spans less than one jdos_spacing step')
+        number_energies = n_steps + 1
       end if
-      number_energies = int(num_energies) + 1
+      top_energy = photo_photon_min + real(number_energies - 1, dp)*jdos_spacing
       allocate (index_energy(number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photon_energies - allocation of index_energy failed')
       do i = 1, number_energies
         temp = (i - 1)*jdos_spacing + photo_photon_min
-        ! Account for E = 0.0
-        index_energy(i) = int(temp/jdos_spacing) + 1
+        ! Account for E = 0.0. nint, not int: the grid is E(n) = (n-1)*jdos_spacing
+        ! exactly, and temp/jdos_spacing can land a hair below the integer it is
+        ! meant to be, which int() would round the wrong way by a whole bin.
+        index_energy(i) = nint(temp/jdos_spacing) + 1
       end do
       ! We only have one photon energy to do the calculation for.
     else
       number_energies = 1
+      top_energy = photo_photon_energy
       allocate (index_energy(number_energies), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photon_energies - allocation of index_energy failed')
       ! Account for E = 0.0
-      index_energy(number_energies) = int(photo_photon_energy/jdos_spacing) + 1
+      index_energy(number_energies) = nint(photo_photon_energy/jdos_spacing) + 1
     end if
+
+    ! The photon energy indexes the JDOS grid, which reaches jdos_max_energy. Off
+    ! the end of it there is no delta function and no absorption coefficient to
+    ! read, only whatever lies past the end of those arrays -- silently, since
+    ! nothing else checks. jdos_max_energy is negative here when the user left it
+    ! for setup_energy_scale to work out, and that value is not known yet.
+    if (jdos_max_energy .gt. 0.0_dp .and. top_energy .gt. jdos_max_energy + 1.0E-10_dp) &
+      call io_error('Error: calc_photon_energies - the highest photon energy is above jdos_max_energy, '// &
+                    'so it falls outside the JDOS energy grid. Raise jdos_max_energy.')
   end subroutine calc_photon_energies
 
   subroutine make_pdos_weights_atoms
@@ -1206,6 +1270,39 @@ contains
 
   end subroutine make_pdos_weights_atoms
 
+  !===============================================================================
+  pure function pdos_fraction(weight, total) result(frac)
+    !*===============================================================================
+    ! The share of a band's projected weight that sits on one atom or in one box.
+    !
+    ! total is pdos_weights_k_band: the same per-atom weights summed over every
+    ! atom in the cell, each clamped at zero first. So total is a sum of
+    ! non-negative terms and can only vanish when every one of them does, which
+    ! makes weight zero as well and the fraction 0/0.
+    !
+    ! That is not hypothetical. The projection is onto the atomic basis, and the
+    ! free-electron-like states a photoemission run carries have almost no
+    ! overlap with it: on the 65 band Cu(100) test case the total falls from
+    ! ~1.0 across the 3d/4s manifold to 7.3E-06 by band 49, and the clamp makes
+    ! an exactly zero total reachable as soon as every orbital projection for a
+    ! band comes out non-positive. One such band put a NaN into
+    ! temp_contribution; multiplying by a vanishing Fermi factor does not clear
+    ! it, it propagates through the sum into total_qe, and total_qe .gt. 0 is
+    ! false for a NaN -- so the run printed NaN for the QE and zero for the MTE.
+    !
+    ! A band with no weight anywhere contributes nothing, so zero is the answer
+    ! rather than a fudge. calc_photo_optics has always taken the same view, by
+    ! cycling on the same test.
+    !===============================================================================
+    use od_constants, only: dp
+    implicit none
+    real(kind=dp), intent(in) :: weight, total
+    real(kind=dp)             :: frac
+
+    frac = 0.0_dp
+    if (total .gt. 0.0_dp) frac = weight/total
+  end function pdos_fraction
+
   subroutine calc_photo_optics
     !! This subroutine calculates the projected optical characteristics for each layer.
     use od_optics, only: make_weights, calc_epsilon_2, calc_epsilon_1, calc_refract, calc_absorp, calc_reflect, &
@@ -1218,7 +1315,6 @@ contains
     use od_comms, only: comms_bcast, on_root, my_node_id
     use od_parameters, only: optics_intraband, jdos_spacing, iprint, jdos_max_energy, photo_model
     use od_dos_utils, only: dos_utils_calculate_at_e
-    use od_constants, only: epsilon_0, e_charge
     implicit none
     real(kind=dp), allocatable, dimension(:, :, :, :) :: dos_matrix_weights
     real(kind=dp), allocatable, dimension(:, :) :: weighted_dos_at_e
@@ -1393,7 +1489,7 @@ contains
     if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate projected_matrix_weights')
     if (index(photo_model, '3step') .gt. 0 .or. index(photo_model, 'dosds') .gt. 0) then
       ! Flip the kpt and spin indices in the matrix_weights array for contiguous memory access later
-      allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)))
+      allocate (photo_matrix_weights(nbands, nbands, nspins, num_kpoints_on_node(my_node_id)), stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_photo_optics - allocation of photo_matrix_weights failed')
 
       do N_spin = 1, nspins
@@ -1405,7 +1501,7 @@ contains
     ! get rid of the old, now unnecessary array - either because we have the 1step model,
     ! or we have transferred the relevant data to photo_matrix_weights
     deallocate (matrix_weights, stat=ierr)
-    if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
+    if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate matrix_weights')
 
     time1 = io_time()
     if (on_root .and. iprint .gt. 1) then
@@ -1581,7 +1677,7 @@ contains
   subroutine effective_wf
     use od_parameters, only: photo_work_function, photo_elec_field
     use od_electronic, only: efermi
-    use od_constants, only: pi, epsilon_0, e_charge, j_to_ev, ev_to_j
+    use od_constants, only: pi, epsilon_0, e_charge, ev_to_j
     use od_io, only: stdout, io_error
     use od_comms, only: on_root
     implicit none
@@ -1717,7 +1813,8 @@ contains
   end subroutine calc_field_emission
 
   subroutine compute_G(barrier_eV, F, G)
-    use od_io, only: stdout
+    use od_io, only: stdout, io_error
+    use od_comms, only: on_root
     use od_constants, only: dp, pi, e_mass, h_planck, ev_to_j, e_charge, epsilon_0
     implicit none
     real(kind=dp), intent(in)  :: barrier_eV, F
@@ -1736,10 +1833,19 @@ contains
     ! analytic turning points
     disc = phi*phi - (e_charge**3*F)/(4.0_dp*pi*epsilon_0)
 
+    ! calc_field_emission only calls this when the scaled barrier field is below
+    ! one, which is the same condition as disc >= 0 -- but it tests it in eV^2
+    ! and this tests it in J^2, so a value on the boundary can round through.
+    ! Reaching here was a bare stop, with the reason written to a stdout that is
+    ! not open off root: one rank vanished silently and the rest hung on the
+    ! next collective. io_error is what every other failure in the module uses.
     if (disc < 0.0_dp) then
-      write (stdout, *) 'No real turning points: discriminant < 0'
-      write (stdout, *) 'discriminant = ', disc
-      stop
+      if (on_root) then
+        write (stdout, *) 'No real turning points: discriminant < 0'
+        write (stdout, *) 'discriminant = ', disc, ' barrier (eV) = ', barrier_eV, ' field = ', F
+      end if
+      call io_error('Error: compute_G - the Schottky-Nordheim barrier has no real turning '// &
+                    'points, so the field emission integral is undefined. Lower photo_elec_field.')
     end if
 
     root = sqrt(disc)
@@ -1919,6 +2025,62 @@ contains
     frac = real(n_accept, dp)/real(n_symm, dp)
   end function phi_star_fraction
 
+  !===============================================================================
+  pure function photo_n_symm() result(n_symm)
+    !*===============================================================================
+    ! How many in-plane symmetry operations to walk, never fewer than one.
+    !
+    ! num_crystal_symmetry_operations is zero when the -out.cell carries no
+    ! symmetry_ops block. cell_read_cell leaves it that way without a word, and
+    ! only the .sym path in cell_get_symmetry says anything. Every routine that
+    ! places a k-point's symmetry star then ran do nsymm_op = 1, 0 -- a zero-trip
+    ! loop -- and wrote out a map or a tensor of nothing but zeros, with no error;
+    ! the k_prefactor divisions by the same count were never reached to fail.
+    !
+    ! Every crystal has the identity whether or not the file lists it, so that is
+    ! the right stand-in: one operation, each k-point standing for itself. It is
+    ! the convention phi_star_fraction and od_optics already use for the same
+    ! situation.
+    !===============================================================================
+    use od_cell, only: num_crystal_symmetry_operations
+    implicit none
+    integer :: n_symm
+
+    n_symm = max(num_crystal_symmetry_operations, 1)
+  end function photo_n_symm
+
+  !===============================================================================
+  pure function photo_symm_2d(nsymm_op) result(mat)
+    !*===============================================================================
+    ! The in-plane block of one symmetry operation, or the identity when the cell
+    ! carries none. See photo_n_symm.
+    !
+    ! The operations are Cartesian: CASTEP writes orthogonal rotation matrices
+    ! into the symmetry_ops block, not the integer matrices a fractional basis
+    ! would give -- a three-fold rotation on a hexagonal surface comes out as
+    ! +-0.5 and +-0.866. So they act directly on kpoint_r_cart, which is what
+    ! every caller does.
+    !
+    ! The storage matches CASTEP's own, element for element. Both readers put
+    ! file line i into array column i -- CASTEP's is
+    ! read(...)(((symmetry_operations(i,j,k),i=1,3),j=1,3),...) and od_cell's is
+    ! three explicit reads into (1:3,i) -- and CASTEP's writer is the inverse,
+    ! write(...) symmetry_operations(:,i,nsym). So the array holds the rotation
+    ! itself and matmul(op, k) is the forward action, the same one CASTEP applies
+    ! to its own k-points at cell.f90 'Apply symmetry to k-point'. Note this
+    ! makes the array the transpose of the matrix as it appears in the file.
+    !===============================================================================
+    use od_cell, only: num_crystal_symmetry_operations, crystal_symmetry_operations
+    implicit none
+    integer, intent(in) :: nsymm_op
+    real(kind=dp)       :: mat(2, 2)
+
+    mat = 0.0_dp
+    mat(1, 1) = 1.0_dp
+    mat(2, 2) = 1.0_dp
+    if (num_crystal_symmetry_operations .ge. 1) mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+  end function photo_symm_2d
+
   subroutine calc_angle
     !*******=======================================================================
     ! This subroutine calculates the photoemission angles theta and phi
@@ -1937,7 +2099,7 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, stdout, io_time
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: hbar, ev_to_j, j_to_ev, e_mass, rad_to_deg
+    use od_constants, only: hbar, j_to_ev, e_mass, rad_to_deg
     implicit none
     integer :: N_k, N_spin, n_eigen, ierr, gdx
 
@@ -2118,11 +2280,6 @@ contains
     if (allocated(kpoint_r_cart)) then
       deallocate (kpoint_r_cart, stat=ierr)
       if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate kpoint_r_cart')
-    end if
-
-    if (allocated(photo_gkgrid)) then
-      deallocate (photo_gkgrid, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_angle - failed to deallocate photo_gkgrid')
     end if
 
     time1 = io_time()
@@ -2556,7 +2713,11 @@ contains
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
-          if (num_exclude_bands .gt. 1) then
+          ! .gt. 0, not .gt. 1: exclude_bands is allocated to num_exclude_bands,
+          ! so a single excluded band gives num_exclude_bands = 1 and the old
+          ! test skipped it. calculate_delta has always used .gt. 0, so one
+          ! excluded band was dropped from the delta function and kept here.
+          if (num_exclude_bands .gt. 0) then
             if (any(exclude_bands == n_eigen_final)) then
               cycle
             end if
@@ -2672,7 +2833,7 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: stdout, io_error, io_file_unit, io_time, io_date
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: pi, kB, inv_sqrt_two_pi
+    use od_constants, only: kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:) :: qe_per_kpt
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
@@ -2727,7 +2888,7 @@ contains
       call elec_read_transmit_prob()
     else
       if (.not. allocated(transmit_prob)) then
-        allocate (transmit_prob(nbands, num_kpoints_on_node(my_node_id), nspins))
+        allocate (transmit_prob(nbands, num_kpoints_on_node(my_node_id), nspins), stat=ierr)
         if (ierr /= 0) call io_error('Error: calc_three_step_model - allocation of transmit_prob failed')
       end if
       transmit_prob = 1.0_dp
@@ -2789,8 +2950,8 @@ contains
                                    *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_k, N_spin) &
                                    *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
                                    *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                                   *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
-                                     /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                                   *pdos_fraction(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), &
+                                                  pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 ! do the gkgrid_dependent part
@@ -2824,8 +2985,8 @@ contains
                  *transmit_prob(n_eigen_final, N_k, N_spin) &
                  *electrons_per_state*kpoint_weight(N_k) &
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
-                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                 *pdos_fraction(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes), &
+                                pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 gk_factor = gkgrid_weight(gdx, n_eigen_init, N_spin, N_k) &
@@ -2997,26 +3158,24 @@ contains
     use od_cell, only: num_kpoints_on_node, kpoint_grid_dim, recip_lattice
     use od_parameters, only: adaptive_smearing, fixed_smearing, iprint, finite_bin_correction, &
       hybrid_linear_grad_tol, hybrid_linear, exclude_bands, &
-      num_exclude_bands, jdos_max_energy
+      num_exclude_bands
     use od_io, only: io_error, stdout
     use od_electronic, only: band_gradient, nbands, band_energy, nspins
-    use od_jdos_utils, only: jdos_nbins
+    use od_jdos_utils, only: delta_bins
     use od_dos_utils, only: doslin, doslin_sub_cell_corners
     use od_algorithms, only: gaussian
-    use od_constants, only: pi, inv_sqrt_two_pi
+    use od_constants, only: pi
     implicit none
 
     integer :: ik, is, ib, jb, i, ierr
     real(kind=dp) :: cuml, width, adaptive_smearing_temp
     real(kind=dp) :: grad(1:3), step(1:3), EV(0:4), sub_cell_length(1:3)
-    real(kind=dp), save                   :: delta_bins
 
     character(len=1), intent(in)                      :: delta_type
     real(kind=dp), intent(inout), allocatable, optional :: delta_temp(:, :, :, :)
     logical, intent(in)                               :: calculate_bulk
 
     logical :: linear, fixed, adaptive, force_adaptive
-    real(kind=dp) :: norm_width
 
     linear = .false.
     fixed = .false.
@@ -3034,10 +3193,22 @@ contains
     end select
 
     width = 0.0_dp
-    delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
 
     if (linear .or. adaptive) step(:) = 1.0_dp/real(kpoint_grid_dim(:), dp)/2.0_dp
-    if (adaptive .or. hybrid_linear) then
+    ! adaptive_smearing_temp is read only from inside the .not. fixed branch of
+    ! the loop below, either directly under adaptive or through force_adaptive,
+    ! which needs hybrid_linear and can therefore only fire under linear. So the
+    ! set of runs that use it is exactly adaptive, or linear with hybrid_linear
+    ! -- and step is set for both of those on the line above.
+    !
+    ! The old condition, adaptive .or. hybrid_linear, was wider than that. It let
+    ! a fixed delta with hybrid_linear set enter here and build
+    ! adaptive_smearing_temp out of an undefined step. Nothing read the result,
+    ! so no number ever changed; it was an uninitialised read that tools flag and
+    ! that -ffpe-trap turns into a crash. fixed and hybrid_linear is expressible:
+    ! hybrid_linear is an independent keyword with no cross-check against
+    ! broadening, and compare_jdos sets fixed as well.
+    if (adaptive .or. (linear .and. hybrid_linear)) then
       do i = 1, 2
         sub_cell_length(i) = sqrt(recip_lattice(i, 1)**2 + recip_lattice(i, 2)**2 + recip_lattice(i, 3)**2)*step(i)
       end do
@@ -3078,7 +3249,6 @@ contains
             ! Hybrid Adaptive -- This way we don't lose weight at very flat parts of the
             ! band. It's a kind of fudge that we wouldn't need if we had infinitely small bins.
             if (finite_bin_correction) width = max(width, delta_bins)
-            norm_width = inv_sqrt_two_pi/width
 
             ! The linear method has a special way to calculate the integrated dos
             ! we have to take account for this here.
@@ -3676,8 +3846,8 @@ contains
           if (three_step) then
             do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
               do n_eigen = 1, n_eigen_final - 1
-                pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                            /pdos_weights_k_band(n_eigen, N_spin, N_k)
+                pdos_frac = pdos_fraction(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+                                          pdos_weights_k_band(n_eigen, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   n_buf = n_buf + 1
                   row_buf(1:9, n_buf) = real((/atom, box, k_offset + N_k, my_node_id, N_k, &
@@ -3706,8 +3876,8 @@ contains
             end do
           else
             do n_eigen = 1, nbands
-              pdos_frac = pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                          /pdos_weights_k_band(n_eigen, N_spin, N_k)
+              pdos_frac = pdos_fraction(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+                                        pdos_weights_k_band(n_eigen, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 n_buf = n_buf + 1
                 row_buf(1:8, n_buf) = real((/atom, box, k_offset + N_k, my_node_id, N_k, &
@@ -3754,7 +3924,7 @@ contains
     use od_comms, only: on_root, comms_recv, comms_send, comms_reduce
     use od_io, only: stdout, io_error, io_file_unit, io_time, io_date
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: pi, kB, inv_sqrt_two_pi
+    use od_constants, only: kB, inv_sqrt_two_pi
     implicit none
     real(kind=dp), allocatable, dimension(:) :: qe_per_kpt
     integer :: N_k, N_spin, n_eigen, atom, ierr, gdx
@@ -3766,7 +3936,7 @@ contains
     real(kind=dp), allocatable, dimension(:, :, :, :) :: emission_gauss
 
     qe_factor = 1.0_dp/(cell_area)
-    width = (1.0_dp/11604.45_dp)*photo_temperature
+    width = kB*photo_temperature
     norm_vac = inv_sqrt_two_pi/width
 
     time0 = io_time()
@@ -3853,8 +4023,8 @@ contains
                                  *electrons_per_state*kpoint_weight(N_k) &
                                  *(I_layer(box_atom(atom), current_photo_energy_index)) &
                                  *fermi_dirac(n_eigen, N_spin, N_k) &
-                                 *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                   /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                 *pdos_fraction(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+                                                pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
             do gdx = 1, photo_gkmax
               gk_factor = gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
@@ -3880,8 +4050,8 @@ contains
                                  *electrons_per_state*kpoint_weight(N_k) &
                                  *(I_layer(box_atom(max_atoms + 1), current_photo_energy_index)) &
                                  *fermi_dirac(n_eigen, N_spin, N_k) &
-                                 *(pdos_weights_boxes(n_eigen, N_spin, N_k, num_boxes) &
-                                   /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                 *pdos_fraction(pdos_weights_boxes(n_eigen, N_spin, N_k, num_boxes), &
+                                                pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                 *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
             do gdx = 1, photo_gkmax
               gk_factor = gkgrid_weight(gdx, n_eigen, N_spin, N_k) &
@@ -3936,7 +4106,6 @@ contains
     use od_algorithms, only: gaussian
     use od_io, only: io_error, io_file_unit, io_time, stdout
     use od_jdos_utils, only: jdos_utils_calculate
-    use od_constants, only: inv_sqrt_two_pi
     implicit none
     real(kind=dp)                            :: time0, time1, qe_term1, qe_term2, mte_term1
     integer                                  :: atom, ierr
@@ -4011,9 +4180,22 @@ contains
       call comms_reduce(qe_term2, 1, 'SUM')
       mte_term1 = sum(ds_mte_num)
       call comms_reduce(mte_term1, 1, 'SUM')
-      total_qe = qe_term1/qe_term2
+      ! Both denominators vanish whenever no transition clears the vacuum
+      ! level, which is every photon energy below threshold -- the ordinary way
+      ! to start a sweep. The 3step and 1step branches above already guard their
+      ! division; this one did not, and returned a NaN that compares false
+      ! against every later test and prints as such.
+      if (qe_term2 .gt. 0.0_dp) then
+        total_qe = qe_term1/qe_term2
+      else
+        total_qe = 0.0_dp
+      end if
       ! The numerator of the QE is the denominator of the MTE.
-      mean_te = 0.5_dp*(mte_term1/qe_term1)
+      if (qe_term1 .gt. 0.0_dp) then
+        mean_te = 0.5_dp*(mte_term1/qe_term1)
+      else
+        mean_te = 0.0_dp
+      end if
 
     end if
 
@@ -4037,6 +4219,7 @@ contains
     use od_io, only: stdout, io_error, io_file_unit, stdout
     use od_jdos_utils, only: jdos_utils_calculate
     integer :: atom
+    real(kind=dp) :: dos_mte
 
     write (stdout, '(1x,a78)') '+------------------------------ Photoemission -------------------------------+'
     write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
@@ -4063,8 +4246,11 @@ contains
 
       write (stdout, 236) '|       MTE from single band contrib.  (eV) :', mean_te, '      |'
       write (stdout, '(1x,a78)') '|       **********        DOS based MTE estimate            **********       |'
-      write (stdout, 236) '|       MTE estimate from DOS          (eV) :', &
-        0.5_dp*ds_dos_mte_num/ds_dos_mte_den, '   |'
+      ! Same guard as weighted_mean_te: the DOS based estimate has the same
+      ! empty denominator below threshold.
+      dos_mte = 0.0_dp
+      if (ds_dos_mte_den .gt. 0.0_dp) dos_mte = 0.5_dp*ds_dos_mte_num/ds_dos_mte_den
+      write (stdout, 236) '|       MTE estimate from DOS          (eV) :', dos_mte, '   |'
     else
       write (stdout, '(1x,a78)') '| Atom |  Atom Order  |   Layer   |             Quantum Efficiency           |'
       ! Larger number of digits for debugging purposes
@@ -4134,7 +4320,7 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast
     use od_io, only: io_error, io_file_unit, io_time, io_date
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi
+    use od_constants, only: inv_sqrt_two_pi, kB
     implicit none
 
     real(kind=dp), intent(inout), allocatable, dimension(:, :, :) :: fermi_dirac
@@ -4264,7 +4450,6 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
@@ -4357,8 +4542,8 @@ contains
                   *delta_temp(n_eigen_init, n_eigen_final, N_spin, N_k)*transmit_prob(n_eigen_final, N_k, N_spin) &
                   *electrons_per_state*kpoint_weight(N_k)*(I_layer(box_atom(atom), current_photo_energy_index)) &
                   *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                  *(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)) &
-                    /pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
+                  *pdos_fraction(pdos_weights_atoms(n_eigen_init, N_spin, N_k, atom_order(atom)), &
+                                 pdos_weights_k_band(n_eigen_init, N_spin, N_k)) &
                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
                 do gdx = 1, photo_gkmax
                   gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
@@ -4383,7 +4568,7 @@ contains
           do n_eigen_final = min_index_unocc(N_spin, N_k), nbands
             final_fd = 1 - fermi_dirac(n_eigen_final, N_spin, N_k)
             do n_eigen_init = 1, n_eigen_final - 1
-              idx_center = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))*1000) + 500
+              idx_center = ceiling((efermi - band_energy(n_eigen_init, N_spin, N_k))*1000) + 501
               e_min = max(idx_center - idx_window, 1)
               e_max = min(idx_center + idx_window, max_energy)
               temp_contribution = &
@@ -4392,8 +4577,8 @@ contains
                  *transmit_prob(n_eigen_final, N_k, N_spin) &
                  *electrons_per_state*kpoint_weight(N_k) &
                  *fermi_dirac(n_eigen_init, N_spin, N_k)*final_fd &
-                 *(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes) &
-                   /pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
+                 *pdos_fraction(pdos_weights_boxes(n_eigen_init, N_spin, N_k, num_boxes), &
+                                pdos_weights_k_band(n_eigen_init, N_spin, N_k))) &
                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 gk_factor = arpes_mask(gdx, n_eigen_init, N_spin, N_k)*phi_accept_frac(gdx, n_eigen_init, N_spin, N_k) &
@@ -4415,7 +4600,7 @@ contains
         do N_k = 1, num_kpoints_on_node(my_node_id)
           do N_spin = 1, nspins
             do n_eigen = 1, nbands
-              idx_center = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))*1000) + 500
+              idx_center = ceiling((efermi - band_energy(n_eigen, N_spin, N_k))*1000) + 501
               idx_window = ceiling(photo_bindenergy_broadening*window_width*1000)
               e_min = max(idx_center - idx_window, 1)
               e_max = min(idx_center + idx_window, max_energy)
@@ -4423,8 +4608,8 @@ contains
                                    *electrons_per_state*kpoint_weight(N_k) &
                                    *I_layer(box_atom(atom), current_photo_energy_index) &
                                    *fermi_dirac(n_eigen, N_spin, N_k) &
-                                   *(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)) &
-                                     /pdos_weights_k_band(n_eigen, N_spin, N_k))) &
+                                   *pdos_fraction(pdos_weights_atoms(n_eigen, N_spin, N_k, atom_order(atom)), &
+                                                  pdos_weights_k_band(n_eigen, N_spin, N_k))) &
                                   *(1.0_dp + field_emission(n_eigen, N_spin, N_k))
               do gdx = 1, photo_gkmax
                 gk_factor = arpes_mask(gdx, n_eigen, N_spin, N_k)*phi_accept_frac(gdx, n_eigen, N_spin, N_k) &
@@ -4538,7 +4723,6 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, hbar, ev_to_j
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :) :: fermi_dirac
@@ -4569,7 +4753,8 @@ contains
     ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     max_energy = int((temp_photon_energy - work_function_eff)*1000) + 500
     if (max_energy .lt. -250) then
-      write (stdout, '(1x,a78)') '+-------------- No E_kin vs p_trans map calculated - returning --------------+'
+      if (on_root) write (stdout, '(1x,a78)') &
+        '+-------------- No E_kin vs p_trans map calculated - returning --------------+'
       return
     end if
 
@@ -4612,7 +4797,8 @@ contains
     max_bin_e = ceiling((max_e_kinetic - min_e)/photo_pmat_bin_width)
 
     if (max_bin_e .lt. 0 .or. max_bin_k .lt. 0) then
-      write (stdout, '(1x,a78)') '+-------------------- map array size negative - returning -------------------+'
+      if (on_root) write (stdout, '(1x,a78)') &
+        '+-------------------- map array size negative - returning -------------------+'
       return
     end if
 
@@ -4819,7 +5005,7 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, hbar, ev_to_j
+    use od_constants, only: e_mass, hbar, ev_to_j
     implicit none
 
     integer :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, kdx, edx, gdx, ierr
@@ -4856,7 +5042,8 @@ contains
     ! How many standard deviations out from the center should the Gaussian broadening be summed up?
     max_energy = int((temp_photon_energy - work_function_eff)*1000) + 500
     if (max_energy .lt. -250) then
-      write (stdout, '(1x,a78)') '+-------------- No E_kin vs p_trans map calculated - returning --------------+'
+      if (on_root) write (stdout, '(1x,a78)') &
+        '+-------------- No E_kin vs p_trans map calculated - returning --------------+'
       return
     end if
 
@@ -4896,7 +5083,8 @@ contains
     max_bin_e = ceiling((max_e_kinetic - min_e)/photo_pmat_bin_width)
 
     if (max_bin_e .lt. 0 .or. max_bin_k .lt. 0) then
-      write (stdout, '(1x,a78)') '+-------------------- map array size negative - returning -------------------+'
+      if (on_root) write (stdout, '(1x,a78)') &
+        '+-------------------- map array size negative - returning -------------------+'
       return
     end if
 
@@ -4935,6 +5123,8 @@ contains
         do N_spin = 1, nspins
           do n_eigen_init = 1, nbands - 1
             ! Factors carrying only the initial band.
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -5010,6 +5200,8 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen_init = 1, nbands - 1
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -5071,6 +5263,8 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                 *electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen, N_spin, N_k) &
@@ -5174,9 +5368,6 @@ contains
     deallocate (gauss_k, stat=ierr)
     if (ierr /= 0) call io_error('Error : kinetic_energy_momentum_map_gkgrid - failed to deallocate gauss_k')
 
-    deallocate (photo_gkgrid, stat=ierr)
-    if (ierr /= 0) call io_error('Error : kinetic_energy_momentum_map_gkgrid - failed to deallocate photo_gkgrid')
-
     deallocate (ekin_k_matrix, stat=ierr)
     if (ierr /= 0) call io_error('Error: kinetic_energy_momentum_map_gkgrid - failed to deallocate ekin_k_matrix')
 
@@ -5194,8 +5385,8 @@ contains
     ! applies a gaussian broadening to each contribution and writes it to a file.
     ! written by Felix Mildner, after May 2025
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, kpoint_grid_dim, &
+      recip_lattice
     use od_electronic, only: nbands, nspins
     use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_momentum, photo_phi_centre, &
       photo_phi_halfwidth, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, devel_flag, optics_geom, &
@@ -5203,7 +5394,7 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, ev_to_j, hbar
+    use od_constants, only: e_mass, ev_to_j, hbar
     implicit none
 
     integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, ierr
@@ -5269,9 +5460,21 @@ contains
 
     call cell_calc_kpoint_r_cart
     z_max = sqrt((2*e_mass*((max_e_kinetic + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
+    ! minval over E_kinetic sees only this node's k-points, so without the reduce
+    ! every rank gets a different z_min. That is not a cosmetic difference: z_min
+    ! is the origin of the p_z axis, so the ranks would bin the same momentum into
+    ! different z bins, and it sets zdx_offset and hence max_bin_p(3), so the
+    ! comms_reduce of p_tensor below would be called with a different element
+    ! count on each rank. The two sibling routines, kinetic_energy_momentum_map
+    ! and its gkgrid twin, already reduce their min_e; this one did not.
     min_e = max(minval(E_kinetic) - 0.25_dp, 0.0_dp)
+    call comms_reduce(min_e, 1, 'MIN')
+    call comms_bcast(min_e, 1)
     z_min = sqrt((2*e_mass*((min_e)*ev_to_j))/(hbar*hbar))*1E-10
-    xy_max = min((abs(maxval(kpoint_r_cart(1:2, :))) + 0.5), z_max)
+    ! maxval(abs(...)), not abs(maxval(...)): the latter is the largest signed
+    ! component made positive, so a node holding only negative kx and ky
+    ! reports the one closest to zero and the axis comes out far too short.
+    xy_max = min((maxval(abs(kpoint_r_cart(1:2, :))) + 0.5), z_max)
 
     xdx_offset = ceiling(xy_max/photo_pmat_bin_width)
     ydx_offset = ceiling(xy_max/photo_pmat_bin_width)
@@ -5303,7 +5506,7 @@ contains
 
     allocate (gauss_xy(max_bin_p(1), max_bin_p(2)), stat=ierr)
     if (ierr /= 0) call io_error('Error: full_momentum_tensor - allocation of gauss_xy failed')
-    gauss_y = 0.0_dp
+    gauss_xy = 0.0_dp
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
     ! Reset the running total of unbroadened contributions. It is a module
@@ -5326,15 +5529,15 @@ contains
     end do
 
     if (index(photo_model, '3step') .gt. 0) then
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5380,15 +5583,15 @@ contains
         end do ! kpts
       end do ! symm_ops
 
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5434,15 +5637,15 @@ contains
 
     if (index(photo_model, '1step') .gt. 0) then
 
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5577,7 +5780,7 @@ contains
     ! caller evaluates it once and this routine reuses it. The z Gaussian likewise
     ! depends only on (gdx, band, spin, kpt) and is built before the symmetry loop.
     !===============================================================================
-    use od_cell, only: kpoint_weight, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: kpoint_weight
     use od_electronic, only: photo_gkgrid
     use od_parameters, only: photo_pmat_bin_width, devel_flag
     use od_algorithms, only: gaussian
@@ -5602,14 +5805,14 @@ contains
                                 (zdx - 1)*photo_pmat_bin_width)
     end do
 
-    do nsymm_op = 1, num_crystal_symmetry_operations
-      temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+    do nsymm_op = 1, photo_n_symm()
+      temp_mat = photo_symm_2d(nsymm_op)
       if (index(devel_flag, 'no_symmetry') .gt. 0) then
         current_k = photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k)
-        k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+        k_prefactor = 1.0_dp/photo_n_symm()
       else
         current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
-        k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+        k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
       end if
       ! As above: this is the emission direction of this image, so the wedge
       ! can be tested here and nowhere earlier.
@@ -5663,7 +5866,7 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, e_mass, ev_to_j, hbar
+    use od_constants, only: e_mass, ev_to_j, hbar
     implicit none
 
     integer    ::  i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, gdx, ierr
@@ -5728,7 +5931,7 @@ contains
     call cell_calc_kpoint_r_cart
     max_e_kinetic = temp_photon_energy - work_function_eff
     z_max = sqrt((2*e_mass*((max_e_kinetic + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
-    xy_max = min((abs(maxval(kpoint_r_cart(1:2, :))) + 0.5), z_max)
+    xy_max = min((maxval(abs(kpoint_r_cart(1:2, :))) + 0.5), z_max)
     xdx_offset = ceiling(xy_max/photo_pmat_bin_width)
     ydx_offset = ceiling(xy_max/photo_pmat_bin_width)
     zdx_offset = ceiling(z_max/photo_pmat_bin_width) + zdx_window
@@ -5765,8 +5968,8 @@ contains
     if (ierr /= 0) call io_error('Error: full_momentum_tensor_gkgrid - allocation of gauss_z_v failed')
     gauss_z_v = 0.0_dp
 
-    ! Each gkgrid routine frees photo_gkgrid on the way out, so whichever runs
-    ! first deallocates it; read it back rather than assuming it is present.
+    ! Returns immediately when the grid is already in memory, which it is for
+    ! every call after the first: it is read once and held until photo_deallocate.
     call elec_read_gk_grid()
 
     call prepare_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
@@ -5798,6 +6001,8 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen_init = 1, nbands - 1
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -5846,6 +6051,8 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen_init = 1, nbands - 1
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                 *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -5889,6 +6096,8 @@ contains
       do N_k = 1, num_kpoints_on_node(my_node_id)
         do N_spin = 1, nspins
           do n_eigen = 1, nbands
+            ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+            if (pdos_weights_k_band(n_eigen, N_spin, N_k) .le. 0.0_dp) cycle
             temp_contribution = qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                 *electrons_per_state*kpoint_weight(N_k) &
                                 *fermi_dirac(n_eigen, N_spin, N_k) &
@@ -6000,8 +6209,8 @@ contains
     ! energy and writes it out to a file.
     ! written by Felix Mildner, after Jan 2025
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, &
-      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart, kpoint_r_cart, kpoint_weight, kpoint_grid_dim, &
+      recip_lattice
     use od_electronic, only: nbands, nspins, band_energy, efermi
     use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, &
@@ -6009,7 +6218,7 @@ contains
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, ev_to_j, e_mass, hbar
+    use od_constants, only: ev_to_j, e_mass, hbar
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: arpes_mask
@@ -6061,7 +6270,7 @@ contains
 
     call cell_calc_kpoint_r_cart
     z_max = sqrt((2*e_mass*((max_e_kinetic + 0.5)*ev_to_j))/(hbar*hbar))*1E-10
-    xy_max = min((abs(maxval(kpoint_r_cart(1:2, :))) + 0.5), z_max)
+    xy_max = min((maxval(abs(kpoint_r_cart(1:2, :))) + 0.5), z_max)
     xdx_offset = ceiling(xy_max/photo_pmat_bin_width)
     ydx_offset = ceiling(xy_max/photo_pmat_bin_width)
 
@@ -6099,15 +6308,15 @@ contains
     total_be_contribs = 0.0_dp
 
     if (index(photo_model, '3step') .gt. 0) then
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6148,15 +6357,15 @@ contains
         end do ! kpts
       end do ! symm_ops
 
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6196,15 +6405,15 @@ contains
     end if
 
     if (index(photo_model, '1step') .gt. 0) then
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/num_crystal_symmetry_operations
+            k_prefactor = 1.0_dp/photo_n_symm()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6320,17 +6529,16 @@ contains
     ! photo_momentum option to allow supercell calculations.
     ! written by Felix Mildner, after May 2025
     !===============================================================================
-    use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_calc_kpoint_r_cart, &
-      kpoint_grid_dim, recip_lattice, num_crystal_symmetry_operations, crystal_symmetry_operations
+    use od_cell, only: num_kpoints_on_node, kpoint_weight, cell_calc_kpoint_r_cart, kpoint_grid_dim, recip_lattice
     use od_electronic, only: nbands, nspins, electrons_per_state, transmit_prob, photo_gkgrid, elec_read_gk_grid
-    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, photo_temperature, &
+    use od_parameters, only: photo_model, photo_theta_centre, photo_theta_halfwidth, &
       photo_phi_centre, photo_phi_halfwidth, &
       photo_momentum, photo_bindenergy_broadening, iprint, photo_pmat_bin_width, optics_geom, optics_qdir, &
       photo_const_bindenergy_value
     use od_algorithms, only: gaussian
     use od_comms, only: my_node_id, comms_reduce, comms_bcast, on_root
     use od_io, only: io_error, io_file_unit, stdout, io_time, io_date, seedname
-    use od_constants, only: inv_sqrt_two_pi, kB, rad_to_deg, twopi, ev_to_j, e_mass, hbar
+    use od_constants, only: ev_to_j, e_mass, hbar
     implicit none
 
     real(kind=dp), allocatable, dimension(:, :, :, :) :: delta_temp
@@ -6344,7 +6552,7 @@ contains
     ! Contributions below this never reach the map, so the patch that would
     ! spread them is not built at all.
     real(kind=dp), parameter :: tiny_contribution = 1.0e-30_dp
-    real(kind=dp) :: temp_contribution, gk_factor, norm_vac, qe_factor, width, total_weighted, qe_norm
+    real(kind=dp) :: temp_contribution, gk_factor, qe_factor, total_weighted, qe_norm
     integer    :: i, N_k, N_spin, n_eigen_init, n_eigen, n_eigen_final, atom, gdx, ierr, window_width
     integer    :: matrix_unit, nsymm_op, x_center, y_center, xdx, ydx, xdx_min, xdx_max, ydx_min, ydx_max, px_max, py_max
     integer    :: total_ks, xdx_window, ydx_window, ydx_offset, xdx_offset
@@ -6361,8 +6569,6 @@ contains
     end if
 
     qe_factor = 1.0_dp/(cell_area)
-    width = kB*photo_temperature
-    norm_vac = inv_sqrt_two_pi/width
 
     ! get kinetic energy at efermi for reference
     max_e_kinetic = temp_photon_energy - work_function_eff
@@ -6412,8 +6618,8 @@ contains
     total_be_contribs = 0.0_dp
     if (index(photo_model, '3step') .gt. 0) then
       call photo_calculate_delta(delta_temp, .false.)
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         ! current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
 
         ! Everything that sets the k_x/k_y patch is indexed by the initial band
@@ -6427,9 +6633,11 @@ contains
         ! wide, so it is negligible for most states; testing it before the patch
         ! is built skips the majority of the work outright.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           do N_spin = 1, nspins
             do n_eigen_init = 1, nbands - 1
+              ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+              if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
               temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                   *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -6500,14 +6708,16 @@ contains
 
       call photo_calculate_delta(delta_temp, .true.)
 
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         ! Same factorisation for the extrapolated bulk; no atom loop to hoist,
         ! since the bulk is one region indexed max_atoms + 1.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           do N_spin = 1, nspins
             do n_eigen_init = 1, nbands - 1
+              ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+              if (pdos_weights_k_band(n_eigen_init, N_spin, N_k) .le. 0.0_dp) cycle
               temp_contribution = qe_factor*electrons_per_state*kpoint_weight(N_k) &
                                   *fermi_dirac(n_eigen_init, N_spin, N_k) &
                                   *(1.0_dp + field_emission(n_eigen_init, N_spin, N_k)) &
@@ -6573,13 +6783,15 @@ contains
     end if
 
     if (index(photo_model, '1step') .gt. 0) then
-      do nsymm_op = 1, num_crystal_symmetry_operations
-        temp_mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
+      do nsymm_op = 1, photo_n_symm()
+        temp_mat = photo_symm_2d(nsymm_op)
         ! One band index here, so only the atom sum comes out of the patch.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/num_crystal_symmetry_operations
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
           do N_spin = 1, nspins
             kxkybands: do n_eigen = 1, nbands
+              ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
+              if (pdos_weights_k_band(n_eigen, N_spin, N_k) .le. 0.0_dp) cycle
               temp_contribution = qe_factor*foptical_matrix_weights(n_eigen, N_spin, N_k) &
                                   *electrons_per_state*kpoint_weight(N_k) &
                                   *fermi_dirac(n_eigen, N_spin, N_k) &
@@ -6690,8 +6902,6 @@ contains
     if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate gauss_x')
     deallocate (gauss_y, stat=ierr)
     if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate gauss_y')
-    deallocate (photo_gkgrid, stat=ierr)
-    if (ierr /= 0) call io_error('Error: const_binding_energy_map_gkgrid - failed to deallocate photo_gkgrid')
     call deallocate_emission_arrays(fermi_dirac, arpes_mask, emission_gauss)
 
     time1 = io_time()
@@ -6712,7 +6922,7 @@ contains
     !===============================================================================
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nbands, nspins
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_reduce, comms_bcast
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_reduce, comms_bcast
     use od_io, only: io_error, seedname, io_file_unit, io_date, io_time, stdout
     use od_parameters, only: photo_model, photo_momentum, iprint, optics_geom, optics_qdir
     implicit none
@@ -6796,7 +7006,7 @@ contains
     ! F. Mildner, June 2023
     use od_cell, only: num_kpoints_on_node, cell_calc_kpoint_r_cart
     use od_electronic, only: nspins, nbands
-    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, root_id, comms_bcast
+    use od_comms, only: my_node_id, on_root, num_nodes, comms_send, comms_recv, comms_bcast
     use od_io, only: io_error, io_file_unit, io_date, io_time, seedname
     use od_parameters, only: photo_model, photo_momentum
 
@@ -6911,7 +7121,7 @@ contains
     ! been deallocated yet
 
     use od_io, only: io_error
-    use od_electronic, only: foptical_mat
+    use od_electronic, only: foptical_mat, photo_gkgrid, transmit_prob
     implicit none
     integer :: ierr
 
@@ -6962,7 +7172,7 @@ contains
 
     if (allocated(photo_matrix_weights)) then
       deallocate (photo_matrix_weights, stat=ierr)
-      if (ierr /= 0) call io_error('Error: calc_photo_optics - failed to deallocate photo_matrix_weights')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate photo_matrix_weights')
     end if
 
     if (allocated(E_transverse)) then
@@ -7046,7 +7256,77 @@ contains
 
     if (allocated(gkgrid_weight)) then
       deallocate (gkgrid_weight, stat=ierr)
-      if (ierr /= 0) call io_error('Error: const_binding_energy_map - failed to deallocate gkgrid_weight')
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate gkgrid_weight')
+    end if
+
+    ! The geometry, the IMFP and the band-index tables. None of these were ever
+    ! released: they are allocated once, behind a .not. allocated() guard, and
+    ! the routine that allocates them has no natural place to free them. Left
+    ! here they are both a leak and a trap, since those same guards would reuse
+    ! stale contents if the module were ever entered a second time.
+    if (allocated(pdos_weights_boxes)) then
+      deallocate (pdos_weights_boxes, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate pdos_weights_boxes')
+    end if
+
+    if (allocated(box_atom)) then
+      deallocate (box_atom, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate box_atom')
+    end if
+
+    if (allocated(box_heights)) then
+      deallocate (box_heights, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate box_heights')
+    end if
+
+    if (allocated(box_volumes)) then
+      deallocate (box_volumes, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate box_volumes')
+    end if
+
+    if (allocated(boxes_top_z_coord)) then
+      deallocate (boxes_top_z_coord, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate boxes_top_z_coord')
+    end if
+
+    if (allocated(atoms_per_box)) then
+      deallocate (atoms_per_box, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate atoms_per_box')
+    end if
+
+    if (allocated(atom_imfp)) then
+      deallocate (atom_imfp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate atom_imfp')
+    end if
+
+    if (allocated(band_imfp)) then
+      deallocate (band_imfp, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate band_imfp')
+    end if
+
+    if (allocated(min_index_unocc)) then
+      deallocate (min_index_unocc, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate min_index_unocc')
+    end if
+
+    ! bulk_emission frees this on every path it takes, but it never runs for the
+    ! dosds model, and calc_electron_esc allocates it before either is reached.
+    if (allocated(new_atom_coordinates)) then
+      deallocate (new_atom_coordinates, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate new_atom_coordinates')
+    end if
+
+    ! Both belong to od_electronic. transmit_prob is released in
+    ! calc_three_step_model only when photo_output is off, and photo_gkgrid is
+    ! now held for the whole run rather than re-read per photon energy.
+    if (allocated(transmit_prob)) then
+      deallocate (transmit_prob, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate transmit_prob')
+    end if
+
+    if (allocated(photo_gkgrid)) then
+      deallocate (photo_gkgrid, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate photo_gkgrid')
     end if
 
   end subroutine photo_deallocate
