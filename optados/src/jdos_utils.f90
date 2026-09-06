@@ -206,15 +206,28 @@ contains
       end if
     end if
 
-    jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing))
-    jdos_max_energy = jdos_nbins*jdos_spacing
+    ! One bin per jdos_spacing, plus the bin at zero.
+    !
+    ! The grid starts at E = 0, so jdos_nbins points reach only
+    ! (jdos_nbins - 1)*jdos_spacing. Without the extra point the code closed that
+    ! gap by widening the step instead -- delta_bins = jdos_max_energy/(nbins-1),
+    ! larger than jdos_spacing by nbins/(nbins-1) -- so the grid never had the
+    ! spacing the keyword asks for. Self-consistent inside the JDOS, which only
+    ! ever evaluates at E(idos), but not to anything that turns an energy into a
+    ! bin index using jdos_spacing: the photoemission photon sweep does exactly
+    ! that, and landed 3 meV off at 6 eV for jdos_spacing 0.01 and 20 meV off for
+    ! 0.05, growing linearly with the photon energy. It also put the top of the
+    ! usable range at jdos_max_energy - jdos_spacing rather than at
+    ! jdos_max_energy, so a photon energy near the top indexed past the end of E.
+    jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing)) + 1
+    jdos_max_energy = real(jdos_nbins - 1, dp)*jdos_spacing
 
     allocate (E(1:jdos_nbins), stat=ierr)
     if (ierr /= 0) call io_error("Error: jdos_utils, setup_energy_scale: cannot allocate E")
 
-    delta_bins = jdos_max_energy/real(jdos_nbins - 1, dp)
+    delta_bins = jdos_spacing
     do idos = 1, jdos_nbins
-      E(idos) = real(idos - 1, dp)*delta_bins
+      E(idos) = real(idos - 1, dp)*jdos_spacing
     end do
 
     if (on_root .and. (iprint > 2)) then
