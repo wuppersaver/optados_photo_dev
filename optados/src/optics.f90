@@ -774,13 +774,53 @@ contains
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
     else
-      do N_energy = 1, jdos_nbins
+      ! n and k must come from one and the same complex epsilon, and with the
+      ! intraband term switched on that is the TOTAL, index 3 of the last
+      ! dimension: calc_epsilon_1 builds it as
+      ! epsilon(:,1,:,3) = epsilon(:,1,:,1) + epsilon(:,1,:,2) - 1, interband
+      ! plus Drude. Index 1 is the interband part on its own.
+      !
+      ! Three of the six references here used index 1. Both lines were made by
+      ! copying the interband branch above -- which correctly uses index 1
+      ! throughout -- and changing only some of them, so n took its modulus from
+      ! the total but its addend from the interband part, and k took the real
+      ! part of its modulus from the interband part while the imaginary part came
+      ! from the total. The second is not a dielectric function at all: it is the
+      ! length of a complex number whose two halves come from different
+      ! quantities.
+      !
+      ! For a metal the difference is not subtle, because the Drude term
+      ! dominates epsilon_1 below the plasma energy. Measured on the 4 atom
+      ! aluminium case in the test suite, epsilon_1 total is -1.4E6 at 0.01 eV
+      ! where the interband part alone is +123. At that energy the old form gave
+      ! n = 830.4, k = 0.98; a metal below its plasma energy must have n near
+      ! zero and k large, and it now gives n = 0.0089, k = 1174.4. Reflectivity
+      ! was wrong by up to 0.95 absolute, with 2330 of 3000 grid points out by
+      ! more than 0.01, and the absorption coefficient by 1.5 to 2.5 times from
+      ! 2 to 8 eV and up to 35 times near the plasmon.
+      !
+      ! The fixed form reproduces the optics of real aluminium: 0.99 reflectivity
+      ! in the infrared, a mean of 0.93 across 2-5 eV, and a plasma edge falling
+      ! from 0.95 at 10 eV to 0.20 by 16 eV. That edge sits where epsilon_1
+      ! crosses zero, 14.80 eV, which is independently where the total loss
+      ! function peaks. The old form put the visible reflectance at 0.45 and had
+      ! R below 0.02 by 10 eV, so no edge survived. Both forms show the 1.27 eV
+      ! interband feature -- it is the baseline that was lost, not the structure.
+      !
+      ! The loops start at 2 because E(1) is exactly zero and these expressions
+      ! divide by it. At N_energy = 1 the old bound evaluated 0/0 and wrote a NaN
+      ! into the first bin of the refractive index, the absorption and the
+      ! reflection; it is still there in the committed benchmarks for
+      ! testopt_optics_drude and testopt_optics_intraband. refract is allocated
+      ! zeroed, so the first bin now holds n = k = 0, which gives R = 1 -- the
+      ! right answer for a metal at zero frequency.
+      do N_energy = 2, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 3)**2) +&
-             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
+             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) + epsilon(N_energy, 1, 1, 3)))**(0.5_dp)
       end do
-      do N_energy = 1, jdos_nbins
-        refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
-             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
+      do N_energy = 2, jdos_nbins
+        refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 3)**2) +&
+             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) - epsilon(N_energy, 1, 1, 3)))**(0.5_dp)
       end do
 
     end if
