@@ -262,16 +262,22 @@ contains
 
   !=========================================================================
   subroutine read_fem_fmt()
-    !! Read a formatted Optical Matrix Elements file.
+    !! Read a formatted free-electron coherency tensor file.
+    !
+    ! Version 2. The file holds fem_tensor(9, n_Ef, nbands, nk, nspins): nine
+    ! reals, the coherency tensor A_ij, for every final-state energy bin of
+    ! every band. Version 1 held foptical_mat(nbands, 3, n_Ef, nk, nspins), a
+    ! complex wavepacket matrix element -- a different quantity with a different
+    ! rank, which is why the version is refused rather than converted.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, seedname, stdout, io_file_unit,&
          & io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, foptical_mat
-    use od_constants, only: bohr2ang, H2eV
+    use od_electronic, only: nspins, nbands, fem_tensor
     implicit none
 
     real(dp):: file_version = 1.0_dp          ! File version
+    real(dp), parameter :: fem_file_ver = 2.0_dp
     character(len=100):: string
     integer :: ik, is, ib, i, jb, energy_count, ierr, fem_unit = 6
 
@@ -279,33 +285,35 @@ contains
 
     open (unit=fem_unit, form='formatted', recl=1073741824, file=trim(seedname)//".fem_fmt")
     read (fem_unit, '('//trim(format_precision)//')') file_version
+    if (abs(file_version - fem_file_ver) .gt. 0.001_dp) then
+      write (stdout, *) 'fem_fmt file version:', file_version, ' expected:', fem_file_ver
+      call io_error('Error: read_fem_fmt - only version 2 fem files, holding the coherency '// &
+                    'tensor, can be converted. Regenerate with a current CASTEP.')
+    end if
 
     read (fem_unit, '(a80)') femfile_header
     do i = 1, 5
       read (fem_unit, '('//trim(format_precision)//')') fem_energy_info(i)
     end do
 
-    energy_count = int(fem_energy_info(1))
-    write (stdout, *) fem_energy_info
-    if (.not. allocated(foptical_mat)) then
-      write (stdout, *) " Allocating foptical_mat."
-      allocate (foptical_mat(nbands, 3, energy_count, nkpoints, nspins), stat=ierr)
+    energy_count = nint(fem_energy_info(1))
+    if (.not. allocated(fem_tensor)) then
+      allocate (fem_tensor(9, energy_count, nbands, nkpoints, nspins), stat=ierr)
+      if (ierr /= 0) call io_error('Error: read_fem_fmt - allocation of fem_tensor failed')
     end if
-    ! Total number of elements of fem
-    write (stdout, *) 'nbands', nbands, 'energy_count', energy_count
-    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
-    write (stdout, *) string
 
-    ! write(string,'(a)') trim(format_precision)
-    write (stdout, *) nkpoints, nspins, nbands
+    write (string, '(I0,"(1x,",a,")")') 9*energy_count*nbands, trim(format_precision)
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        read (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+        read (fem_unit, '('//trim(string)//')') ((fem_tensor(1:9, jb, ib, ik, is), jb=1, energy_count), ib=1, nbands)
       end do
     end do
 
-    foptical_mat = foptical_mat*(bohr2ang*H2eV)
+    ! Undo the scaling write_fem_fmt applied, so a round trip through the
+    ! formatted file reproduces what elec_read_foptical_mat would have returned
+    ! from the binary. See the comment there for the powers.
+    fem_tensor = fem_tensor*bohr2ang*bohr2ang*H2eV
 
     close (unit=fem_unit)
 
@@ -315,27 +323,28 @@ contains
 
   !=========================================================================
   subroutine write_fem_fmt()
-    !! Write a formatted ome file.
+    !! Write a formatted free-electron coherency tensor file. See read_fem_fmt
+    !! for the version 2 layout.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, foptical_mat
-    use od_constants, only: bohr2ang, H2eV
+    use od_electronic, only: nspins, nbands, fem_tensor
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp), parameter :: file_version = 2.0_dp
     character(len=100):: string
-    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
+    integer :: ik, is, ib, jb, i, energy_count, fem_unit = 6
 
     write (stdout, *) " Write a formatted .fem file. "
 
-    foptical_mat = foptical_mat/(bohr2ang*H2eV)
+    ! Back to the units the binary carries; read_fem_fmt puts it back.
+    fem_tensor = fem_tensor/(bohr2ang*bohr2ang*H2eV)
     energy_count = nint(fem_energy_info(1))
 
     open (unit=fem_unit, form='formatted', file=trim(outseedname)//".fem_fmt")
 
-    write (string, '(I0,"(1x,",a,")")') 2*3*nbands*energy_count, trim(format_precision)
+    write (string, '(I0,"(1x,",a,")")') 9*energy_count*nbands, trim(format_precision)
 
     write (stdout, '(a80)') adjustl(femfile_header)
 
@@ -347,7 +356,7 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit, '('//trim(string)//')') (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+        write (fem_unit, '('//trim(string)//')') ((fem_tensor(1:9, jb, ib, ik, is), jb=1, energy_count), ib=1, nbands)
       end do
     end do
 
@@ -368,22 +377,22 @@ contains
 
   !=========================================================================
   subroutine write_fem_bin()
-    !! Write a binary ome file.
+    !! Write a binary free-electron coherency tensor file. The record layout
+    !! matches elec_read_foptical_mat, which is the only reader of it.
     use od_constants, only: dp, bohr2ang, H2eV
     use od_io, only: io_time, filename_len, stdout, io_file_unit,&
          & io_error
     use od_cell, only: nkpoints
-    use od_electronic, only: nspins, nbands, foptical_mat
-    use od_constants, only: bohr2ang, H2eV
+    use od_electronic, only: nspins, nbands, fem_tensor
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
-    integer :: ik, is, ib, i, jb, energy_count, fem_unit = 6
+    real(dp), parameter :: file_version = 2.0_dp
+    integer :: ik, is, ib, jb, i, energy_count, fem_unit = 6
 
     write (stdout, *) " Write a binary fem file."
 
-    foptical_mat = foptical_mat/(bohr2ang*H2eV)
-    energy_count = int(fem_energy_info(1))
+    fem_tensor = fem_tensor/(bohr2ang*bohr2ang*H2eV)
+    energy_count = nint(fem_energy_info(1))
 
     open (unit=fem_unit, form='unformatted', file=trim(outseedname)//".fem_bin")
 
@@ -397,7 +406,7 @@ contains
 
     do ik = 1, nkpoints
       do is = 1, nspins
-        write (fem_unit) (((foptical_mat(ib, i, jb, ik, is), ib=1, nbands), i=1, 3), jb=1, energy_count)
+        write (fem_unit) ((fem_tensor(1:9, jb, ib, ik, is), jb=1, energy_count), ib=1, nbands)
       end do
     end do
 
@@ -420,7 +429,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: tmprob_file_ver = 2.0_dp
     character(len=100):: string
     integer :: ik, is, ib, ierr, tmcoeff_unit = 6
 
@@ -428,6 +438,11 @@ contains
 
     open (unit=tmcoeff_unit, form='formatted', recl=1073741824, file=trim(seedname)//".tmprob_fmt")
     read (tmcoeff_unit, '('//trim(format_precision)//')') file_version
+    if (abs(file_version - tmprob_file_ver) .gt. 0.001_dp) then
+      write (stdout, *) 'tmprob_fmt file version:', file_version, ' expected:', tmprob_file_ver
+      call io_error('Error: read_tmprob_fmt - only version 2 files can be converted; '// &
+                    'the values differ between versions, not just the layout.')
+    end if
 
     read (tmcoeff_unit, '(a80)') tmprob_file_header
 
@@ -466,7 +481,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: tmprob_file_ver = 2.0_dp
     character(len=100):: string
     integer :: ik, is, ib, tmcoeff_unit = 6
 
@@ -514,7 +530,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: tmprob_file_ver = 2.0_dp
     integer :: ik, is, ib, tmcoeff_unit = 6
 
     write (stdout, *) " Write a binary tmprob file."
@@ -552,7 +569,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: gkgrid_file_ver = 2.0_dp
     character(len=100):: string
     integer :: ik, is, ib, i, gdx, ierr, max_gvec, gkgrid_unit = 6
 
@@ -560,6 +578,11 @@ contains
 
     open (unit=gkgrid_unit, form='formatted', recl=1073741824, file=trim(seedname)//".gkgrid_fmt")
     read (gkgrid_unit, '('//trim(format_precision)//')') file_version
+    if (abs(file_version - gkgrid_file_ver) .gt. 0.001_dp) then
+      write (stdout, *) 'gkgrid_fmt file version:', file_version, ' expected:', gkgrid_file_ver
+      call io_error('Error: read_gkgrid_fmt - only version 2 files can be converted; '// &
+                    'the values differ between versions, not just the layout.')
+    end if
     read (gkgrid_unit, '(I6)') max_gvec
 
     read (gkgrid_unit, '(a80)') photo_gkgrid_file_header
@@ -601,7 +624,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: gkgrid_file_ver = 2.0_dp
     character(len=100):: string
     integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
 
@@ -655,7 +679,8 @@ contains
     use od_constants, only: bohr2ang, H2eV
     implicit none
 
-    real(dp):: file_version = 1.0_dp          ! File version
+    real(dp):: file_version = 2.0_dp          ! File version
+    real(dp), parameter :: gkgrid_file_ver = 2.0_dp
     integer :: ik, is, ib, i, gdx, max_gvec, gkgrid_unit = 6
 
     write (stdout, *) " Write a binary gkgrid file."
