@@ -817,13 +817,46 @@ contains
              &(epsilon(N_energy, 2, 1, 1)**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
       end do
     else
+      ! n and k must come from one and the same complex epsilon, and with the
+      ! intraband term switched on that is the TOTAL, index 3 of the last
+      ! dimension: calc_epsilon_1 builds it as
+      ! epsilon(:,1,:,3) = epsilon(:,1,:,1) + epsilon(:,1,:,2) - 1, interband
+      ! plus Drude. Index 1 is the interband part on its own.
+      !
+      ! Three of the six references here used to be index 1. Both lines were
+      ! made by copying the interband branch above -- which correctly uses
+      ! index 1 throughout -- and changing only some of them, so n took its
+      ! modulus from the total but its addend from the interband part, and k
+      ! took the real part of its modulus from the interband part while the
+      ! imaginary part came from the total. The second of those is not a
+      ! dielectric function at all: it is the modulus of a complex number whose
+      ! two halves come from different quantities.
+      !
+      ! For a metal the difference is not subtle, because the Drude term
+      ! dominates epsilon_1 below the plasma energy. Measured on the 4 atom
+      ! aluminium test case, at 0.05 eV the old form gave n = 166, k = 1.3 --
+      ! a metal is required to have n near zero and k large -- and the
+      ! reflectivity was wrong by up to 0.95 absolute, with 2330 of 3000 grid
+      ! points out by more than 0.01. With the total used throughout, the
+      ! calculation reproduces the reflectance of real aluminium: 0.99 in the
+      ! infrared, a mean of 0.93 across 2-5 eV, and a sharp plasma edge at the
+      ! energy where epsilon_1 crosses zero -- 0.95 at 10 eV falling to 0.20 by
+      ! 16 eV, with the crossing at 14.80 eV and the loss function peaking at
+      ! 14.80 eV independently. The old form put the visible reflectance at 0.45
+      ! and had R below 0.02 by 10 eV, so no plasma edge survived to be seen.
+      ! Both forms show the 1.27 eV interband feature; it is the baseline the
+      ! old one loses, not the structure.
+      !
+      ! absorp is 2*refract(:,2)*E/(hbar c), so the absorption coefficient the
+      ! photoemission model attenuates each layer with was out by 1.7 to 7
+      ! times over the same range.
       do N_energy = 2, jdos_nbins
         refract(N_energy, 1) = (0.5_dp*((((epsilon(N_energy, 1, 1, 3)**2) +&
-             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) + epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
+             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) + epsilon(N_energy, 1, 1, 3)))**(0.5_dp)
       end do
       do N_energy = 2, jdos_nbins
-        refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 1)**2) +&
-             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) - epsilon(N_energy, 1, 1, 1)))**(0.5_dp)
+        refract(N_energy, 2) = (0.5_dp*((((epsilon(N_energy, 1, 1, 3)**2) +&
+             &((epsilon(N_energy, 2, 1, 3)/(E(N_energy)*e_charge))**2))**0.5_dp) - epsilon(N_energy, 1, 1, 3)))**(0.5_dp)
       end do
 
     end if
