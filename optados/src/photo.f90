@@ -111,11 +111,7 @@ module od_photo
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: qe_osm
   real(kind=dp), allocatable, dimension(:, :, :, :)    :: te_osm
   real(kind=dp), allocatable, dimension(:, :, :, :, :) :: qe_tsm
-  ! Dowell-Schmerge like model. Kept apart from qe_tsm, whose last index is
-  ! the box a transition belongs to: the DS model was reusing that index to
-  ! mean "which of five quantities", so the same module array had two
-  ! unrelated shapes, and slots 4 and 5 spent an nbands x nbands x nspins x nk
-  ! array on two scalars.
+  ! Dowell-Schmerge like model.
   real(kind=dp), allocatable, dimension(:, :, :, :) :: ds_qe_den, ds_qe_num, ds_mte_num
   real(kind=dp) :: ds_dos_mte_num, ds_dos_mte_den
   real(kind=dp), allocatable, dimension(:, :, :, :) :: te_tsm
@@ -127,9 +123,8 @@ module od_photo
   integer, dimension(:), allocatable :: atom_order
   real(kind=dp) :: work_function_eff
   !! The step an escaping electron climbs, used for the refraction at the
-  !! surface. photo_inner_potential when it is given, otherwise the work
-  !! function, which is what the code always used and is too small by roughly a
-  !! factor of three for a metal.
+  !! surface. set by photo_inner_potential when it is given, otherwise the work
+  !! function
   real(kind=dp) :: surface_barrier
   logical       :: barrier_warned = .false.
   real(kind=dp) :: evacuum
@@ -2569,11 +2564,8 @@ contains
       surface_barrier = work_function_eff
       if (on_root .and. .not. barrier_warned) then
         write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
-        write (stdout, '(1x,a78)') '! Warning: photo_inner_potential is not set, so the refraction at the surface !'
-        write (stdout, '(1x,a78)') '! falls back to the work function. That is the barrier measured from the      !'
-        write (stdout, '(1x,a78)') '! Fermi level rather than from the bottom of the final state band, so it is   !'
-        write (stdout, '(1x,a78)') '! far too small - roughly 4.3 against 13.5 eV for Cu - and escape depths come !'
-        write (stdout, '(1x,a78)') '! out too short. workfct.py prints an estimate to feed the keyword.           !'
+        write (stdout, '(1x,a78)') '! Warning: photo_inner_potential is not set, so the refraction at the        !'
+        write (stdout, '(1x,a78)') '! surface falls back to the work function.                                   !'
         write (stdout, '(1x,a78)') '!----------------------------------------------------------------------------!'
         barrier_warned = .true.
       end if
