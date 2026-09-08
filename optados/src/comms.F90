@@ -541,10 +541,10 @@ contains
 
     end select
 
-    call my_icopy(size, array, 1, array_red, 1)
+    call my_icopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
-      print *, 'Error in comms_reduce_real'
+      print *, 'Error in comms_reduce_int'
       call comms_error
     end if
 #endif
