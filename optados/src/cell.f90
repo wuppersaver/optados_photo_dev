@@ -298,14 +298,14 @@ contains
       if (abs(2.0_dp*min_img - min_img2) < min_img_tol) then
         ! If 1stMI==2ndMI then 1/1stMP is the grid density
         if (present(kpoint_offset)) kpoint_offset(idim) = 0.0_dp
-        kpoint_grid_dim(idim) = int(1.0_dp/min_img)
+        kpoint_grid_dim(idim) = nint(1.0_dp/min_img)
         ! WARNING could also have a shifted grid with a perfect shift 3/(4n)
         ! this would be a known bug
       else
         ! If 1stMI.ne.2ndMI then 1/3rdMP is the grid density
         ! and 1stMI/2 is the shift
         if (present(kpoint_offset)) kpoint_offset(idim) = min_img/2.0_dp
-        kpoint_grid_dim(idim) = int(1.0_dp/min_img3)
+        kpoint_grid_dim(idim) = nint(1.0_dp/min_img3)
       end if
 
     end do over_dim
