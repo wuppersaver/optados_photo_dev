@@ -43,6 +43,13 @@ module od_io
 
   integer, public, save           :: stdout
   integer, public, save           :: stderr
+  !! True only on the node that actually opened stdout. od_io cannot use
+  !! od_comms without a circular dependency, and `stdout` is an uninitialised
+  !! save variable everywhere else -- writing to or flushing it off root would
+  !! touch whatever unit that garbage value happens to name. Set beside the
+  !! open in optados.f90 and od2od.f90; false until then, which is correct,
+  !! because before the open there is nothing to flush.
+  logical, public, save           :: io_on_root = .false.
   integer, parameter, public :: filename_len = 80
   character(len=filename_len), public, save :: seedname
   integer, parameter, public :: maxlen = 120  ! Max column width of input file
@@ -97,6 +104,18 @@ contains
 
     implicit none
     character(len=*), intent(in) :: error_msg
+    integer :: flush_ierr
+
+    ! Push the .odo out before aborting. This routine only ever wrote to stderr,
+    ! so anything still buffered on stdout was lost with the process -- which
+    ! meant the report a user needs in order to understand the abort could be
+    ! missing from the very file they are told to examine.
+    !
+    ! Guarded by io_on_root, not by iostat alone: off root `stdout` was never
+    ! assigned, so it names an arbitrary unit that may well be connected to
+    ! something else. iostat would hide the error, not the mistake.
+    if (io_on_root) flush(stdout, iostat=flush_ierr)
+
     write (stderr, *) 'Exiting.......'
     write (stderr, '(1x,a)') trim(error_msg)
     close (stderr)

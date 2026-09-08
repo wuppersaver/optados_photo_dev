@@ -79,6 +79,22 @@ module od_photo
   !! axis and therefore no symmetry loop of their own; the map and tensor
   !! routines test each image directly with phi_accepted instead.
   real(kind=dp), allocatable, dimension(:, :, :, :) :: phi_accept_frac
+  !! Set by photo_check_star, read by every routine that places a symmetry star.
+  !! photo_needs_tr(N_k) is true when the star CASTEP used to weight this k-point
+  !! is larger than the one the operation list can reach, which happens when the
+  !! in-plane point group has no -I and time reversal supplied the difference.
+  !! photo_star_ok is false when the weights or the inferred MP grid could not be
+  !! trusted; nothing is then corrected, and the run says so. See item 10 of
+  !! documents/Photoemission_setup_invariance_fixes.md.
+  logical, allocatable, dimension(:) :: photo_needs_tr
+  logical :: photo_star_ok = .false.
+  logical :: photo_star_checked = .false.
+  !! True when the operation list must be walked a second time with the sign
+  !! flipped, to place the time-reversed half of every star. Set by
+  !! photo_check_star; read only through photo_star_n_ops and photo_star_op.
+  logical :: photo_star_double = .false.
+  integer :: photo_star_n_tr = 0
+  real(kind=dp) :: photo_star_tr_weight = 0.0_dp
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_arpes
   real(kind=dp), allocatable, dimension(:, :, :, :) :: theta_internal
   real(kind=dp), allocatable, dimension(:, :, :, :) :: E_kinetic
@@ -172,6 +188,9 @@ contains
     ! Identify layers
     call analyse_geometry
     call calc_band_info
+    ! Establish, once, whether the operation list reaches the whole symmetry
+    ! star. Reports either way; corrects nothing on its own. See item 10.
+    call photo_check_star
     call calc_photon_energies
 
     if (index(photo_model, 'dosds') .eq. 0) then
@@ -2017,9 +2036,16 @@ contains
       return
     end if
 
+    ! Walk the same list the maps walk, so that "the star" means one thing in
+    ! this code and not two. When item 10's correction is off this is exactly
+    ! the operation list and the result is unchanged; when it is on, the
+    ! time-reversed half is counted here too. Duplicated images inflate the
+    ! numerator and the denominator together and cancel, which is why the
+    ! doubling is safe for a k that did not need it.
+    n_symm = photo_star_n_ops()
     n_accept = 0
     do nsymm_op = 1, n_symm
-      image = matmul(crystal_symmetry_operations(1:2, 1:2, nsymm_op), (/kx, ky/))
+      image = matmul(photo_star_op(nsymm_op), (/kx, ky/))
       if (phi_accepted(image(1), image(2))) n_accept = n_accept + 1
     end do
     frac = real(n_accept, dp)/real(n_symm, dp)
@@ -2080,6 +2106,362 @@ contains
     mat(2, 2) = 1.0_dp
     if (num_crystal_symmetry_operations .ge. 1) mat = crystal_symmetry_operations(1:2, 1:2, nsymm_op)
   end function photo_symm_2d
+
+  !===============================================================================
+  pure function photo_star_n_ops() result(n_ops)
+    !*===============================================================================
+    ! How many images a placing loop must walk: the operation list, doubled when
+    ! the star needs its time-reversed half (item 10).
+    !
+    ! Doubling is applied to every k-point, not only to those that need it, and
+    ! that is deliberate. For a k whose orbit already contains -k the negated
+    ! images coincide with the ones already there, so each distinct image is hit
+    ! twice and the halved prefactor gives it back exactly the weight it had.
+    ! The result is identical, and the loops need no per-k branch.
+    !
+    ! Returns photo_n_symm() unchanged whenever the star is complete, so nothing
+    ! moves on a centrosymmetric structure.
+    !===============================================================================
+    implicit none
+    integer :: n_ops
+
+    n_ops = photo_n_symm()
+    if (photo_star_double) n_ops = n_ops*2
+  end function photo_star_n_ops
+
+  !===============================================================================
+  pure function photo_star_op(i) result(mat)
+    !*===============================================================================
+    ! Image i of the star: the in-plane operation for i <= n_symm, and its
+    ! negative beyond that. Negating the operation is the same as negating k,
+    ! since {-R k} = {R (-k)} and the group is closed.
+    !===============================================================================
+    implicit none
+    integer, intent(in) :: i
+    real(kind=dp)       :: mat(2, 2)
+
+    if (i .le. photo_n_symm()) then
+      mat = photo_symm_2d(i)
+    else
+      mat = -photo_symm_2d(i - photo_n_symm())
+    end if
+  end function photo_star_op
+
+  !===============================================================================
+  function photo_star_size(N_k) result(m_prime)
+    !*===============================================================================
+    ! How many DISTINCT in-plane images the operation list produces for this
+    ! k-point -- m'_k in item 10 of the invariance brief.
+    !
+    ! Not the same as the number of operations. Several 3D operations can share
+    ! an in-plane block (in a slab symmetric about its mid-plane the z-mirror
+    ! pairs with every operation, halving the distinct count at a stroke), and a
+    ! k on a symmetry line is left where it is by its little group. By
+    ! orbit-stabiliser the loop hits each distinct image n_symm/m'_k times, which
+    ! is exactly why the 1/n_symm prefactor conserves the star total without
+    ! anyone having to know m'_k.
+    !
+    ! Two images are the same k when they differ by a reciprocal lattice vector,
+    ! so the comparison is done on folded FRACTIONAL coordinates. The operations
+    ! themselves are Cartesian (see photo_symm_2d), hence the round trip.
+    !===============================================================================
+    use od_cell, only: kpoint_r, recip_lattice, real_lattice
+    use od_algorithms, only: utility_reciprocal_frac_to_cart, utility_reciprocal_cart_to_frac
+    implicit none
+    integer, intent(in) :: N_k
+    integer             :: m_prime
+
+    real(kind=dp) :: cart(3), img_cart(3), img_frac(3)
+    real(kind=dp) :: images(2, 48)
+    integer       :: nsymm_op, i
+    logical       :: seen
+    ! The k-points come from a text file with a handful of decimals, so identity
+    ! is a question about the file's precision, not the machine's.
+    real(kind=dp), parameter :: k_tol = 1.0e-5_dp
+
+    call utility_reciprocal_frac_to_cart(kpoint_r(:, N_k), cart, recip_lattice)
+
+    m_prime = 0
+    do nsymm_op = 1, photo_n_symm()
+      img_cart = 0.0_dp
+      img_cart(1:2) = matmul(photo_symm_2d(nsymm_op), cart(1:2))
+      img_cart(3) = cart(3)
+      call utility_reciprocal_cart_to_frac(img_cart, img_frac, real_lattice)
+      ! Fold to [-0.5, 0.5). The same idiom cell_find_MP_grid uses.
+      img_frac(1:2) = img_frac(1:2) - floor(img_frac(1:2) + 0.5_dp)
+
+      seen = .false.
+      do i = 1, m_prime
+        if (abs(images(1, i) - img_frac(1)) .lt. k_tol .and. &
+            abs(images(2, i) - img_frac(2)) .lt. k_tol) then
+          seen = .true.
+          exit
+        end if
+      end do
+      if (.not. seen) then
+        m_prime = m_prime + 1
+        if (m_prime .le. size(images, 2)) images(:, m_prime) = img_frac(1:2)
+      end if
+    end do
+
+    if (m_prime .lt. 1) m_prime = 1
+  end function photo_star_size
+
+  !===============================================================================
+  subroutine star_rule(edge, title)
+    !*===============================================================================
+    ! One horizontal rule of the symmetry-star box, with an optional centred title.
+    !
+    ! The edge character is a parameter because the whole section is framed with
+    ! '+'/'|' when there is nothing wrong and with '!' when there is. Fusing the
+    ! frame into the report, rather than printing a separate warning box after it,
+    ! keeps the explanation in one place: the two used to say the same thing twice.
+    !===============================================================================
+    use od_io, only: stdout, io_on_root
+    implicit none
+    character(len=1), intent(in) :: edge
+    character(len=*), intent(in) :: title
+    character(len=76) :: bar
+    character(len=1)  :: corner
+    integer :: n, left
+
+    ! '+' closes the ordinary frame and '!' the warning one, matching the two
+    ! box styles already used in this file.
+    corner = '+'
+    if (edge .eq. '!') corner = '!'
+    bar = repeat('-', 76)
+    n = len_trim(title)
+    if (n .gt. 0) then
+      left = (76 - n - 2)/2
+      bar(left + 1:left + n + 2) = ' '//trim(title)//' '
+    end if
+    ! Guarded here, not only at the call site. stdout is assigned on the root
+    ! node alone; off root it is an uninitialised save variable naming whatever
+    ! unit that value happens to be, so one call placed outside an on_root block
+    ! would scribble on it from every other rank. io_on_root is exactly the
+    ! question being asked -- is stdout connected here -- and costs nothing.
+    if (io_on_root) write (stdout, '(1x,a1,a76,a1)') corner, bar, corner
+  end subroutine star_rule
+
+  !===============================================================================
+  subroutine star_line(edge, text)
+    !*===============================================================================
+    ! One text line of the symmetry-star box. See star_rule for the edge.
+    !===============================================================================
+    use od_io, only: stdout, io_on_root
+    implicit none
+    character(len=1), intent(in) :: edge
+    character(len=*), intent(in) :: text
+    character(len=76) :: buf
+
+    buf = '  '//text
+    ! See star_rule for why this is guarded here rather than only by the caller.
+    if (io_on_root) write (stdout, '(1x,a1,a76,a1)') edge, buf, edge
+  end subroutine star_line
+
+  !===============================================================================
+  subroutine photo_check_star
+    !*===============================================================================
+    ! Decide, once per run, whether the operation list can reach the whole star
+    ! that CASTEP's k-point weights describe.
+    !
+    !   m_k  = kpoint_weight(N_k)*total_ks   the star CASTEP reduced with
+    !   m'_k = photo_star_size(N_k)          the star the operation list reaches
+    !
+    ! CASTEP reduces the mesh with the point group AND time reversal, but writes
+    ! only the point group into symmetry_ops. So on a structure whose in-plane
+    ! group has no -I -- a slab whose two faces differ -- m_k is twice m'_k for
+    ! every k that is not its own -k, and nothing in the files says so.
+    !
+    ! Two conditions are checked, and both are theorems rather than tolerances:
+    ! m_k must be a positive integer, and m_k/m'_k must be exactly 1 or 2 (time
+    ! reversal is an order-2 extension of the point group, so orbit-stabiliser
+    ! permits nothing else). Either failing means kpoint_grid_dim is wrong or the
+    ! weights are not those of a full MP grid, and the honest response is to say
+    ! so and correct nothing. That makes this the first automatic check
+    ! cell_find_MP_grid has ever had.
+    !===============================================================================
+    use od_cell, only: kpoint_weight, kpoint_grid_dim, num_kpoints_on_node
+    use od_comms, only: my_node_id, on_root, comms_reduce, comms_bcast
+    use od_parameters, only: devel_flag, kpoint_mp_grid
+    use od_io, only: stdout, io_error
+    implicit none
+
+    integer       :: N_k, m_prime, m_k_int, ratio, ierr
+    integer       :: n_bad_int, n_bad_ratio, n_mesh_open, total_ks
+    character(len=1)  :: edge
+    character(len=74) :: buf
+    real(kind=dp) :: m_k
+    real(kind=dp), parameter :: int_tol = 1.0e-4_dp
+
+    if (photo_star_checked) return
+    photo_star_checked = .true.
+
+    if (.not. allocated(photo_needs_tr)) then
+      allocate (photo_needs_tr(num_kpoints_on_node(my_node_id)), stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_check_star - allocation of photo_needs_tr failed')
+    end if
+    photo_needs_tr = .false.
+
+    total_ks = kpoint_grid_dim(1)*kpoint_grid_dim(2)
+    n_bad_int = 0
+    n_bad_ratio = 0
+    n_mesh_open = 0
+    photo_star_n_tr = 0
+    photo_star_tr_weight = 0.0_dp
+
+    if (total_ks .lt. 1) then
+      photo_star_ok = .false.
+    else
+      do N_k = 1, num_kpoints_on_node(my_node_id)
+        m_k = kpoint_weight(N_k)*real(total_ks, dp)
+        m_k_int = nint(m_k)
+        if (m_k_int .lt. 1 .or. abs(m_k - real(m_k_int, dp)) .gt. int_tol) then
+          n_bad_int = n_bad_int + 1
+          cycle
+        end if
+        m_prime = photo_star_size(N_k)
+        ! m_k < m'_k means the operations generate more images than the weight
+        ! accounts for, which can only happen if some of those images are not
+        ! mesh points: the mesh is not invariant under the point group. A mesh
+        ! shifted off the symmetry-compatible positions does exactly this, and
+        ! it breaks star placement generally, not merely this bookkeeping.
+        if (m_k_int .lt. m_prime) then
+          n_mesh_open = n_mesh_open + 1
+          cycle
+        end if
+        if (mod(m_k_int, m_prime) .ne. 0) then
+          n_bad_ratio = n_bad_ratio + 1
+          cycle
+        end if
+        ratio = m_k_int/m_prime
+        if (ratio .eq. 2) then
+          photo_needs_tr(N_k) = .true.
+          photo_star_n_tr = photo_star_n_tr + 1
+          photo_star_tr_weight = photo_star_tr_weight + kpoint_weight(N_k)
+        elseif (ratio .ne. 1) then
+          n_bad_ratio = n_bad_ratio + 1
+        end if
+      end do
+
+      call comms_reduce(n_bad_int, 1, 'SUM')
+      call comms_reduce(n_bad_ratio, 1, 'SUM')
+      call comms_reduce(n_mesh_open, 1, 'SUM')
+      call comms_reduce(photo_star_n_tr, 1, 'SUM')
+      call comms_reduce(photo_star_tr_weight, 1, 'SUM')
+      ! comms_reduce leaves the totals on root only, and the verdict has to be
+      ! the same on every rank or the correction would be applied unevenly.
+      call comms_bcast(n_bad_int, 1)
+      call comms_bcast(n_bad_ratio, 1)
+      call comms_bcast(n_mesh_open, 1)
+      call comms_bcast(photo_star_n_tr, 1)
+      call comms_bcast(photo_star_tr_weight, 1)
+
+      photo_star_ok = (n_bad_int .eq. 0 .and. n_bad_ratio .eq. 0 .and. n_mesh_open .eq. 0)
+    end if
+    ! A run that could not establish the facts must not act on them.
+    if (.not. photo_star_ok) photo_needs_tr = .false.
+    photo_star_double = (photo_star_ok .and. photo_star_n_tr .gt. 0)
+    ! The documented way to see the uncorrected placement, matching the
+    ! convention of devel_flag : no_symmetry a few routines below.
+    if (index(devel_flag, 'no_time_reversal') .gt. 0) photo_star_double = .false.
+    ! The counterpart, and the only way to test the claim the design rests on:
+    ! doubling a star that is already complete must change nothing, because the
+    ! negated images coincide with those already placed and the halved prefactor
+    ! gives each one back the weight it had. Forcing it on a centrosymmetric
+    ! structure must reproduce the run bit for bit.
+    if (index(devel_flag, 'force_time_reversal') .gt. 0) photo_star_double = .true.
+
+    if (on_root) then
+      ! One box, framed as a warning when the bookkeeping could not be done or
+      ! was deliberately switched off. The explanation is written once.
+      edge = '|'
+      if (.not. photo_star_ok) edge = '!'
+      if (photo_star_ok .and. photo_star_n_tr .gt. 0 .and. .not. photo_star_double) edge = '!'
+
+      if (edge .eq. '!') then
+        call star_rule(edge, 'WARNING: Symmetry Star Bookkeeping')
+      else
+        call star_rule(edge, 'Symmetry Star Bookkeeping')
+      end if
+      write (buf, '(a,i8)') 'Symmetry operations in the cell           :', photo_n_symm()
+      call star_line(edge, buf)
+      if (kpoint_mp_grid(1) .gt. 0) then
+        write (buf, '(a,i8)') 'In-plane MP grid points (from your .odi)  :', total_ks
+      else
+        write (buf, '(a,i8)') 'In-plane MP grid points (reconstructed)   :', total_ks
+      end if
+      call star_line(edge, buf)
+
+      if (photo_star_ok) then
+        write (buf, '(a,i8)') 'k-points needing time-reversed partners   :', photo_star_n_tr
+        call star_line(edge, buf)
+        if (photo_star_n_tr .gt. 0) then
+          write (buf, '(a,f8.4)') '... carrying a k-point weight of          :', photo_star_tr_weight
+          call star_line(edge, buf)
+          call star_line(edge, '')
+          call star_line(edge, 'This cell has no in-plane inversion symmetry. The DFT code therefore')
+          call star_line(edge, 'treated k and -k as equivalent when it reduced the k-point mesh, but')
+          call star_line(edge, 'wrote only the rotations into the cell file. The k-points counted above')
+          call star_line(edge, 'each stand for twice as many emission directions as those rotations can')
+          call star_line(edge, 'generate.')
+          call star_line(edge, '')
+          if (photo_star_double) then
+            call star_line(edge, 'Corrected: the -k directions are placed as well. Momentum tensors and')
+            call star_line(edge, 'binding-energy maps gain them. Total QE and MTE do not depend on how the')
+            call star_line(edge, 'emission is distributed in angle, and are the same either way. No action')
+            call star_line(edge, 'needed.')
+          else
+            call star_line(edge, 'Warning: devel_flag : no_time_reversal is set, so the -k directions are')
+            call star_line(edge, 'NOT placed. Momentum tensors and binding-energy maps will show half of')
+            call star_line(edge, 'the emission directions of those k-points, each at twice its true in-')
+            call star_line(edge, 'tensity. Total QE and MTE are not affected. Remove the flag to place')
+            call star_line(edge, 'them.')
+          end if
+        end if
+      else
+        call star_line(edge, '')
+        if (n_bad_int .gt. 0) then
+          write (buf, '(a,i8)') 'k-points with an unexpected weight        :', n_bad_int
+          call star_line(edge, buf)
+          call star_line(edge, '')
+          call star_line(edge, 'Warning: the k-point weights are not as expected for a proper Monkhorst')
+          call star_line(edge, 'Pack mesh. This can be in the case of an explicit k-point list and will')
+          call star_line(edge, 'likely give wrong emission maps and other outputs. Proceed with caution.')
+          call star_line(edge, 'Total QE and MTE are not affected.')
+        end if
+        if (n_mesh_open .gt. 0) then
+          write (buf, '(a,i8)') 'k-points the operations move off the mesh :', n_mesh_open
+          call star_line(edge, buf)
+          call star_line(edge, '')
+          call star_line(edge, 'Warning: the k-point mesh is not invariant under the cell symmetry. For')
+          call star_line(edge, 'a hexagonal cell an even Monkhorst-Pack grid is generally not appropri-')
+          call star_line(edge, 'ate. Emission maps and other outputs will likely be wrong. Total QE and')
+          call star_line(edge, 'MTE will not be affected. An arbitrary kpoint_mp_offset can do the same')
+          call star_line(edge, 'on any lattice.')
+        end if
+        if (n_bad_ratio .gt. 0) then
+          write (buf, '(a,i8)') 'k-points with an unexpected image count   :', n_bad_ratio
+          call star_line(edge, buf)
+          call star_line(edge, '')
+          call star_line(edge, 'Warning: their weights do not divide by the number of images the opera-')
+          call star_line(edge, 'tions produce, so the grid printed above does not match the k-point')
+          call star_line(edge, 'list. Emission maps and other outputs may be wrong. Total QE and MTE')
+          call star_line(edge, 'are not affected.')
+          ! Only the .odi case gets specific advice. A reconstructed grid that is
+          ! wrong also breaks mesh invariance, so n_mesh_open catches it first.
+          if (kpoint_mp_grid(1) .gt. 0) then
+            call star_line(edge, 'The Monkhorst-Pack grid dimensions were defined in the .odi file. Make')
+            call star_line(edge, 'sure it is the exact number the DFT calculation used.')
+          end if
+        end if
+        call star_line(edge, '')
+        call star_line(edge, 'Nothing has been changed.')
+      end if
+      call star_rule(edge, '')
+      write (stdout, '(1x,a78)') '|                                                                            |'
+    end if
+  end subroutine photo_check_star
 
   subroutine calc_angle
     !*******=======================================================================
@@ -3304,7 +3686,7 @@ contains
     real(kind=dp), dimension(2) :: num_occ
     real(kind=dp) :: q_weight, q_weight1, q_weight2, factor, e_final, ef_top, e_occ_max
     integer :: N_k, i, j, N_in, N_spin, N2, N3, n_eigen, num_symm, ierr
-    integer :: n_ef, n_above
+    integer :: n_ef, n_above, n_below
 
     if (.not. legacy_file_format .and. index(devel_flag, 'old_filename') .gt. 0) then
       num_symm = 0
@@ -3369,22 +3751,44 @@ contains
     N_in = 1  ! 0 = no inversion, 1 = inversion
     factor = 1.0_dp/(temp_photon_energy**2)
     n_above = 0
+    n_below = 0
 
     do N_k = 1, num_kpoints_on_node(my_node_id)
       do N_spin = 1, nspins
         do n_eigen = 1, nbands                                ! Loop over state
-          ! * The tensor is binned by |k+G|^2/2, the plane-wave energy, whose zero
-          !   is the cell-averaged potential -- and that average moves when vacuum
-          !   is added, by 2.7 eV over a 10-28 A scan on an otherwise identical
-          !   slab.  A photoelectron travels in the vacuum, not in the average
-          !   potential, so the final state to look up is the plane wave whose
-          !   kinetic energy above the vacuum level matches the excess energy.
-          !   Referencing the lookup to evacuum_eff makes it cell independent: the
-          !   spread over the converged cells falls from 1.264 eV to 0.070 eV, and
-          !   what is left is the work-function spread, which is real.
-          e_final = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy - evacuum_eff
+          ! * The energy axis of the stored tensor is ABSOLUTE, on the same
+          !   eigenvalue scale as band_energy.  CASTEP writes
+          !   Ef_min = fem_ef_origin + SPECTRAL_FEM_EF_MIN (spectral.f90:552),
+          !   with fem_ef_origin the SCF Fermi energy -- so the axis and
+          !   band_energy already share a zero and the lookup needs no shift.
+          !
+          !   This previously subtracted evacuum_eff, and the comment here
+          !   claimed that made the lookup cell independent.  It does the
+          !   opposite: it moves an absolute axis onto a vacuum-referenced one
+          !   that nothing else in the file uses, so every 1-step lookup landed
+          !   low by roughly the work function.  Measured 2026-09-08: with the
+          !   term removed, 1-step QE is exactly invariant under a +3 eV shift of
+          !   the eigenvalue zero (ratio 1.0000 at 51 photon energies); with it,
+          !   QE moves by 3-14x.  On the 64L it collapsed the result to a
+          !   QE ~ exp(hv/kT) thermal tail.  See
+          !   evidence_dependence/One_step_FEM_energy_reference_bug.md.
+          !
+          !   Note evacuum_eff remains correct at photo.f90:3995 and 4379, where
+          !   the excess energies for the escape condition genuinely are on the
+          !   vacuum scale.
+          e_final = band_energy(n_eigen, N_spin, N_k) + temp_photon_energy
           if (e_final .gt. ef_top .and. band_energy(n_eigen, N_spin, N_k) .le. e_occ_max) &
             n_above = n_above + 1
+          ! Mirror of the above-window count.  fem_tensor_at returns zero below
+          ! the window with no record of having done so, which is the mechanism
+          ! by which a mis-referenced lookup stayed silent.  Counted over the
+          ! same occupied states, and only where the electron could actually
+          ! escape -- a state below the emission threshold contributes nothing
+          ! whether or not the table covers it.
+          if (e_final .lt. fem_energy_info(2) .and. &
+              band_energy(n_eigen, N_spin, N_k) .le. e_occ_max .and. &
+              band_energy(n_eigen, N_spin, N_k) + temp_photon_energy .gt. evacuum_eff) &
+            n_below = n_below + 1
           call fem_tensor_at(n_eigen, N_spin, N_k, e_final, tens)
 
           if (index(optics_geom, 'unpolar') .gt. 0) then
@@ -3472,6 +3876,19 @@ contains
       write (stdout, *) 'Raise SPECTRAL_FEM_EF_MAX and regenerate, or lower the photon energy.'
       call flush(stdout)
       call io_error('Error: photon energy takes states above the stored final-state window')
+    end if
+
+    ! Below the window is a warning, not an error: SPECTRAL_FEM_EF_MIN below the
+    ! Fermi energy is normal and those states are genuinely absent from the
+    ! table.  It becomes serious when states that could emit are being dropped,
+    ! which is what this counts.
+    call comms_reduce(n_below, 1, 'SUM')
+    if (on_root .and. n_below .gt. 0) then
+      write (stdout, '(1x,a,f8.4,a,i8,a)') '! Warning: at photon energy ', temp_photon_energy, &
+        ' eV, ', n_below, ' occupied states that clear the emission'
+      write (stdout, '(1x,a)') '! threshold need a final-state energy BELOW the stored window and were'
+      write (stdout, '(1x,a)') '! given a zero matrix element.  Lower SPECTRAL_FEM_EF_MIN and regenerate.'
+      call flush(stdout)
     end if
 
   end subroutine make_foptical_weights
@@ -5529,15 +5946,15 @@ contains
     end do
 
     if (index(photo_model, '3step') .gt. 0) then
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5583,15 +6000,15 @@ contains
         end do ! kpts
       end do ! symm_ops
 
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5637,15 +6054,15 @@ contains
 
     if (index(photo_model, '1step') .gt. 0) then
 
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -5805,14 +6222,14 @@ contains
                                 (zdx - 1)*photo_pmat_bin_width)
     end do
 
-    do nsymm_op = 1, photo_n_symm()
-      temp_mat = photo_symm_2d(nsymm_op)
+    do nsymm_op = 1, photo_star_n_ops()
+      temp_mat = photo_star_op(nsymm_op)
       if (index(devel_flag, 'no_symmetry') .gt. 0) then
         current_k = photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k)
-        k_prefactor = 1.0_dp/photo_n_symm()
+        k_prefactor = 1.0_dp/photo_star_n_ops()
       else
         current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen, N_spin, N_k))
-        k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+        k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
       end if
       ! As above: this is the emission direction of this image, so the wedge
       ! can be tested here and nowhere earlier.
@@ -6308,15 +6725,15 @@ contains
     total_be_contribs = 0.0_dp
 
     if (index(photo_model, '3step') .gt. 0) then
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6357,15 +6774,15 @@ contains
         end do ! kpts
       end do ! symm_ops
 
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6405,15 +6822,15 @@ contains
     end if
 
     if (index(photo_model, '1step') .gt. 0) then
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         do N_k = 1, num_kpoints_on_node(my_node_id)
           if (index(devel_flag, 'no_symmetry') .gt. 0) then
             current_k = kpoint_r_cart(1:2, N_k)
-            k_prefactor = 1.0_dp/photo_n_symm()
+            k_prefactor = 1.0_dp/photo_star_n_ops()
           else
             current_k = matmul(temp_mat, kpoint_r_cart(1:2, N_k))
-            k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+            k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           end if
           ! current_k is the emission direction of this symmetry image, so the
           ! azimuthal acceptance can finally be tested against something real.
@@ -6618,8 +7035,8 @@ contains
     total_be_contribs = 0.0_dp
     if (index(photo_model, '3step') .gt. 0) then
       call photo_calculate_delta(delta_temp, .false.)
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         ! current_k = matmul(temp_mat, photo_gkgrid(1:2, gdx, n_eigen_init, N_spin, N_k))
 
         ! Everything that sets the k_x/k_y patch is indexed by the initial band
@@ -6633,7 +7050,7 @@ contains
         ! wide, so it is negligible for most states; testing it before the patch
         ! is built skips the majority of the work outright.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           do N_spin = 1, nspins
             do n_eigen_init = 1, nbands - 1
               ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
@@ -6708,12 +7125,12 @@ contains
 
       call photo_calculate_delta(delta_temp, .true.)
 
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         ! Same factorisation for the extrapolated bulk; no atom loop to hoist,
         ! since the bulk is one region indexed max_atoms + 1.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           do N_spin = 1, nspins
             do n_eigen_init = 1, nbands - 1
               ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
@@ -6783,11 +7200,11 @@ contains
     end if
 
     if (index(photo_model, '1step') .gt. 0) then
-      do nsymm_op = 1, photo_n_symm()
-        temp_mat = photo_symm_2d(nsymm_op)
+      do nsymm_op = 1, photo_star_n_ops()
+        temp_mat = photo_star_op(nsymm_op)
         ! One band index here, so only the atom sum comes out of the patch.
         do N_k = 1, num_kpoints_on_node(my_node_id)
-          k_prefactor = kpoint_weight(N_k)*total_ks/photo_n_symm()
+          k_prefactor = kpoint_weight(N_k)*total_ks/photo_star_n_ops()
           do N_spin = 1, nspins
             kxkybands: do n_eigen = 1, nbands
               ! Zero total: see pdos_fraction. Factored out of the atom sum here, so skip.
@@ -7124,6 +7541,15 @@ contains
     use od_electronic, only: foptical_mat, photo_gkgrid, transmit_prob
     implicit none
     integer :: ierr
+
+    if (allocated(photo_needs_tr)) then
+      deallocate (photo_needs_tr, stat=ierr)
+      if (ierr /= 0) call io_error('Error: photo_deallocate - failed to deallocate photo_needs_tr')
+    end if
+    ! A photon sweep calls photo_calculate once, so the check stays valid across
+    ! energies; a second call in the same process must re-establish it.
+    photo_star_checked = .false.
+    photo_star_ok = .false.
 
     if (allocated(phi_accept_frac)) then
       deallocate (phi_accept_frac, stat=ierr)

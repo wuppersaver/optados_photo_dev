@@ -543,10 +543,15 @@ contains
 
     end select
 
-    call my_icopy(size, array, 1, array_red, 1)
+    ! Arguments were the wrong way round: my_ICOPY(N, ZX, INCX, ZY, INCY) does
+    ! ZY = ZX, so this copied the LOCAL value over the reduced one and left
+    ! `array` untouched. comms_reduce was therefore a no-op for integers, and
+    ! every rank kept its own partial count. comms_reduce_real has always had
+    ! it the right way round -- compare my_dcopy below.
+    call my_icopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
-      print *, 'Error in comms_reduce_real'
+      print *, 'Error in comms_reduce_int'
       call comms_error
     end if
 #endif

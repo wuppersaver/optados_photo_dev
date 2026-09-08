@@ -55,6 +55,23 @@ exe = ../../optados.mpi.x86_64
 extract_fn = tools parsers.parse_photo_add_output.parse
 tolerance = (5.0e-2, 5E-5)
 
+[OPTADOS_PHOTO_STAR_OK]
+# The symmetry-star bookkeeping of item 10. can_fail because the fixture carries
+# only a .bands and an -out.cell: the star report is complete long before the
+# first matrix element is read, so the run reports what this test is about and
+# then stops for want of an ome_bin. Keeping the fixture that small is the point
+# -- it makes the test about symmetry and nothing else.
+exe = ../../optados.x.x86_64
+can_fail = true
+extract_fn = tools parsers.parse_photo_star.parse
+tolerance = (1.0e-8, 1.0e-8)
+
+[OPTADOS_MPI_PHOTO_STAR_OK]
+exe = ../../optados.mpi.x86_64
+can_fail = true
+extract_fn = tools parsers.parse_photo_star.parse
+tolerance = (1.0e-8, 1.0e-8)
+
 [OPTADOS_PHOTO_OPTERR_FAIL]
 exe = ../../optados.x.x86_64
 can_fail = true

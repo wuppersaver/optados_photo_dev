@@ -1,0 +1,32 @@
+# Symmetry-star bookkeeping (item 10). The run is EXPECTED to stop for want of
+# an ome_bin: the star report is written before the first matrix element is
+# read, so the fixture needs only a .bands and an -out.cell. See the checkpoint
+# README beside them.
+
+task                 : photoemission
+photo_model          : dosds
+
+photo_photon_energy  : 6.0
+jdos_spacing         : 0.05
+broadening           : adaptive
+
+# Pinned, so the run does not need a dome_bin to find the Fermi level.
+efermi               : -1.6213
+
+optics_geom          : unpolar
+optics_qdir          : 1 1 0
+
+# Wide enough to contain every atom, adsorbate included: analyse_geometry runs
+# BEFORE photo_check_star and refuses an atom above the slab top, so a tight
+# bound here would kill the run before it reported the thing under test.
+photo_slab_min       : 4.0
+photo_slab_max       : 18.0
+
+photo_work_function  : 4.60
+photo_imfp_model     : const
+photo_imfp_value     : 5.3
+photo_elec_field     : 0.0
+photo_temperature    : 300.0
+photo_momentum       : crystal
+
+iprint               : 1

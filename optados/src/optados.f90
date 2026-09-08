@@ -35,7 +35,7 @@ program optados
   !=========================================================================!
   use od_comms, only: comms_setup, on_root, comms_end, num_nodes
   use od_constants, only: dp
-  use od_io, only: io_get_seedname, io_time, io_date, io_file_unit,&! Functions
+  use od_io, only: io_get_seedname, io_time, io_date, io_file_unit, io_on_root,&! Functions
        & stdout, stderr, seedname                                            ! Variables
   use od_parameters, only: param_read, param_write_header, param_Dist, param_write, &
     param_dealloc, pdos, pdis, dos, jdos, core, optics, photo, iprint, param_write_atomic_coord, &
@@ -89,6 +89,7 @@ program optados
     pos = 'append'
 
     stdout = io_file_unit()
+    io_on_root = .true.   ! od_io may now flush stdout on abort
     open (unit=stdout, file=trim(seedname)//'.odo', status=trim(stat), position=trim(pos))
     write (stdout, *) 'OptaDOS: Execution started on ', cdate, ' at ', ctime
     write (stdout, '(1x,a26,i5,a10)') 'Parallelised over', num_nodes, ' thread(s)'

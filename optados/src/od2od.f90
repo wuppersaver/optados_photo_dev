@@ -8,7 +8,7 @@ module od_conv
        & elnesfile_header, elec_read_foptical_mat, femfile_header, fem_energy_info, tmprob_file_header, &
        & elec_read_transmit_prob, photo_gkgrid, photo_gkgrid_file_header, elec_read_gk_grid
   use od_parameters, only: iprint
-  use od_io, only: stdout, io_error, seedname
+  use od_io, only: stdout, io_error, seedname, io_on_root
   implicit none
 
   character(len=80), save :: outseedname
@@ -1438,6 +1438,7 @@ program od2od
   write (stderr, *) 'od2od: Execution started on ', cdate, ' at ', ctime
 
   stdout = io_file_unit()
+  io_on_root = .true.   ! od_io may now flush stdout on abort
   open (unit=stdout, file=trim(seedname)//'.log')
   !-------------------------------------------------------------------------!
   write (stdout, *)

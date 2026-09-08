@@ -590,6 +590,31 @@ inputs_args = ('Cu100_5L.odi','')
 output = Cu100_5L.odo
 
 # ds-like model, serial
+# Symmetry-star bookkeeping, item 10 of
+# documents/Photoemission_setup_invariance_fixes.md.
+#
+# A matched pair of six-layer Cu(111) slabs differing only in whether the two
+# faces are the same. Both give 12 irreducible k-points from the same 9x9x1 grid
+# with identical weights; only the operation counts differ, 12 against 6. The
+# asymmetric one therefore carries weights describing a star its operation list
+# cannot reach, which is the condition item 10 detects.
+#
+# Both runs are EXPECTED TO STOP for want of an ome_bin -- hence can_fail on
+# OPTADOS_PHOTO_STAR_OK. The star report is complete before the first matrix
+# element is read, so the fixture is a .bands and an -out.cell and nothing else.
+
+[testopt_photo_ds_star_complete]
+program = OPTADOS_PHOTO_STAR_OK
+max_nprocs = 0
+inputs_args = ('Cu111_star_sym.odi','')
+output = Cu111_star_sym.odo
+
+[testopt_photo_ds_star_time_reversal]
+program = OPTADOS_PHOTO_STAR_OK
+max_nprocs = 0
+inputs_args = ('Cu111_star.odi','')
+output = Cu111_star.odo
+
 [testopt_photo_ds_general]
 program = OPTADOS_PHOTO_ODO_OK
 max_nprocs = 0

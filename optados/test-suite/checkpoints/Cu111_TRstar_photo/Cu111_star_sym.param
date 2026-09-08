@@ -1,0 +1,12 @@
+task                 : spectral
+spectral_task        : dos
+cut_off_energy       : 300 eV
+xc_functional        : PBEsol
+spin_polarized       : false
+nextra_bands         : 12
+elec_energy_tol      : 1e-5 eV
+max_scf_cycles       : 100
+smearing_width       : 300.0 K
+write_cell_structure : true
+opt_strategy         : speed
+num_dump_cycles      : 0

@@ -635,6 +635,40 @@ contains
         read (fem_unit) fem_energy_info(i)
       end do
       if (iprint > 1) write (stdout, '(1x,a)') trim(femfile_header)
+
+      ! Slot 5 is Ef_origin, the SCF Fermi energy CASTEP referenced the window
+      ! to.  It was read and discarded.  Asserting it against the .bands Fermi
+      ! energy is the one cheap way to catch a .fem_bin and a .bands that came
+      ! from different SCFs -- in which case the axes do not share a zero and
+      ! every 1-step lookup is meaningless.
+      if (abs(fem_energy_info(5) - efermi_castep) .gt. 0.001_dp) then
+        write (stdout, *) 'fem_bin Ef_origin:', fem_energy_info(5), &
+          ' but the .bands Fermi energy is:', efermi_castep
+        write (stdout, *) 'These must agree: the stored final-state window is referenced to the'
+        write (stdout, *) 'SCF Fermi energy, on the same absolute scale as the eigenvalues.  A'
+        write (stdout, *) 'mismatch means the .fem_bin and the .bands are from different runs.'
+        call io_error('Error: .fem_bin Ef_origin disagrees with the .bands Fermi energy')
+      end if
+
+      ! The four numbers that decide whether the 1-step model is meaningful at
+      ! all never appeared in any output at iprint 1, so a mis-referenced lookup
+      ! had nothing to show for itself.  Print them unconditionally.
+      write (stdout, '(1x,a)') '+------------------ Free-electron final-state table ------------------+'
+      write (stdout, '(1x,a,f10.4,a,f10.4,a)') '|  Window (absolute)      : ', &
+        fem_energy_info(2), ' to ', &
+        fem_energy_info(2) + fem_energy_info(3)*real(nint(fem_energy_info(1)), dp), ' eV'
+      write (stdout, '(1x,a,f10.4,a,f10.4,a)') '|  Step / broadening      : ', &
+        fem_energy_info(3), ' / ', fem_energy_info(4), ' eV'
+      write (stdout, '(1x,a,f10.4,a)') '|  Ef_origin (CASTEP E_F) : ', &
+        fem_energy_info(5), ' eV'
+      write (stdout, '(1x,a,i8)') '|  Number of Ef bins      : ', nint(fem_energy_info(1))
+      ! A broadening much wider than the photon step means the E_f dependence
+      ! being resolved is illusory -- the table is smoother than the grid it is
+      ! sampled on.
+      if (fem_energy_info(4) .gt. 10.0_dp*fem_energy_info(3)) then
+        write (stdout, '(1x,a)') '|  ! broadening exceeds 10x the step: E_f structure is not resolved'
+      end if
+      write (stdout, '(1x,a)') '+----------------------------------------------------------------------+'
     end if
 
     call comms_bcast(fem_energy_info(1), 5)
