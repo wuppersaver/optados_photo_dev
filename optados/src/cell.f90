@@ -302,17 +302,36 @@ contains
         write (stdout, *) " 1st^-1:", 1.0_dp/min_img
       end if
 
+      ! nint, not int. The k-points are read from the .bands file, where CASTEP
+      ! writes them to 8 decimals, so min_img is a difference of rounded numbers
+      ! and 1/min_img misses the integer by a few ulp either way. Truncating
+      ! then loses a whole grid point: 1/17 rounds UP to 0.05882353, every
+      ! pairwise difference inherits that, and 1.0_dp/min_img comes out
+      ! 16.999999830000014 -- so a 17x17x1 mesh was reported as 16x16x1.
+      ! Which sizes are hit depends on where the decimal rounding lands and is
+      ! not monotonic in the precision: at 8 dp only n=17 in 2..300, at 9 dp
+      ! n = 7, 11, 13, 19, 77, 91, 133, 143, 209, 247. With nint, none at any
+      ! precision from 7 dp up. Verified against a real CASTEP 17x17x1 run.
       if (abs(2.0_dp*min_img - min_img2) < min_img_tol) then
         ! If 1stMI==2ndMI then 1/1stMP is the grid density
         if (present(kpoint_offset)) kpoint_offset(idim) = 0.0_dp
-        kpoint_grid_dim(idim) = int(1.0_dp/min_img)
-        ! WARNING could also have a shifted grid with a perfect shift 3/(4n)
-        ! this would be a known bug
+        kpoint_grid_dim(idim) = nint(1.0_dp/min_img)
+        ! WARNING a shifted grid can still alias onto a denser one, and the
+        ! family is wider than the 3/(4n) named above. With d = (2*shift) mod
+        ! 1/n and a = min(d, 1/n - d), for n >= 2:
+        !     d = 0        (shift = m/(2n))          reported correctly
+        !     a = 1/(2n)   (shift = odd/(4n))        reported as 2n
+        !     a = 1/(3n)   (shift = m/(6n), 3 !| m)  reported as 3n
+        !     otherwise                              reported correctly
+        ! So no shift and the half-step shift -- the two a user is told to use
+        ! -- are both safe, and an arbitrary shift is safe; it is the tidy
+        ! quarter and third steps that alias. Still unfixable here: without the
+        ! symmetry operations we cannot build the shifted mesh to rule it out.
       else
         ! If 1stMI.ne.2ndMI then 1/3rdMP is the grid density
         ! and 1stMI/2 is the shift
         if (present(kpoint_offset)) kpoint_offset(idim) = min_img/2.0_dp
-        kpoint_grid_dim(idim) = int(1.0_dp/min_img3)
+        kpoint_grid_dim(idim) = nint(1.0_dp/min_img3)
       end if
 
     end do over_dim
