@@ -1006,9 +1006,9 @@ contains
     integer :: i
 
     write (stdout, '(30x,a21)') 'Lattice Vectors (Ang)'
-    write (stdout, 101) 'a_1', (real_lattice(1, I), i=1, 3)
-    write (stdout, 101) 'a_2', (real_lattice(2, I), i=1, 3)
-    write (stdout, 101) 'a_3', (real_lattice(3, I), i=1, 3)
+    write (stdout, 101) 'a_1', (real_lattice(I, 1), i=1, 3)
+    write (stdout, 101) 'a_2', (real_lattice(I, 2), i=1, 3)
+    write (stdout, 101) 'a_3', (real_lattice(I, 3), i=1, 3)
 
     write (stdout, *)
 
