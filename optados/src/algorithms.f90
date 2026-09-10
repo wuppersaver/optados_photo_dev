@@ -216,7 +216,7 @@ contains
     integer :: i
 
     do i = 1, 3
-      cart(i) = real_lat(1, i)*frac(1) + real_lat(2, i)*frac(2) + real_lat(3, i)*frac(3)
+      cart(i) = real_lat(i, 1)*frac(1) + real_lat(i, 2)*frac(2) + real_lat(i, 3)*frac(3)
     end do
 
     return
