@@ -1,4 +1,4 @@
- OptaDOS: Execution started on  9 Feb 2022 at 11:26:26 
+ OptaDOS: Execution started on 10 Sep 2026 at 11:58:34 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -84,19 +84,19 @@
 
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Linear broadening                                                     |
- |   Spin Component : 1 occupation between    3.89321 and    4.02005   <- Occ |
- |   Spin Component : 2 occupation between    3.89390 and    4.02005   <- Occ |
- |           Fermi energy (Linear broadening) :   4.2477 eV            <- EfL |
+ |   Spin Component : 1 occupation between    3.89127 and    4.01595   <- Occ |
+ |   Spin Component : 2 occupation between    3.89259 and    4.01595   <- Occ |
+ |           Fermi energy (Linear broadening) :   4.2128 eV            <- EfL |
  +----------------------------------------------------------------------------+
  +--------------------------- Setting Fermi Energy  --------------------------+
- |                      Fermi energy from DOS :   4.2477 eV            <- EfD |
+ |                      Fermi energy from DOS :   4.2128 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
  +----------------------- DOS at Fermi Energy Analysis -----------------------+
- |                          Fermi energy used :   4.2477 eV                   |
+ |                          Fermi energy used :   4.2128 eV                   |
  | From Linear broadening                                                     |
- |   Spin Component : 1   DOS at Fermi Energy :   0.0736 eln/cell      <- DEL |
- |   Spin Component : 2   DOS at Fermi Energy :   0.0709 eln/cell      <- DEL |
+ |   Spin Component : 1   DOS at Fermi Energy :   0.0607 eln/cell      <- DEL |
+ |   Spin Component : 2   DOS at Fermi Energy :   0.0566 eln/cell      <- DEL |
  +----------------------------------------------------------------------------+
 
  +----------------------------- Bandgap Analysis -----------------------------+
@@ -122,13 +122,13 @@
  +----------------------------------------------------------------------------+
  |                                                                            |
  +--------------------------- Band Energy Analysis ---------------------------+
- |            Band energy (Linear broadening) :      -5.7492 eV        <- BEL |
+ |            Band energy (Linear broadening) :   -8248.4177 eV        <- BEL |
  |                  Band energy (From CASTEP) :      -6.4324 eV        <- BEC |
  +----------------------------------------------------------------------------+
 
- + Time to calculate Density of States                            0.008 (sec) +
+ + Time to calculate Density of States                            0.006 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on  9 Feb 2022 at 11:26:26 
+ OptaDOS: Execution complete on 10 Sep 2026 at 11:58:34 

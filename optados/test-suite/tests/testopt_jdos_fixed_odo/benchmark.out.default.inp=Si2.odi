@@ -1,4 +1,4 @@
- OptaDOS: Execution started on 11 Feb 2022 at 10:23:09 
+ OptaDOS: Execution started on 10 Sep 2026 at 11:58:34 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -85,17 +85,17 @@
  +--------------------------- Setting Fermi Energy  --------------------------+
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Fixed broadening                                                      |
- |   Spin Component : 1 occupation between    3.96238 and    4.00573   <- Occ |
- |   Spin Component : 2 occupation between    3.96237 and    4.00573   <- Occ |
- |            Fermi energy (Fixed broadening) :   4.4481 eV            <- EfF |
+ |   Spin Component : 1 occupation between    3.97547 and    4.02183   <- Occ |
+ |   Spin Component : 2 occupation between    3.97547 and    4.02183   <- Occ |
+ |            Fermi energy (Fixed broadening) :   4.5128 eV            <- EfF |
  +----------------------------------------------------------------------------+
- |                      Fermi energy from DOS :   4.4481 eV            <- EfD |
+ |                      Fermi energy from DOS :   4.5128 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
  |                                                                            |
- + Time to calculate Joint Density of States                      0.025 (sec) +
+ + Time to calculate Joint Density of States                      0.043 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 11 Feb 2022 at 10:23:09 
+ OptaDOS: Execution complete on 10 Sep 2026 at 11:58:34 

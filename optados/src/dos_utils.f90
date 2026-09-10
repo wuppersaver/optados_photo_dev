@@ -978,14 +978,15 @@ contains
 
     ! If dos_nbins is set, then we'd better use that
     if (dos_nbins < 0) then ! we'll have to work it out
-      dos_nbins = abs(ceiling((max_band_energy - min_band_energy)/dos_spacing))
+      ! One bin per dos_spacing, plus the bin at the bottom of the range.
+      dos_nbins = abs(ceiling((max_band_energy - min_band_energy)/dos_spacing)) + 1
       ! Now modify the max_band_energy
       if (on_root .and. (iprint > 2)) then
         write (stdout, *)
         write (stdout, '(1x,a78)') '+----------------------------------------------------------------------------+'
         write (stdout, '(1x,a40,f11.3,13x,a14)') '| max_band_energy (before correction) : ', max_band_energy, "<-- DOS Grid |"
       end if
-      max_band_energy = min_band_energy + dos_nbins*dos_spacing
+      max_band_energy = min_band_energy + real(dos_nbins - 1, dp)*dos_spacing
     end if
 
     allocate (E(1:dos_nbins), stat=ierr)
@@ -997,8 +998,8 @@ contains
     end do
 
     if (on_root .and. (iprint > 2)) then
-      write (stdout, '(1x,1a,a39,e11.5,13x,a14)') '|', 'dos_min_energy : ', dos_min_energy, "<-- DOS Grid |"
-      write (stdout, '(1x,1a,a39,e11.5,13x,a14)') '|', 'dos_max_energy : ', dos_max_energy, "<-- DOS Grid |"
+      write (stdout, '(1x,1a,a39,e12.5,12x,a14)') '|', 'dos_min_energy : ', dos_min_energy, "<-- DOS Grid |"
+      write (stdout, '(1x,1a,a39,e12.5,12x,a14)') '|', 'dos_max_energy : ', dos_max_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'min_band_energy : ', min_band_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,f11.3,13x,a14)') '|', 'max_band_energy : ', max_band_energy, "<-- DOS Grid |"
       write (stdout, '(1x,1a,a39,i11,13x,a14)') '|', 'dos_nbins : ', dos_nbins, "<-- DOS Grid |"

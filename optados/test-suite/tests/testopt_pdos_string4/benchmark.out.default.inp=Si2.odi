@@ -1,4 +1,4 @@
- OptaDOS: Execution started on 10 Feb 2022 at 15:56:16 
+ OptaDOS: Execution started on 10 Sep 2026 at 11:58:47 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -91,17 +91,17 @@
 
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Adaptive broadening                                                   |
- |   Spin Component : 1 occupation between    3.97682 and    4.01002   <- Occ |
- |   Spin Component : 2 occupation between    3.97682 and    4.01003   <- Occ |
- |         Fermi energy (Adaptive broadening) :   4.4481 eV            <- EfA |
+ |   Spin Component : 1 occupation between    3.96344 and    4.00645   <- Occ |
+ |   Spin Component : 2 occupation between    3.96345 and    4.00645   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.4128 eV            <- EfA |
  +----------------------------------------------------------------------------+
  +--------------------------- Setting Fermi Energy  --------------------------+
- |                      Fermi energy from DOS :   4.4481 eV            <- EfD |
+ |                      Fermi energy from DOS :   4.4128 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
- + Time to calculate Projected Density of States                  0.005 (sec) +
+ + Time to calculate Projected Density of States                  0.006 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on 10 Feb 2022 at 15:56:16 
+ OptaDOS: Execution complete on 10 Sep 2026 at 11:58:47 

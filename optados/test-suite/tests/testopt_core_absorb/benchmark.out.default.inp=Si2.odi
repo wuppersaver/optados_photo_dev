@@ -1,4 +1,4 @@
- OptaDOS: Execution started on  7 Dec 2022 at 11:17:07 
+ OptaDOS: Execution started on 10 Sep 2026 at 11:57:36 
           Parallelised over    1 thread(s)
 
  +===========================================================================+
@@ -96,21 +96,21 @@
  +--------------------------- Setting Fermi Energy  --------------------------+
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Adaptive broadening                                                   |
- |   Spin Component : 1 occupation between    7.97155 and    8.00150   <- Occ |
- |         Fermi energy (Adaptive broadening) :   4.3195 eV            <- EfA |
+ |   Spin Component : 1 occupation between    7.96425 and    8.00063   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.3170 eV            <- EfA |
  +----------------------------------------------------------------------------+
- |                      Fermi energy from DOS :   4.3195 eV            <- EfD |
+ |                      Fermi energy from DOS :   4.3170 eV            <- EfD |
  +----------------------------------------------------------------------------+
 
  +----------------------------- Fermi Energy Analysis ------------------------+
  | From Adaptive broadening                                                   |
- |   Spin Component : 1 occupation between    7.96499 and    8.00074   <- Occ |
- |         Fermi energy (Adaptive broadening) :   4.3173 eV            <- EfA |
+ |   Spin Component : 1 occupation between    7.98545 and    8.00238   <- Occ |
+ |         Fermi energy (Adaptive broadening) :   4.3248 eV            <- EfA |
  +----------------------------------------------------------------------------+
  |                                                                            |
- + Time to calculate Core Level Spectra                           2.281 (sec) +
+ + Time to calculate Core Level Spectra                           0.778 (sec) +
  +============================================================================+
   
   
 
- OptaDOS: Execution complete on  7 Dec 2022 at 11:17:09 
+ OptaDOS: Execution complete on 10 Sep 2026 at 11:57:36 
