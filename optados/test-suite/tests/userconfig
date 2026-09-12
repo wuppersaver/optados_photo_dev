@@ -30,6 +30,13 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+# The Bandgap Analysis block, which is gathered onto the root node and so is
+# the part of a DOS run that depends on the MPI decomposition.
+[OPTADOS_MPI_DOS_GAP_OK]
+exe = ../../optados.mpi.x
+extract_fn = tools parsers.parse_dos_bandgap.parse
+tolerance = (1.0e-8, 1.0e-8)
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

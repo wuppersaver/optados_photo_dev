@@ -12,6 +12,7 @@
 # no spin   |       |    5     |        |
 # ome file  |       |    2,4,5 |    3   |
 # dome file |       |          |    6   |
+# mpi       |       |    7     |        |
 # ----------+-------+----------+--------+
 
 # 1)
@@ -59,6 +60,15 @@ output = Si2.adaptive.dat
 program = OPTADOS_DOS_DAT_OK
 inputs_args = ('Si2.odi', '')
 output = Si2.linear.dat
+
+# 7)
+# The band-gap analysis on three nodes.
+[testopt_dos_bandgap_mpi]
+program = OPTADOS_MPI_DOS_GAP_OK
+min_nprocs = 3
+nprocs = 3
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
 
 #--------------------------------------------------------------
 # O p t a D O S   P D O S   T e s t s

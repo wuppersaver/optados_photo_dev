@@ -509,7 +509,8 @@ contains
       write (stdout, '(1x,a78)') '+----------------------------- Bandgap Analysis -----------------------------+'
     end if
 
-    if (.not. allocated(all_kpoints)) call io_error('Error all_kpoints not allocated in dos_utils: compute_bandgap')
+    if (on_root .and. .not. allocated(all_kpoints)) &
+      call io_error('Error all_kpoints not allocated in dos_utils: compute_bandgap')
 
     allocate (bandgap(1:2, 1:nspins, 1:num_kpoints_on_node(my_node_id)), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating bandgap in dos_utils: compute_bandgap')
@@ -544,12 +545,12 @@ contains
     ! Pass all the slices around Efermi to the head node, making sure whe get the global
     ! kpoint number. *And* crucially the same kpoint numbers as in the bands file.
     ! Otherwise the kpoint numbers of the VBM and CBM change as different numbers of nodes
-    ! are used.
+    ! are used. The count is 2*nspins values per k-point.
     kpoints_before_this_node = 0
     do inode = 1, (num_nodes - 1)
-      if (my_node_id == inode) call comms_send(bandgap(1, 1, 1), 2*is*num_kpoints_on_node(inode), root_id)
+      if (my_node_id == inode) call comms_send(bandgap(1, 1, 1), 2*nspins*num_kpoints_on_node(inode), root_id)
       if (on_root) call comms_recv(global_bandgap(1, 1, &
-           & kpoints_before_this_node + 1), 2*is*num_kpoints_on_node(inode), inode)
+           & kpoints_before_this_node + 1), 2*nspins*num_kpoints_on_node(inode), inode)
       kpoints_before_this_node = kpoints_before_this_node + num_kpoints_on_node(inode)
     end do
     ! Copy the root node's slice to the global array.
@@ -945,8 +946,9 @@ contains
     !===============================================================================
     use od_parameters, only: dos_nbins, dos_min_energy, dos_max_energy, dos_spacing, iprint
     use od_electronic, only: band_energy
+    use od_cell, only: num_kpoints_on_node
     use od_io, only: io_error, stdout
-    use od_comms, only: comms_reduce, comms_bcast, on_root
+    use od_comms, only: comms_reduce, comms_bcast, on_root, my_node_id
 
     implicit none
 
@@ -961,7 +963,7 @@ contains
     ! If we do have dos_min_energy and dos_max_energy set, then we'd better
     ! use them. If not, let's set some sensible values.
     if (dos_min_energy == -huge(dos_min_energy)) then !Do it automatically
-      min_band_energy = minval(band_energy) - 5.0_dp
+      min_band_energy = minval(band_energy(:, :, 1:num_kpoints_on_node(my_node_id))) - 5.0_dp
     else
       min_band_energy = dos_min_energy
     end if
@@ -969,7 +971,7 @@ contains
     call comms_bcast(min_band_energy, 1)
 
     if (dos_max_energy == huge(dos_max_energy)) then !Do it automatically
-      max_band_energy = maxval(band_energy) + 5.0_dp
+      max_band_energy = maxval(band_energy(:, :, 1:num_kpoints_on_node(my_node_id))) + 5.0_dp
     else
       max_band_energy = dos_max_energy
     end if

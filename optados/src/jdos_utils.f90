@@ -182,7 +182,8 @@ contains
     use od_dos_utils, only: dos_utils_calculate
     use od_parameters, only: jdos_max_energy, jdos_spacing, iprint
     use od_electronic, only: efermi, band_energy
-    use od_comms, only: comms_reduce, comms_bcast, on_root
+    use od_cell, only: num_kpoints_on_node
+    use od_comms, only: comms_reduce, comms_bcast, on_root, my_node_id
     use od_io, only: stdout, io_error
 
     implicit none
@@ -191,7 +192,7 @@ contains
     real(kind=dp) :: max_band_energy
 
     if (jdos_max_energy < 0.0_dp) then ! we have to work it out ourselves
-      max_band_energy = maxval(band_energy)
+      max_band_energy = maxval(band_energy(:, :, 1:num_kpoints_on_node(my_node_id)))
       call comms_reduce(max_band_energy, 1, 'MAX')
       call comms_bcast(max_band_energy, 1)
       jdos_max_energy = efermi - max_band_energy
