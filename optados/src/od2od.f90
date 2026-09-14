@@ -489,10 +489,10 @@ contains
     read (pdos_in_unit, '('//trim(format_precision)//')') file_version
     read (pdos_in_unit, '(a80)') pdosfile_header
 
-    read (pdos_in_unit, '(a10, i6)') dummy, pdos_mwab%nkpoints
-    read (pdos_in_unit, '(a10, i6)') dummy, pdos_mwab%nspins
-    read (pdos_in_unit, '(a10, i6)') dummy, pdos_mwab%norbitals
-    read (pdos_in_unit, '(a10, i6)') dummy, pdos_mwab%nbands
+    read (pdos_in_unit, *) dummy, pdos_mwab%nkpoints
+    read (pdos_in_unit, *) dummy, pdos_mwab%nspins
+    read (pdos_in_unit, *) dummy, pdos_mwab%norbitals
+    read (pdos_in_unit, *) dummy, pdos_mwab%nbands
 
     !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nkpoints= ",pdos_mwab%nkpoints
     !write(stdout,'(a, i6)') "DEBUG: pdos_mwab%nspins= ",pdos_mwab%nspins
@@ -538,10 +538,10 @@ contains
 
     do ik = 1, nkpoints
       ! The kpoint number, followed by the kpoint-vector
-      read (pdos_in_unit, '(i6,3'//trim(format_precision)//')') idummy, kpoint_r(:, ik)
+      read (pdos_in_unit, *) idummy, kpoint_r(:, ik)
       do is = 1, pdos_mwab%nspins
-        read (pdos_in_unit, '(i6)') idummy ! this is the spin number
-        read (pdos_in_unit, '(i6)') nbands_occ(ik, is)
+        read (pdos_in_unit, *) idummy ! this is the spin number
+        read (pdos_in_unit, *) nbands_occ(ik, is)
         do ib = 1, nbands_occ(ik, is)
 
           !      write(stdout,*) " ***** F U L L _ D E B U G _ P D O S _ W E I G H T S ***** "
@@ -662,10 +662,10 @@ contains
     read (elnes_unit, '('//trim(format_precision)//')') file_version
     read (elnes_unit, '(a80)') elnesfile_header
 
-    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%norbitals
-    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nbands
-    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nkpoints
-    read (elnes_unit, '(a20,1x,i5)') dummy20, elnes_mwab%nspins
+    read (elnes_unit, *) dummy20, elnes_mwab%norbitals
+    read (elnes_unit, *) dummy20, elnes_mwab%nbands
+    read (elnes_unit, *) dummy20, elnes_mwab%nkpoints
+    read (elnes_unit, *) dummy20, elnes_mwab%nspins
 
     write (string, '(i7,"(1x,",a,")")') elnes_mwab%norbitals, "i5"
     write (string2, '(i7,"(1x,",a,")")') elnes_mwab%norbitals*elnes_mwab%nbands*3, trim(format_precision)
