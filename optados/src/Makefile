@@ -13,6 +13,7 @@ ifeq ($(BUILD), debug)
   EXTENSION:=.debug
 else
   FFLAGS+=$(FFLAGS_FAST)
+  EXTENSION:=
 endif
 
 
@@ -24,8 +25,7 @@ else
    F90:=$(F90_SERIAL)
 endif
 
-#EXTENSION:=$(EXTENSION)$(EXE_SUFFIX)
-EXTENSION:=.x
+EXTENSION:=$(EXE_SUFFIX)$(EXTENSION)
 
 # Put object names here
 OBJS=build.o algorithms.o cell.o comms.o constants.o core.o dos.o dos_utils.o electronic.o io.o jdos.o jdos_utils.o optics.o parameters.o pdos.o pdis.o projection_utils.o xmgrace_utils.o
@@ -108,7 +108,8 @@ clean:
 
 
 veryclean: clean
-	rm -f optados$(EXTENSION) optados$(EXTENSION).debug optados$(EXTENSION).mpi ../od2od ../optados.x
+	rm -f ../optados$(EXE_SUFFIX) ../optados$(EXE_SUFFIX).debug ../optados$(EXE_SUFFIX).mpi ../od2od
 
 install:
-	cp optados$(EXTENSION) $(INSTALL_DIR)
+	@test -n "$(INSTALL_DIR)" || { echo "make install needs INSTALL_DIR=<directory>"; exit 1; }
+	cp ../optados$(EXTENSION) $(INSTALL_DIR)

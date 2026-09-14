@@ -51,9 +51,15 @@ jobs:
       - name: build
         run:  |
           cd optados 
+          make COMMS_ARCH=mpi
+          make clean
           make 
           make tools
       - name: run tests
+        # The MPI tests run 3 ranks (an uneven k-point split); a hosted runner may
+        # have fewer cores than that.
+        env:
+          OMPI_MCA_rmaps_base_oversubscribe: 1
         run: |
           cd optados/test-suite
           ./run_tests -v --category=default 

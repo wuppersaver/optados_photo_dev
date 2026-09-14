@@ -7,7 +7,7 @@ The code needs the `configparser` module, that can be installed e.g. via
 
 ## How to write a new test
 
-### Writing a new test for optados.x 
+### Writing a new test for OptaDOS
 
 1. Create a new folder for the test inside `test-suite/tests`, 
    with a short but meaningful name. 
@@ -93,7 +93,7 @@ Moreover, additional options can be provided like some custom tolerances.
 An example program section looks like this:
 ```
 [OPTADOS_ODO_OK]
-exe = ../../optados.x
+exe = ../../optados.x86_64.debug
 extract_fn = tools parsers.parse_odo.parse
 tolerance = ( (1.0e-3, 5.0e-3, 'bandenergy'),
 	             (1.0e-6, 1.0e-6, 'bandidx')))
@@ -106,7 +106,8 @@ Each line defines the following:
     parsed/checked (e.g. `ODO` or `DAT`)
   * `<SHOULDFAIL>` is `OK` if this is a standard run that should end with error code zero,
     or `FAIL` if you expect the code to fail.
-* Line 2: specify the executable to run. Typically this is either `../../optados.x` 
+* Line 2: specify the executable to run. Typically this is either `../../optados.x86_64.debug`
+  (serial) or `../../optados.x86_64.mpi` (MPI)
    (the location is with respect to the folder in which `userconfig` is
   located)
 * Line 3: define the (python) function to parse the output files. In the example above, 
@@ -145,8 +146,9 @@ The code has a number of command-line options to run in non-interactive mode, or
 to specify some options (number of MPI processors for parallel runs, verbose mode).
 Run `./run_tests -h` for further info.
 
-**Note**: you will need to have compiled `optados.x` and to be able
-to run the tests.
+**Note**: you will need to have compiled `optados.x86_64.debug` (`make`, with the default
+`BUILD := debug`) and, for the MPI tests, `optados.x86_64.mpi` (`make COMMS_ARCH=mpi`, with a
+`make clean` between the two builds) to be able to run the tests.
 
 ## Cleaning up
 When running tests, a number of temporary files are created. While these should not

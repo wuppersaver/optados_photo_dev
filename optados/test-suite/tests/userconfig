@@ -4,23 +4,23 @@
 # Still, specifying it helps understanding what the test will compare.
 
 [OPTADOS_ODO_OK]
-exe = ../../optados.x
+exe = ../../optados.x86_64.debug
 extract_fn = tools parsers.parse_odo.parse
 #tolerance = ( 1.0e-3, 1.0e-3, 'fermi_fb'))
 
 [OPTADOS_DOS_DAT_OK]
-exe = ../../optados.x
+exe = ../../optados.x86_64.debug
 extract_fn = tools parsers.parse_dos_dat.parse
 
 # We can use od2od's general formatted parser to 
 # read a pdos file
 [OPTADOS_GEN_DAT_OK]
-exe = ../../optados.x
+exe = ../../optados.x86_64.debug
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
 # The same on the MPI binary: the pdos weights are distributed by k-point.
 [OPTADOS_MPI_GEN_DAT_OK]
-exe = ../../optados.mpi.x
+exe = ../../optados.x86_64.mpi
 extract_fn = tools parsers.parse_od2od_fmt.parse
 tolerance = (1.0e-8, 1.0e-6)
 
@@ -39,7 +39,7 @@ extract_fn = tools parsers.parse_od2od_fmt.parse
 # The Bandgap Analysis block, which is gathered onto the root node and so is
 # the part of a DOS run that depends on the MPI decomposition.
 [OPTADOS_MPI_DOS_GAP_OK]
-exe = ../../optados.mpi.x
+exe = ../../optados.x86_64.mpi
 extract_fn = tools parsers.parse_dos_bandgap.parse
 tolerance = (1.0e-8, 1.0e-8)
 
