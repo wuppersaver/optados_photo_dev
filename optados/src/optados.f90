@@ -33,7 +33,7 @@ program optados
   ! Written by Andrew Morris, Rebecca Nicholls, Chris Pickard               !
   !             and Jonathan Yates      2010                                !
   !=========================================================================!
-  use od_comms, only: comms_setup, on_root, comms_end, num_nodes
+  use od_comms, only: comms_setup, on_root, comms_end, num_nodes, comms_bcast
   use od_constants, only: dp
   use od_io, only: io_get_seedname, io_time, io_date, io_file_unit,&! Functions
        & stdout, stderr, seedname                                            ! Variables
@@ -98,6 +98,10 @@ program optados
     !-------------------------------------------------------------------------!
   end if
 
+  ! Only the root node has read the parameters so far (param_dist comes later),
+  ! and the two band readers exchange different messages: every node has to
+  ! know now whether this is a pdispersion.
+  call comms_bcast(pdis, 1)
   if (pdis) then
     call elec_read_band_energy_ordered
   else

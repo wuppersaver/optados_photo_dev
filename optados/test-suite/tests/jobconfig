@@ -190,10 +190,27 @@ output = GaAs.pdos.proj-0001-0002.dat
 #--------------------------------------------------------------
 # Test coverage (there was none)
 # 1) the .pdis.dat of an angular projection, serial
+# 2) the same on 2 and on 3 MPI ranks, against the serial benchmark
 
 # 1)
 [testopt_pdis_angular]
 program = OPTADOS_PDIS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdis.dat
+
+# 2) Three ranks split the 4 k-points 2, 1, 1, rather than 2, 2
+# for the 2 rank.
+[testopt_pdis_angular_mpi2]
+program = OPTADOS_MPI_PDIS_DAT_OK
+min_nprocs = 2
+nprocs = 2
+inputs_args = ('Si2.odi', '')
+output = Si2.pdis.dat
+
+[testopt_pdis_angular_mpi3]
+program = OPTADOS_MPI_PDIS_DAT_OK
+min_nprocs = 3
+nprocs = 3
 inputs_args = ('Si2.odi', '')
 output = Si2.pdis.dat
 

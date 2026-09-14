@@ -34,6 +34,12 @@ module od_pdis
   use od_projection_utils, only: projection_array, matrix_weights, max_am, proj_symbol, num_proj
   !-------------------------------------------------------------------------!
 
+  ! Every k-point's band energies and projector weights, collected on the root
+  ! node by pdis_gather for the one .pdis.dat: band_energy and matrix_weights
+  ! hold only this node's k-points.
+  real(kind=dp), allocatable :: all_energy(:, :, :)     ! (nbands, nspins, nkpoints)
+  real(kind=dp), allocatable :: all_weights(:, :, :, :) ! (num_proj, nbands, nkpoints, nspins)
+
   private
 
   public :: pdis_calculate
@@ -79,11 +85,64 @@ contains
       call pdis_report_projectors
     end if
 
+    call pdis_gather
+
     if (on_root) then
       call pdis_write
+      deallocate (all_energy, all_weights)
     end if
 
   end subroutine pdis_calculate
+
+  !===============================================================================
+  subroutine pdis_gather
+    !===============================================================================
+    ! Collect every node's k-points on the root node in all_energy and all_weights,
+    ! in k-point order: node inodes holds num_kpoints_on_node(inodes) of them,
+    ! following those of the nodes before it (algor_dist_array).
+    !
+    ! matrix_weights is allocated for this node's own k-points, so the whole array
+    ! is its section. band_energy is allocated for the root node's count and this
+    ! node fills the first num_kpoints_on_node(my_node_id); with the k-point index
+    ! last, those are one contiguous block. Each arrives in a buffer of exactly its
+    ! sender's shape and is copied into place from there.
+    !===============================================================================
+    use od_comms, only: on_root, my_node_id, num_nodes, root_id, comms_send, comms_recv
+    use od_cell, only: nkpoints, num_kpoints_on_node
+    use od_electronic, only: band_energy, nbands, nspins, pdos_mwab
+    use od_io, only: io_error
+    implicit none
+    real(kind=dp), allocatable :: buf_energy(:, :, :), buf_weights(:, :, :, :)
+    integer :: inodes, nk, ik0, ierr
+
+    nk = num_kpoints_on_node(my_node_id)
+    if (.not. on_root) then
+      if (nk > 0) then
+        call comms_send(band_energy(1, 1, 1), nbands*nspins*nk, root_id)
+        call comms_send(matrix_weights(1, 1, 1, 1), size(matrix_weights), root_id)
+      end if
+      return
+    end if
+
+    allocate (all_energy(nbands, nspins, nkpoints), all_weights(num_proj, pdos_mwab%nbands, nkpoints, nspins), &
+              stat=ierr)
+    if (ierr /= 0) call io_error('Error: pdis_gather - allocation of all_energy/all_weights failed')
+    all_energy(:, :, 1:nk) = band_energy(:, :, 1:nk)
+    all_weights(:, :, 1:nk, :) = matrix_weights(:, :, 1:nk, :)
+    ik0 = nk
+    do inodes = 1, num_nodes - 1
+      nk = num_kpoints_on_node(inodes)
+      if (nk == 0) cycle
+      allocate (buf_energy(nbands, nspins, nk), buf_weights(num_proj, pdos_mwab%nbands, nk, nspins), stat=ierr)
+      if (ierr /= 0) call io_error('Error: pdis_gather - allocation of the receive buffers failed')
+      call comms_recv(buf_energy(1, 1, 1), size(buf_energy), inodes)
+      call comms_recv(buf_weights(1, 1, 1, 1), size(buf_weights), inodes)
+      all_energy(:, :, ik0 + 1:ik0 + nk) = buf_energy
+      all_weights(:, :, ik0 + 1:ik0 + nk, :) = buf_weights
+      deallocate (buf_energy, buf_weights)
+      ik0 = ik0 + nk
+    end do
+  end subroutine pdis_gather
 
   !===============================================================================
   subroutine pdis_write
@@ -107,7 +166,7 @@ contains
     !===============================================================================
     use od_parameters, only: iprint, set_efermi_zero
     use od_algorithms, only: channel_to_am
-    use od_electronic, only: pdos_mwab, all_kpoints, band_energy, efermi
+    use od_electronic, only: pdos_mwab, all_kpoints, efermi
     use od_cell, only: atoms_species_num, num_species, nkpoints
     use od_io, only: io_file_unit, io_error, io_date, stdout
 
@@ -122,7 +181,7 @@ contains
     integer :: N, n_eigen
 
     if (set_efermi_zero) then
-      band_energy = band_energy - efermi
+      all_energy = all_energy - efermi
     end if
 
     write (string, '(I4,"(x,es14.7)")') (stop_proj - start_proj) + 1
@@ -165,8 +224,8 @@ contains
       do N = 1, nkpoints
         write (pdis_file, '(a10, i4, a10, es18.7, es18.7, es18.7)') 'K-point   ', N, '     ', (all_kpoints(i, N), i=1, 3)
         do n_eigen = 1, pdos_mwab%nbands
-          write (pdis_file, '(es20.7,'//trim(string)//')') band_energy(n_eigen, 1, N), &
-            (matrix_weights(i, n_eigen, N, 1), i=start_proj, stop_proj)
+          write (pdis_file, '(es20.7,'//trim(string)//')') all_energy(n_eigen, 1, N), &
+            (all_weights(i, n_eigen, N, 1), i=start_proj, stop_proj)
         end do
       end do
 

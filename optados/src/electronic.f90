@@ -755,9 +755,14 @@ contains
         end do
       end do
 
-      ! split bands across node-level arrays
-      iall_kpoints = 0
-      do inodes = 0, num_nodes - 1
+      ! split bands across node-level arrays: every other node's block first, sent
+      ! from the root node's buffer (which has the shape every node allocated), and
+      ! the root node's own block last, so that band_energy, kpoint_r and
+      ! kpoint_weight end up holding the root node's k-points. Filling them in node
+      ! order left the root node with the last node's block. Node inodes' k-points
+      ! follow those of the nodes before it.
+      do inodes = 1, num_nodes - 1
+        iall_kpoints = sum(num_kpoints_on_node(0:inodes - 1))
         do ik = 1, num_kpoints_on_node(inodes)
           do i = 1, 3
             kpoint_r(i, ik) = all_kpoints(i, ik + iall_kpoints)
@@ -769,13 +774,20 @@ contains
             end do
           end do
         end do
-        iall_kpoints = iall_kpoints + num_kpoints_on_node(inodes)
-        ! distribute bands across kpoints
-        if (inodes /= 0) then
-          call comms_send(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(0), inodes)
-          call comms_send(kpoint_r(1, 1), 3*num_kpoints_on_node(0), inodes)
-          call comms_send(kpoint_weight(1), num_kpoints_on_node(0), inodes)
-        end if
+        call comms_send(band_energy(1, 1, 1), nbands*nspins*num_kpoints_on_node(0), inodes)
+        call comms_send(kpoint_r(1, 1), 3*num_kpoints_on_node(0), inodes)
+        call comms_send(kpoint_weight(1), num_kpoints_on_node(0), inodes)
+      end do
+      do ik = 1, num_kpoints_on_node(0)
+        do i = 1, 3
+          kpoint_r(i, ik) = all_kpoints(i, ik)
+        end do
+        kpoint_weight(ik) = all_kpoint_weight(ik)
+        do is = 1, nspins
+          do ib = 1, nbands
+            band_energy(ib, is, ik) = all_band_energy(ib, is, ik) !NB spin <-> kpt swapped
+          end do
+        end do
       end do
 
       ! Do this here so we can free up the all_kpoints memory, unless we need it to calculate
@@ -1390,11 +1402,12 @@ contains
       read (pdos_in_unit) pdos_orbital%rank_in_species(1:pdos_mwab%norbitals)
       read (pdos_in_unit) pdos_orbital%am_channel(1:pdos_mwab%norbitals)
       !-------------------------------------------------------------------------!
-      call comms_bcast(pdos_mwab%norbitals, 1)
-      call comms_bcast(pdos_mwab%nbands, 1)
-      call comms_bcast(pdos_mwab%nkpoints, 1)
-      call comms_bcast(pdos_mwab%nspins, 1)
     end if
+    ! Outside the on_root block: a broadcast has to be called on every node.
+    call comms_bcast(pdos_mwab%norbitals, 1)
+    call comms_bcast(pdos_mwab%nbands, 1)
+    call comms_bcast(pdos_mwab%nkpoints, 1)
+    call comms_bcast(pdos_mwab%nspins, 1)
     if (.not. on_root) then
       allocate (pdos_orbital%species_no(pdos_mwab%norbitals), stat=ierr)
       if (ierr /= 0) call io_error(" Error : cannot allocate pdos_orbital")
@@ -1417,6 +1430,10 @@ contains
     allocate (all_pdos_weights(1:pdos_mwab%norbitals, 1:pdos_mwab%nbands, &
                                1:nkpoints, 1:pdos_mwab%nspins), stat=ierr)
     if (ierr /= 0) stop " Error : cannot allocate all_pdos_weights"
+    ! Bands above a k-point's nbands_occ are not in the file: zero, not whatever
+    ! the allocation held, and the same on every node.
+    all_pdos_weights = 0.0_dp
+    pdos_weights = 0.0_dp
 
     if (on_root) then
       ! Read in the k-points in the correct path ordering, not the file ordering
@@ -1452,11 +1469,14 @@ contains
     end if
 
     call comms_bcast(all_pdos_weights(1, 1, 1, 1), size(all_pdos_weights))
+    ! Read on the root node only, and every node needs it to pick its bands below.
+    call comms_bcast(all_nbands_occ(1, 1), size(all_nbands_occ))
 
+    ! This node's k-points follow those of the nodes before it. (The offset used
+    ! to sum inodes*num_kpoints_on_node(inodes), which is 0 for node 1 and wrong
+    ! for every node but the root.)
     iall_kpoints = 0
-    do inodes = 0, my_node_id - 1
-      iall_kpoints = iall_kpoints + inodes*num_kpoints_on_node(inodes)
-    end do
+    if (my_node_id > 0) iall_kpoints = sum(num_kpoints_on_node(0:my_node_id - 1))
 
     do ik = 1, num_kpoints_on_node(my_node_id)
       do is = 1, pdos_mwab%nspins

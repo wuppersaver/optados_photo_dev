@@ -1,0 +1,5 @@
+# testopt_pdis_angular on 2 MPI ranks: the 4 k-points split 2 and 2. The
+# benchmark is the serial one; every k-point has to come back in order.
+TASK              : pdispersion
+PDISPERSION       : angular
+SET_EFERMI_ZERO   : true

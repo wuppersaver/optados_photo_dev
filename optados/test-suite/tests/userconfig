@@ -41,6 +41,10 @@ extract_fn = tools parsers.parse_od2od_fmt.parse
 exe = ../../optados.x86_64.debug
 extract_fn = tools parsers.parse_pdis_dat.parse
 
+[OPTADOS_MPI_PDIS_DAT_OK]
+exe = ../../optados.x86_64.mpi
+extract_fn = tools parsers.parse_pdis_dat.parse
+
 # The Bandgap Analysis block, which is gathered onto the root node and so is
 # the part of a DOS run that depends on the MPI decomposition.
 [OPTADOS_MPI_DOS_GAP_OK]
