@@ -18,6 +18,12 @@ extract_fn = tools parsers.parse_dos_dat.parse
 exe = ../../optados.x
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+# The same on the MPI binary: the pdos weights are distributed by k-point.
+[OPTADOS_MPI_GEN_DAT_OK]
+exe = ../../optados.mpi.x
+extract_fn = tools parsers.parse_od2od_fmt.parse
+tolerance = (1.0e-8, 1.0e-6)
+
 [OPTADOS_MIZ_OUT_OK]
 exe = ../../tools/miz_chemical_shift
 extract_fn = tools parsers.parse_miz_out.parse

@@ -541,7 +541,7 @@ contains
 
     end select
 
-    call my_icopy(size, array_red, 1, array, 1)
+    if (my_node_id == 0) call my_icopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
       print *, 'Error in comms_reduce_int'
@@ -589,7 +589,7 @@ contains
 
     end select
 
-    call my_dcopy(size, array_red, 1, array, 1)
+    if (my_node_id == 0) call my_dcopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
       print *, 'Error in comms_reduce_real'
@@ -632,7 +632,7 @@ contains
 
     end select
 
-    call my_zcopy(size, array_red, 1, array, 1)
+    if (my_node_id == 0) call my_zcopy(size, array_red, 1, array, 1)
 
     if (error .ne. MPI_success) then
       print *, 'Error in comms_reduce_cmplx'

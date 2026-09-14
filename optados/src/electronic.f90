@@ -118,6 +118,15 @@ module od_electronic
 
 contains
 
+  function poison_nan() result(x)
+    !! A quiet NaN, for devel_flag poison_send_buffers
+    !! testopt_dos_bandgap_mpi_poison and testopt_pdos_angular_mpi_poison run
+    !! with it.
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
+    real(kind=dp) :: x
+    x = ieee_value(1.0_dp, ieee_quiet_nan)
+  end function poison_nan
+
   !=========================================================================
   subroutine elec_report_parameters
     !=========================================================================
@@ -242,6 +251,7 @@ contains
       if (ierr /= 0) call io_error('Error: Problem allocating band_gradient in elec_read_band_gradient')
 
       band_gradient = 0.0_dp
+      if (index(devel_flag, 'poison_send_buffers') > 0) band_gradient = poison_nan()
       if (on_root) then
         do inodes = 1, num_nodes - 1
           do ik = 1, num_kpoints_on_node(inodes)
@@ -360,6 +370,7 @@ contains
     call algor_dist_array(nkpoints, num_kpoints_on_node)
     allocate (optical_mat(1:nbands, 1:nbands, 1:3, 1:num_kpoints_on_node(0), 1:nspins), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating optical_mat in elec_read_optical_mat')
+    if (index(devel_flag, 'poison_send_buffers') > 0) optical_mat = cmplx(poison_nan(), poison_nan(), kind=dp)
 
     if (legacy_file_format) then
 
@@ -470,7 +481,7 @@ contains
     use od_io, only: io_file_unit, seedname, filename_len, stdout, io_time,&
          & io_error
     use od_algorithms, only: algor_dist_array
-    use od_parameters, only: iprint, compute_band_gap, kpoint_mp_grid
+    use od_parameters, only: iprint, compute_band_gap, kpoint_mp_grid, devel_flag
 
     implicit none
 
@@ -534,6 +545,13 @@ contains
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_weight in read_band_energy')
     allocate (kpoint_r(1:3, 1:num_kpoints_on_node(0)), stat=ierr)
     if (ierr /= 0) call io_error('Error: Problem allocating kpoint_r in read_band_energy')
+    ! A node holding fewer k-points than the root receives slots the root never
+    ! filled. band_energy gets a huge finite value, not a NaN: minval and maxval skip NaNs.
+    if (index(devel_flag, 'poison_send_buffers') > 0) then
+      band_energy = huge(1.0_dp)
+      kpoint_r = poison_nan()
+      kpoint_weight = poison_nan()
+    end if
 
     if (on_root) then
       allocate (all_kpoints(1:3, nkpoints), stat=ierr)
@@ -1237,6 +1255,7 @@ contains
     allocate (pdos_weights(1:pdos_mwab%norbitals, 1:pdos_mwab%nbands, &
                            1:num_kpoints_on_node(0), 1:pdos_mwab%nspins), stat=ierr)
     if (ierr /= 0) stop " Error : cannot allocate pdos_weights"
+    if (index(devel_flag, 'poison_send_buffers') > 0) pdos_weights = poison_nan()
 
     if (on_root) then
       do inodes = 1, num_nodes - 1
