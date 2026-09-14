@@ -421,6 +421,23 @@ program = OD2OD_FMT_OK
 inputs_args = ('', '-i ome_bin -o ome_fmt -w Si2_out Si2')
 output = Si2_out.ome_fmt
 
+# The same fmt -> bin -> fmt round trip for the other formats od2od reads and
+# writes.
+[testod2od_dome_fmt]
+program = OD2OD_FMT_OK
+inputs_args = ('', '-i dome_bin -o dome_fmt -w Si2_out Si2')
+output = Si2_out.dome_fmt
+
+[testod2od_pdos_fmt]
+program = OD2OD_FMT_OK
+inputs_args = ('', '-i pdos_bin -o pdos_fmt -w Si2_out Si2')
+output = Si2_out.pdos_fmt
+
+[testod2od_elnes_fmt]
+program = OD2OD_FMT_OK
+inputs_args = ('', '-i elnes_bin -o elnes_fmt -w Si2_out Si2')
+output = Si2_out.elnes_fmt
+
 #--------------------------------------------------------------
 # C a t e g o r y   L i s t
 #--------------------------------------------------------------

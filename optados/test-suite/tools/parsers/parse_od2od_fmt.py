@@ -21,7 +21,8 @@ def parse(fname):
 
     count = len(open(fname).readlines(  ))
 
-    modulo_line = count//10
+    # Every tenth of the file; a file of fewer than ten lines is read whole.
+    modulo_line = max(1, count//10)
 
     line_counter=0
     with open(fname) as f:
