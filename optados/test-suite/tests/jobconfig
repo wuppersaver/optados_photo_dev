@@ -188,8 +188,14 @@ output = GaAs.pdos.proj-0001-0002.dat
 #--------------------------------------------------------------
 # O p t a D O S   P D I S   T e s t s
 #--------------------------------------------------------------
-# Test coverage
-# One for AFH?
+# Test coverage (there was none)
+# 1) the .pdis.dat of an angular projection, serial
+
+# 1)
+[testopt_pdis_angular]
+program = OPTADOS_PDIS_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.pdis.dat
 
 #--------------------------------------------------------------
 # O p t a D O S   J D O S   T e s t s

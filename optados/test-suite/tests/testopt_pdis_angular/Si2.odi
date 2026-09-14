@@ -1,0 +1,6 @@
+# The projected dispersion of Si2, one projector per angular momentum channel.
+# The suite's only pdispersion test: every k-point's coordinates, band energies
+# and projector weights are compared.
+TASK              : pdispersion
+PDISPERSION       : angular
+SET_EFERMI_ZERO   : true

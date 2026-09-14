@@ -36,6 +36,11 @@ extract_fn = tools parsers.parse_od2od_log.parse
 exe = ../../od2od
 extract_fn = tools parsers.parse_od2od_fmt.parse
 
+# A pdispersion's .pdis.dat: k-points, band energies and projector weights.
+[OPTADOS_PDIS_DAT_OK]
+exe = ../../optados.x86_64.debug
+extract_fn = tools parsers.parse_pdis_dat.parse
+
 # The Bandgap Analysis block, which is gathered onto the root node and so is
 # the part of a DOS run that depends on the MPI decomposition.
 [OPTADOS_MPI_DOS_GAP_OK]
