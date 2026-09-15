@@ -70,6 +70,20 @@ nprocs = 3
 inputs_args = ('Si2.odi', '')
 output = Si2.odo
 
+# efermi : insulator with fewer bands than electrons.
+[testopt_dos_efermi_insulator]
+program = OPTADOS_DOS_GAP_OK
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
+# The same on 3 ranks: the VBM and the CBM are on different nodes.
+[testopt_dos_efermi_insulator_mpi]
+program = OPTADOS_MPI_DOS_GAP_OK
+min_nprocs = 3
+nprocs = 3
+inputs_args = ('Si2.odi', '')
+output = Si2.odo
+
 # 7b) The same on three ranks with devel_flag poison_send_buffers. Si2 is
 # spin-polarised and its 4 k-points split 2, 1, 1, so a node holds fewer k-points
 # than root and its spin-2 block sits at a different offset from root's.

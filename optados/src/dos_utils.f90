@@ -340,8 +340,8 @@ contains
 
           if (band_energy(top_occ_band, is, ik) > vbm) &
                &vbm = band_energy(top_occ_band, is, ik)
-          ! If the band_energy array is big enough then there will be occupied states.
-          if (num_electrons(is) + 1 .le. nbands) then
+          ! The band above is the lowest empty one, if the file holds it.
+          if (top_occ_band + 1 .le. nbands) then
             if (band_energy(top_occ_band + 1, is, ik) < cbm) &
                  &cbm = band_energy(top_occ_band + 1, is, ik)
           end if
@@ -364,8 +364,17 @@ contains
         efermi = vbm + 0.5_dp*(cbm - vbm)
       end if
 
-      if (on_root) write (stdout, '(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
-           &" Fermi energy assuming insulator : ", efermi, " eV", "  <- EfI"
+      if (on_root) then
+        write (stdout, '(1x,a1,a46,f8.4,a3,12x,a8)') "|",&
+             &" Fermi energy assuming insulator : ", efermi, " eV", "  <- EfI"
+        if (any(abs(num_electrons/electrons_per_state - nint(num_electrons/electrons_per_state)) > 1.0e-6_dp)) &
+          write (stdout, '(1x,a78)') '|  Warning: the top band is only partly filled, so this is not an insulator  |'
+        if (cbm == huge(cbm)) then
+          write (stdout, '(1x,a78)') '|  Warning: no empty band in the .bands file, so E_F is 0.5 eV above the VBM |'
+        else if (cbm < vbm) then
+          write (stdout, '(1x,a78)') '|  Warning: the lowest empty band is below the highest full one: not a gap   |'
+        end if
+      end if
 
     case ("optados")
       ! So in the case of compare_jdos we pick efermi_adaptive.

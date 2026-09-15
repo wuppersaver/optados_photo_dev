@@ -52,6 +52,11 @@ exe = ../../optados.x86_64.mpi
 extract_fn = tools parsers.parse_dos_bandgap.parse
 tolerance = (1.0e-8, 1.0e-8)
 
+[OPTADOS_DOS_GAP_OK]
+exe = ../../optados.x86_64.debug
+extract_fn = tools parsers.parse_dos_bandgap.parse
+tolerance = (1.0e-8, 1.0e-8)
+
 [user]
 # This is the string (or list of strings) that identifies sets of tests
 # to be run - one could have multiple ones

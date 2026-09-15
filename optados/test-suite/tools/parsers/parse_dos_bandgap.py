@@ -17,6 +17,7 @@ from collections import defaultdict
 from . import show_output
 
 e_fermi_ab = re.compile(r"Fermi\ energy\ \(Adaptive\ broadening\)\ \:\s*([0-9\.-]+)\s*")
+e_fermi_insulator = re.compile(r"Fermi energy assuming insulator :\s*([0-9\.-]+)")
 thermal = re.compile(r"Thermal Bandgap :\s*([0-9\.-]+)")
 optical = re.compile(r"Spin :\s*(\d+)\s*:\s*([0-9\.-]+)\s*eV\s*<- OBg")
 average = re.compile(r"Spin :\s*(\d+)\s*:\s*([0-9\.-]+)\s*eV\s*<- ABg")
@@ -43,6 +44,10 @@ def parse(fname):
         m = e_fermi_ab.search(l)
         if m:
             retdict["fermi_ab"].append(float(m.group(1)))
+            continue
+        m = e_fermi_insulator.search(l)
+        if m:
+            retdict["fermi_insulator"].append(float(m.group(1)))
             continue
         m = thermal.search(l)
         if m:

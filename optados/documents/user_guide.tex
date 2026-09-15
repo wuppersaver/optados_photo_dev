@@ -622,7 +622,7 @@ The valid options for this parameter are:
 \begin{itemize}
 \item[{\bf --}]  \verb#optados# (default) \optados\ recalculates the Fermi energy by performing a DOS calculation.
 \item[{\bf --}]  \verb#file# Take the value from the output of the ab-initio calculation.
-\item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and counts filled bands to find the Fermi energy.
+\item[{\bf --}]  \verb#insulator# Assume that the material is an insulator and counts filled bands to find the Fermi energy. It is put half-way between the highest filled and the lowest empty eigenvalue over all k-points and spins; if the {\tt .bands} file has no empty band, 0.5~eV above the highest filled one. A warning is printed in that case, when the top band is only partly filled (an odd electron count without spin), and when the filled and empty bands overlap.
 \item[{\bf --}]  \verb#<real number># User supplied value.
 \end{itemize}
 

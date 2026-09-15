@@ -1,0 +1,8 @@
+# Si2 cut to 8 bands: 4 filled and 4 empty for 8 electrons, fewer bands than
+# electrons as in a production run. E_F goes half-way between the VBM and the CBM.
+TASK             : dos
+EFERMI           : insulator
+BROADENING       : fixed
+FIXED_SMEARING   : 0.3
+DOS_SPACING      : 0.1
+COMPUTE_BAND_GAP : true
