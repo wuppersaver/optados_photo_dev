@@ -550,14 +550,14 @@ contains
       end do
     end do
 
-    ! Sum rule
+    ! Sum rule.  E(N) = (N-1)*dE, not N*dE.
     if (N_geom == 1) then
       x = 0.0_dp
       do N = 2, jdos_nbins   !! don't include 0eV as it makes in intraband case blow up (and should be zero otherwise)
         if (.not. optics_intraband) then
-          x = x + ((N*(dE**2)*epsilon(N, 2, 1, 1))/(hbar**2))
+          x = x + ((E(N)*dE*epsilon(N, 2, 1, 1))/(hbar**2))
         else
-          x = x + ((N*(dE**2)*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
+          x = x + ((E(N)*dE*epsilon(N, 2, 1, 3))/((hbar**2)*E(N)*e_charge))
         end if
       end do
       N_eff = (x*e_mass*cell_volume*1E-30*epsilon_0*2)/(pi)
@@ -696,13 +696,13 @@ contains
       end if
     end if
 
-    ! Sum rule 1
+    ! Sum rule 1.  E(N_energy) = (N_energy-1)*dE, not N_energy*dE.
     x = 0.0_dp
     do N_energy = 2, jdos_nbins
       if (.not. optics_intraband) then
-        x = x + (N_energy*(dE**2)*loss_fn(N_energy, 1))
+        x = x + (E(N_energy)*dE*loss_fn(N_energy, 1))
       else
-        x = x + (N_energy*(dE**2)*loss_fn(N_energy, 3))
+        x = x + (E(N_energy)*dE*loss_fn(N_energy, 3))
       end if
     end do
     N_eff2 = x*(e_mass*cell_volume*1E-30*epsilon_0*2)/(pi*(hbar**2))
@@ -711,9 +711,9 @@ contains
     x = 0
     do N_energy = 2, jdos_nbins
       if (.not. optics_intraband) then
-        x = x + (loss_fn(N_energy, 1)/N_energy)
+        x = x + (loss_fn(N_energy, 1)*dE/E(N_energy))
       else
-        x = x + (loss_fn(N_energy, 3)/N_energy)
+        x = x + (loss_fn(N_energy, 3)*dE/E(N_energy))
       end if
     end do
     N_eff3 = x
