@@ -1,0 +1,48 @@
+# CELL file written 11:11:43 (GMT-0.0) 7th December 2022 from run Si2
+
+%BLOCK lattice_cart
+   ANG
+       2.73000000000000        2.73000000000000        0.00000000000000    
+       2.73000000000000        0.00000000000000        2.73000000000000    
+       0.00000000000000        2.73000000000000        2.73000000000000    
+%ENDBLOCK lattice_cart
+
+%BLOCK positions_frac
+   Si             0.000000000000000       0.000000000000000       0.000000000000000
+   Si:Ex          0.250000000000000       0.250000000000000       0.250000000000000
+%ENDBLOCK positions_frac
+
+FIX_COM : true
+
+%BLOCK species_pot
+   Si      3|1.8|5|6|7|30:31:32
+   Si:Ex   3|1.8|5|6|7|30:31:32
+%ENDBLOCK species_pot
+
+%BLOCK species_lcao_states
+   Si      2
+   Si:Ex   2
+%ENDBLOCK species_lcao_states
+
+SYMMETRY_TOL :     0.001000
+
+%BLOCK symmetry_ops
+# Symm. op. 1       E
+          1.000000000000000       0.000000000000000       0.000000000000000
+          0.000000000000000       1.000000000000000       0.000000000000000
+          0.000000000000000       0.000000000000000       1.000000000000000
+          0.000000000000000       0.000000000000000       0.000000000000000
+%ENDBLOCK symmetry_ops
+
+kpoint_mp_grid :    3   3   3
+
+bs_kpoint_mp_grid :    2   2   2
+
+optics_kpoint_mp_grid :    2   2   2
+
+elnes_kpoint_mp_grid :    2   2   2
+
+magres_kpoint_mp_grid :    2   2   2
+
+phonon_kpoint_mp_grid :    2   2   2
+

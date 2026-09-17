@@ -532,22 +532,26 @@ contains
     end if
     epsilon = 0.0_dp
 
+    ! The interband set sums over spins; the intraband set and the total must not.
+    ! Inside the spin loop, nspins = 2 gave three times the Drude term and spin 1's
+    ! interband part twice. nspins = 1 was correct, so no such result changes.
     do N2 = 1, N_geom
       do N_spin = 1, nspins                        ! Loop over spins
         do N_energy = 2, jdos_nbins
           epsilon(N_energy, 2, N2, 1) = epsilon(N_energy, 2, N2, 1) + &
                                         epsilon2_const*weighted_jdos(N_energy, N_spin, N2)
-          if (optics_intraband) then
-            epsilon(N_energy, 2, N2, 2) = epsilon(N_energy, 2, N2, 2) + &
-                 &((intra(N2)*(e_charge**2)*hbar*optics_drude_broadening) &
-                 &/(((E(N_energy)*e_charge)**2) &
-                 & + ((optics_drude_broadening*hbar)**2)))
-            epsilon(N_energy, 2, N2, 3) = epsilon(N_energy, 2, N2, 3) + &
-                 & epsilon(N_energy, 2, N2, 2) &
-                 & + epsilon(N_energy, 2, N2, 1)*E(N_energy)*e_charge
-          end if
         end do
       end do
+      if (optics_intraband) then
+        do N_energy = 2, jdos_nbins
+          epsilon(N_energy, 2, N2, 2) = &
+               &((intra(N2)*(e_charge**2)*hbar*optics_drude_broadening) &
+               &/(((E(N_energy)*e_charge)**2) &
+               & + ((optics_drude_broadening*hbar)**2)))
+          epsilon(N_energy, 2, N2, 3) = epsilon(N_energy, 2, N2, 2) &
+               & + epsilon(N_energy, 2, N2, 1)*E(N_energy)*e_charge
+        end do
+      end if
     end do
 
     ! Sum rule.  E(N) = (N-1)*dE, not N*dE.

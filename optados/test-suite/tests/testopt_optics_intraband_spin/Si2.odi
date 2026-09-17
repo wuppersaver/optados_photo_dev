@@ -1,0 +1,19 @@
+# Spin-polarised optics with the intraband term.
+#
+# Regression test for the intraband sets being accumulated inside the spin loop:
+# with nspins = 2 the Drude term was added once per spin and the total re-added
+# the running totals on each pass, giving three times the Drude plus spin 1's
+# interband part twice. nspins = 1 could not see it, and every other optics test
+# here is nspins = 1.
+#
+# Fixed broadening so the fixture needs no .dome_bin.
+
+TASK               : optics
+JDOS_SPACING       : 0.05
+JDOS_MAX_ENERGY    : 30
+EFERMI             : optados
+DOS_SPACING        : 0.1
+BROADENING         : fixed
+FIXED_SMEARING     : 0.3
+OPTICS_GEOM        : polycrystalline
+OPTICS_INTRABAND   : true

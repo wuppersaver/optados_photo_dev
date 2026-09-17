@@ -477,3 +477,10 @@ optados_only = testopt_*
 od2od_only = testod2od_*
 all = optados_only od2od_only
 default =  all
+
+# Spin-polarised optics with the intraband term: the refractive index comes from
+# the total epsilon, which the spin-loop bug tripled the Drude part of.
+[testopt_optics_intraband_spin]
+program = OPTADOS_GEN_DAT_OK
+inputs_args = ('Si2.odi', '')
+output = Si2_refractive_index.dat
