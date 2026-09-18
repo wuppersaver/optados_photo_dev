@@ -39,7 +39,8 @@ module od_jdos_utils
   real(kind=dp), allocatable, public, save :: jdos_fixed(:, :)
   real(kind=dp), allocatable, public, save :: jdos_linear(:, :)
 
-  integer, save :: jdos_nbins
+  !! -1 until setup_energy_scale has chosen the grid; see the note there.
+  integer, save :: jdos_nbins = -1
 
   real(kind=dp), allocatable, public, save :: E(:)
 
@@ -181,7 +182,7 @@ contains
     !===============================================================================
     use od_dos_utils, only: dos_utils_calculate
     use od_parameters, only: jdos_max_energy, jdos_spacing, iprint
-    use od_electronic, only: efermi, band_energy
+    use od_electronic, only: efermi, band_energy, nbands
     use od_cell, only: num_kpoints_on_node
     use od_comms, only: comms_reduce, comms_bcast, on_root, my_node_id
     use od_io, only: stdout, io_error
@@ -189,7 +190,8 @@ contains
     implicit none
 
     integer       :: idos, ierr
-    real(kind=dp) :: max_band_energy
+    real(kind=dp) :: max_band_energy, top_min, reach
+    logical, save :: warned_band_reach = .false.
 
     if (jdos_max_energy < 0.0_dp) then ! we have to work it out ourselves
       max_band_energy = maxval(band_energy(:, :, 1:num_kpoints_on_node(my_node_id)))
@@ -207,9 +209,14 @@ contains
       end if
     end if
 
-    ! One bin per jdos_spacing, plus the bin at zero.
-    jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing)) + 1
-    jdos_max_energy = real(jdos_nbins - 1, dp)*jdos_spacing
+    ! One bin per jdos_spacing, plus the bin at zero, worked out once and reused as
+    ! dos_utils does with dos_nbins. The snapping is not idempotent since it rewrites
+    ! jdos_max_energy. Re-dividing that can round up a bin and the routine
+    ! runs again for every broadening.
+    if (jdos_nbins < 1) then
+      jdos_nbins = abs(ceiling(jdos_max_energy/jdos_spacing)) + 1
+      jdos_max_energy = real(jdos_nbins - 1, dp)*jdos_spacing
+    end if
 
     allocate (E(1:jdos_nbins), stat=ierr)
     if (ierr /= 0) call io_error("Error: jdos_utils, setup_energy_scale: cannot allocate E")
@@ -218,6 +225,38 @@ contains
     do idos = 1, jdos_nbins
       E(idos) = real(idos - 1, dp)*jdos_spacing
     end do
+
+    ! Above E_F plus the highest band there is nothing left to excite into, so the
+    ! JDOS runs out and anything built on it thins out and stops. The test is the
+    ! reach from E_F: a semicore level makes the widest available transition energy
+    ! enormous, so that would never fire.
+    top_min = minval(band_energy(nbands, :, 1:num_kpoints_on_node(my_node_id)))
+    call comms_reduce(top_min, 1, 'MIN')
+    call comms_bcast(top_min, 1)
+    reach = top_min - efermi
+    if (on_root .and. reach < jdos_max_energy .and. .not. warned_band_reach) then
+      warned_band_reach = .true.
+      write (stdout, *)
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '------------------------ Bands and the JDOS window -------------------------', '!'
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '  Warning: the bands do not reach the top of the JDOS window, so the JDOS   ', '!'
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '  and everything built on it thin out and then vanish below it.             ', '!'
+      write (stdout, '(1x,a1,a36,f14.4,a26,a1)') '!', &
+        '  Highest band above E_F (eV)      : ', reach, ' ', '!'
+      write (stdout, '(1x,a1,a36,f14.4,a26,a1)') '!', &
+        '  jdos_max_energy (eV)             : ', jdos_max_energy, ' ', '!'
+      write (stdout, '(1x,a1,a36,f14.4,a26,a1)') '!', &
+        '  JDOS window shortfall (eV)       : ', jdos_max_energy - reach, ' ', '!'
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '  Lower jdos_max_energy to the reach above, or rerun the electronic         ', '!'
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '  structure with more empty bands.                                          ', '!'
+      write (stdout, '(1x,a1,a76,a1)') '!', &
+        '----------------------------------------------------------------------------', '!'
+      write (stdout, *)
+    end if
 
     if (on_root .and. (iprint > 2)) then
       write (stdout, '(1x,a1,a38,f11.3,13x,a15)') '|', 'efermi : ', efermi, "<-- JDOS Grid |"
